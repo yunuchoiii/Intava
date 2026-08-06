@@ -1,25 +1,72 @@
 {
   "expo": {
-    "name": "Intava",
+    "name": "intava",
     "slug": "Intava",
     "version": "1.0.0",
+    "scheme": "intava",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#1B1B21",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "com.intava.app",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "audio"
+        ],
+        "UIUserInterfaceStyle": "Dark",
+        "CFBundleLocalizations": [
+          "ko",
+          "en",
+          "ja",
+          "zh-Hans"
+        ],
+        "CFBundleAllowMixedLocalizations": true
+      }
     },
     "android": {
+      "package": "com.intava.app",
+      "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#17171D",
         "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "./plugins/withoutPushEntitlement",
+      "expo-router",
+      "expo-system-ui",
+      "expo-audio",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#1B1B21"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "sounds": [
+            "./assets/sounds/cue.wav",
+            "./assets/sounds/work.wav",
+            "./assets/sounds/rest.wav",
+            "./assets/sounds/block.wav",
+            "./assets/sounds/round.wav",
+            "./assets/sounds/cooldown.wav",
+            "./assets/sounds/done.wav"
+          ]
+        }
+      ],
+      "expo-localization"
+    ]
   }
 }

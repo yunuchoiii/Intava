@@ -1,0 +1,233 @@
+import type { Catalog } from './ko';
+
+/**
+ * English.
+ *
+ * Word order differs from Korean in several places on purpose:
+ * "3 / 8 세트" → "Set 3 of 8", "푸시업 시작" → "Start Push-ups".
+ * Keep whole sentences here rather than assembling fragments in code.
+ */
+export const en: Catalog = {
+  common: {
+    cancel: 'Cancel',
+    save: 'Save',
+    close: 'Close',
+    delete: 'Delete',
+    done: 'Done',
+    none: 'None',
+  },
+
+  duration: {
+    minSec: '{{m}} min {{s}} sec',
+    minZero: '{{m}} min',
+    min: '{{m}} min',
+    sec: '{{s}} sec',
+  },
+
+  count: {
+    sets_one: '{{count}} set',
+    sets_other: '{{count}} sets',
+    rounds_one: '{{count}} round',
+    rounds_other: '{{count}} rounds',
+    blocks_one: '{{count}} exercise',
+    blocks_other: '{{count}} exercises',
+    exercises_one: '{{count}} exercise',
+    exercises_other: '{{count}} exercises',
+  },
+
+  home: {
+    tabRoutine: 'Routines · {{count}}',
+    tabTimer: 'Timers · {{count}}',
+    newRoutine: 'New routine',
+    newTimer: 'New timer',
+    settings: 'Settings',
+    emptyRoutineTitle: 'No routines yet',
+    emptyRoutineBody:
+      'Set your exercises and rounds once,\nand it calls each one out without a glance.',
+    emptyTimerTitle: 'No timers yet',
+    emptyTimerBody: 'Just work, rest and sets.\nA simple timer for one repeated move.',
+    a11yEdit: 'Edit {{name}}',
+    a11yStart: 'Start {{name}} now',
+    routineSummary: '{{names}} · {{rounds}}',
+    timerSummary: '{{work}} work · {{rest}} rest · {{sets}}',
+    noBlocks: 'No exercises',
+    warmupPart: '{{dur}} warm-up',
+    cooldownPart: '{{dur}} cool-down',
+  },
+
+  edit: {
+    titleRoutine: 'Edit routine',
+    titleTimer: 'Edit timer',
+    name: 'Name',
+    addBlock: '＋ Add exercise',
+    a11yAddBlock: 'Add exercise',
+    repeat: 'Repeat',
+    rounds: 'Rounds',
+    blockRest: 'Rest between exercises',
+    roundRest: 'Rest between rounds',
+    startEnd: 'Start · Finish',
+    startEndRow: 'Warm-up · Prepare · Cool-down',
+    warmup: 'Warm-up',
+    prepare: 'Prepare',
+    cooldown: 'Cool-down',
+    skipLastRest: 'Skip final rest',
+    alerts: 'Alerts',
+    alertsRow: 'Sound · Vibration · Countdown',
+    allOn: 'All on',
+    allOff: 'All off',
+    someOn: '{{count}} on',
+    work: 'Work',
+    rest: 'Rest',
+    sets: 'Sets',
+    totalTime: 'Total {{time}}',
+    workTime: 'Work {{time}}',
+    onlyOne: '{{item}} only',
+    warmupPart: '{{dur}} warm-up',
+    preparePart: '{{dur}} prepare',
+    cooldownPart: '{{dur}} cool-down',
+    blockSummary: '{{work}} work · {{rest}} rest · {{sets}}',
+    a11yReorder: 'Reorder {{name}}',
+    a11yEditBlock: 'Edit {{name}}',
+  },
+
+  sheet: {
+    blockName: 'Exercise name',
+    blockNamePlaceholder: 'Exercise name',
+    work: 'Work',
+    setRest: 'Rest between sets',
+    sets: 'Sets',
+    a11yDelete: 'Delete exercise',
+  },
+
+  settings: {
+    title: 'Settings',
+    alerts: 'Alerts',
+    sound: 'Sound',
+    soundNote: 'Plays a cue when the segment changes.',
+    vibration: 'Vibration',
+    vibrationNote: 'A different pattern for each segment.',
+    countdown: 'Final 3-second countdown',
+    countdownNote: 'Short ticks for the last three seconds of every segment.',
+    volume: 'Volume',
+    volumeLabel: 'Cue volume',
+    screen: 'Screen',
+    keepAwake: 'Keep screen on while running',
+  },
+
+  run: {
+    exitTitle: 'End this workout?',
+    exitBody: 'Your progress so far will not be saved.',
+    exitContinue: 'Keep going',
+    exitConfirm: 'End',
+    a11yExit: 'End workout',
+    a11ySound: 'Sound and vibration settings',
+    pause: 'Pause',
+    resume: 'Resume',
+    next: 'Next · {{what}}',
+    prevRestart: 'Restart',
+    prevBack: 'Previous',
+    elapsed: '{{time}} elapsed',
+    total: 'of {{time}}',
+  },
+
+  phase: {
+    WARMUP: 'Warm-up',
+    PREPARE: 'Prepare',
+    WORK: 'Work',
+    SET_REST: 'Rest',
+    BLOCK_REST: 'Next exercise',
+    ROUND_REST: 'Round rest',
+    COOLDOWN: 'Cool-down',
+    DONE: 'Done',
+    paused: 'Paused',
+  },
+
+  sub: {
+    warmup: 'Loosen up',
+    cooldown: 'Final stretch',
+    prepare: 'Starting soon',
+    roundRest: 'Round {{round}} done · next round',
+    blockRest: 'Round {{round}} of {{rounds}} · exercise {{nth}}',
+    setsOnly: 'Set {{set}} of {{sets}}',
+    setsRounds: 'Set {{set}} of {{sets}} · round {{round}} of {{rounds}}',
+    finished: 'Well done',
+  },
+
+  segment: {
+    work: '{{name}} {{dur}}',
+    prepare: 'Prepare {{dur}}',
+    warmup: 'Warm-up {{dur}}',
+    cooldown: 'Cool-down {{dur}}',
+    blockRest: 'Next exercise {{dur}}',
+    roundRest: 'Round rest {{dur}}',
+    setRest: 'Rest {{dur}}',
+    none: 'Workout complete',
+  },
+
+  jump: {
+    work: 'Start {{name}}',
+    prepare: 'Start prepare',
+    warmup: 'Start warm-up',
+    cooldown: 'Start cool-down',
+    blockRest: 'Next exercise',
+    roundRest: 'Round rest',
+    setRest: 'Start rest',
+    none: 'To finish',
+  },
+
+  doneScreen: {
+    title: 'Workout complete',
+    summaryRoutine: '{{name}} · {{blocks}}, {{rounds}} · {{sets}}',
+    summaryTimer: '{{name}} · {{sets}}',
+    withExtra: '{{summary}} · with {{extra}}',
+    warmup: 'warm-up',
+    cooldown: 'cool-down',
+    totalTime: 'Total time',
+    pureWork: 'Work only',
+    completedRounds: 'Rounds done',
+    completedSets: 'Sets done',
+    again: 'Do it again',
+    home: 'Home',
+  },
+
+  notify: {
+    channelCue: 'Warm-up · Prepare',
+    channelWork: 'Work starts',
+    channelRest: 'Set rest',
+    channelBlock: 'Next exercise',
+    channelRound: 'Round rest',
+    channelCooldown: 'Cool-down',
+    channelDone: 'Workout complete',
+    workTitle: '{{name}} {{dur}}',
+    bodySets: 'Set {{set}} of {{sets}}',
+    bodySetsRounds: 'Set {{set}} of {{sets}} · round {{round}} of {{rounds}}',
+    bodyNext: 'Next · {{what}}',
+    doneTitle: 'Workout complete',
+    doneBody: '{{name}} · well done',
+  },
+
+  tips: {
+    rounds:
+      'How many times to cycle through every exercise. Sets repeat within one exercise; rounds repeat the whole list.',
+    startEnd:
+      'Drop any of the three to zero and it disappears. While running, warm-up shows **orange**, prepare **amber**, and cool-down **slate blue**.',
+    skipLastRest: 'Finish right after the last set, with no rest at the end.',
+    volume: 'Cues play over your music without turning it down.',
+    keepScreenOn: 'This app expects to be used with the screen off.',
+  },
+
+  seed: {
+    circuit: 'Full-body circuit',
+    squat: 'Squats',
+    pushup: 'Push-ups',
+    plank: 'Plank',
+    tabata: 'Tabata',
+  },
+
+  defaults: {
+    routineName: 'New routine',
+    timerName: 'New timer',
+    blockName: 'Exercise {{n}}',
+    block: 'Exercise',
+  },
+};

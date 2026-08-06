@@ -1,0 +1,448 @@
+/**
+ * 5.2 루틴 편집 · 5.3 타이머 편집(축소 상태)
+ *
+ * 블록 1개 · 라운드 1이면 "라운드"·"종목"이라는 말이 어디에도 나오지 않는다.
+ * 웜업·준비·쿨다운은 0으로 내리면 그 구간이 사라진다 — 별도 on/off 토글이 없다.
+ */
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useMemo, useState } from 'react';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BlockList } from '../src/components/BlockList';
+import { BlockSheet } from '../src/components/BlockSheet';
+import { WhiteButton } from '../src/components/Buttons';
+import { Surface } from '../src/components/Surface';
+import { PressBox } from '../src/components/PressBox';
+import { InfoTip } from '../src/components/InfoTip';
+import { Screen } from '../src/components/Screen';
+import { ValueRow } from '../src/components/ValueRow';
+import { t } from '../src/i18n';
+import { durationLong, durationShort } from '../src/engine/labels';
+import { totalSec, workSec } from '../src/engine/segments';
+import { emptyPreset, uid, useStore } from '../src/store';
+import { C, GUTTER, RADIUS, TABULAR } from '../src/theme';
+import { kindOf, type Block, type Preset } from '../src/types';
+
+export default function Edit() {
+  const { id, kind } = useLocalSearchParams<{ id?: string; kind?: 'routine' | 'timer' }>();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { getPreset, savePreset, settings } = useStore();
+
+  const initial = useMemo(
+    () => getPreset(id) ?? emptyPreset(kind === 'timer' ? 'timer' : 'routine'),
+    [] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+  const [draft, setDraft] = useState<Preset>(initial);
+  const [open, setOpen] = useState<string | null>(null);
+  const [tip, setTip] = useState<string | null>(null);
+  const [sheet, setSheet] = useState<{ block: Block; isNew: boolean } | null>(null);
+  const [startEndOpen, setStartEndOpen] = useState(false);
+  // 종목을 끌어 옮기는 동안에는 화면이 같이 스크롤되면 안 된다
+  const [reordering, setReordering] = useState(false);
+
+  // 편집 화면의 모양은 저장된 종류를 따른다 — 종목이 1개라고 루틴이 타이머로 바뀌면 안 된다
+  const simple = kindOf(draft) === 'timer';
+  const total = totalSec(draft);
+  const pure = workSec(draft);
+
+  const patch = (p: Partial<Preset>) => setDraft((d) => ({ ...d, ...p }));
+  const toggleRow = (key: string) => {
+    setOpen((o) => (o === key ? null : key));
+    setTip(null);
+  };
+  const tipFor = (key: string) => ({
+    tipOpen: tip === key,
+    onTip: () => setTip((t) => (t === key ? null : key)),
+  });
+
+  /** 타이머(블록 1개)의 이름은 프리셋 이름과 같이 간다 — 실행 화면 제목이 그 이름이다 */
+  const setName = (name: string) => {
+    if (simple && draft.blocks[0]) {
+      patch({ name, blocks: [{ ...draft.blocks[0], name }] });
+    } else {
+      patch({ name });
+    }
+  };
+
+  const patchBlock0 = (p: Partial<Block>) => {
+    const b = draft.blocks[0];
+    if (!b) return;
+    patch({ blocks: [{ ...b, ...p }] });
+  };
+
+  const normalized = (): Preset => ({
+    ...draft,
+    name: draft.name.trim() || t(simple ? 'defaults.timerName' : 'defaults.routineName'),
+    blocks: draft.blocks.map((b) => ({ ...b, name: b.name.trim() || t('defaults.block') })),
+  });
+
+  const save = () => {
+    savePreset(normalized());
+    router.back();
+  };
+
+  const startEndSummary = () => {
+    const parts: string[] = [];
+    if (draft.warmupSec > 0) parts.push(t('edit.warmupPart', { dur: durationShort(draft.warmupSec) }));
+    if (draft.prepareSec > 0)
+      parts.push(t('edit.preparePart', { dur: durationShort(draft.prepareSec) }));
+    if (draft.cooldownSec > 0)
+      parts.push(t('edit.cooldownPart', { dur: durationShort(draft.cooldownSec) }));
+    if (parts.length === 0) return t('common.none');
+    if (parts.length === 1) return t('edit.onlyOne', { item: parts[0] });
+    return parts.join(' · ');
+  };
+
+  const alertsSummary = () => {
+    const on = [settings.sound, settings.vibration, settings.countdownBeep].filter(Boolean).length;
+    if (on === 3) return t('edit.allOn');
+    if (on === 0) return t('edit.allOff');
+    return t('edit.someOn', { count: on });
+  };
+
+  const startEndRows = (
+    <>
+      <ValueRow
+        title={t('edit.warmup')}
+        display={durationShort(draft.warmupSec) || t('common.none')}
+        open={open === 'warmup'}
+        onToggle={() => toggleRow('warmup')}
+        wheel="time"
+        value={draft.warmupSec}
+        onChange={(warmupSec) => patch({ warmupSec })}
+      />
+      <ValueRow
+        title={t('edit.prepare')}
+        display={durationShort(draft.prepareSec) || t('common.none')}
+        open={open === 'prepare'}
+        onToggle={() => toggleRow('prepare')}
+        wheel="time"
+        value={draft.prepareSec}
+        onChange={(prepareSec) => patch({ prepareSec })}
+      />
+      <ValueRow
+        title={t('edit.cooldown')}
+        display={durationShort(draft.cooldownSec) || t('common.none')}
+        open={open === 'cooldown'}
+        onToggle={() => toggleRow('cooldown')}
+        wheel="time"
+        value={draft.cooldownSec}
+        onChange={(cooldownSec) => patch({ cooldownSec })}
+      />
+      <View style={[styles.switchRow, tip === 'skipLast' && styles.raised]}>
+        <View style={styles.titleWrap}>
+          <Text style={styles.rowTitle}>{t('edit.skipLastRest')}</Text>
+          <InfoTip text={t('tips.skipLastRest')} {...toInfoTip(tip, setTip, 'skipLast')} />
+        </View>
+        <Switch
+          value={draft.skipLastRest}
+          onValueChange={(skipLastRest) => patch({ skipLastRest })}
+          trackColor={{ true: '#3F8F72', false: 'rgba(255,255,255,0.16)' }}
+          thumbColor="#FFFFFF"
+        />
+      </View>
+    </>
+  );
+
+  return (
+    <Screen>
+      <View style={{ flex: 1, paddingTop: insets.top + 6 }}>
+        <View style={styles.topBar}>
+          <Pressable onPress={() => router.back()} hitSlop={12}>
+            <Text style={styles.cancel}>{t('common.cancel')}</Text>
+          </Pressable>
+          <Text style={styles.topTitle}>{t(simple ? 'edit.titleTimer' : 'edit.titleRoutine')}</Text>
+          {/* 저장은 하단 고정 버튼 하나로 모았다. 제목을 가운데 두기 위한 자리 */}
+          <View style={{ width: 40 }} />
+        </View>
+
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingHorizontal: GUTTER, paddingBottom: 160 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          scrollEnabled={!reordering}
+          onScrollBeginDrag={() => setTip(null)}
+        >
+          <View style={styles.nameRow}>
+            <Text style={styles.nameLabel}>{t('edit.name')}</Text>
+            <TextInput
+              value={draft.name}
+              onChangeText={setName}
+              style={styles.nameInput}
+              placeholder={t(simple ? 'defaults.timerName' : 'defaults.routineName')}
+              placeholderTextColor={C.textTertiary}
+              selectionColor={C.textPrimary}
+              maxLength={24}
+              returnKeyType="done"
+            />
+          </View>
+
+          {simple ? (
+            <>
+              {/* 5.3 축소 상태 — 종목 목록도, 별도 시트도 없다 */}
+              <ValueRow
+                title={t('edit.work')}
+                display={durationShort(draft.blocks[0]?.workSec ?? 0)}
+                open={open === 'work'}
+                onToggle={() => toggleRow('work')}
+                wheel="time"
+                value={draft.blocks[0]?.workSec ?? 0}
+                onChange={(workSecV) => patchBlock0({ workSec: workSecV })}
+                allowZero={false}
+              />
+              <ValueRow
+                title={t('edit.rest')}
+                display={durationShort(draft.blocks[0]?.restSec ?? 0) || t('common.none')}
+                open={open === 'rest'}
+                onToggle={() => toggleRow('rest')}
+                wheel="time"
+                value={draft.blocks[0]?.restSec ?? 0}
+                onChange={(restSec) => patchBlock0({ restSec })}
+              />
+              <ValueRow
+                title={t('edit.sets')}
+                display={t('count.sets', { count: draft.blocks[0]?.sets ?? 1 })}
+                open={open === 'sets'}
+                onToggle={() => toggleRow('sets')}
+                wheel="count"
+                value={draft.blocks[0]?.sets ?? 1}
+                onChange={(sets) => patchBlock0({ sets })}
+                min={1}
+                max={50}
+                unit={t('edit.sets')}
+              />
+
+              <Pressable
+                style={[styles.linkRow, tip === 'startEnd' && styles.raised]}
+                onPress={() => {
+                  setStartEndOpen((v) => !v);
+                  setOpen(null);
+                }}
+              >
+                <View style={styles.titleWrap}>
+                  <Text style={styles.rowTitle}>{t('edit.startEndRow')}</Text>
+                  <InfoTip text={t('tips.startEnd')} {...toInfoTip(tip, setTip, 'startEnd')} />
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={[styles.rowValueMuted, TABULAR]}>{startEndSummary()}</Text>
+                  <Text style={styles.chevron}>{startEndOpen ? '⌄' : '›'}</Text>
+                </View>
+              </Pressable>
+              {startEndOpen && <View>{startEndRows}</View>}
+            </>
+          ) : (
+            <>
+              <Text style={styles.section}>{t('count.exercises', { count: draft.blocks.length })}</Text>
+              <BlockList
+                onDragActive={setReordering}
+                blocks={draft.blocks}
+                onPress={(block) => setSheet({ block, isNew: false })}
+                onReorder={(blocks) => patch({ blocks })}
+                onDelete={(bid) => {
+                  if (draft.blocks.length <= 1) return;
+                  patch({ blocks: draft.blocks.filter((b) => b.id !== bid) });
+                }}
+              />
+              <PressBox
+                radius={RADIUS.tile}
+                scaleTo={0.97}
+                dim={0.22}
+                style={{ marginTop: 12, marginBottom: 14 }}
+                accessibilityLabel={t('edit.a11yAddBlock')}
+                onPress={() =>
+                  setSheet({
+                    block: {
+                      id: uid(),
+                      name: t('defaults.blockName', { n: draft.blocks.length + 1 }),
+                      workSec: 40,
+                      restSec: 20,
+                      sets: 3,
+                    },
+                    isNew: true,
+                  })
+                }
+              >
+                <Surface radius={RADIUS.tile} style={styles.addBlock}>
+                  <View style={styles.center}>
+                    <Text style={styles.addBlockLabel}>{t('edit.addBlock')}</Text>
+                  </View>
+                </Surface>
+              </PressBox>
+
+              <Text style={styles.section}>{t('edit.repeat')}</Text>
+              <ValueRow
+                title={t('edit.rounds')}
+                tip={t('tips.rounds')}
+                {...tipFor('rounds')}
+                display={t('count.rounds', { count: draft.rounds })}
+                open={open === 'rounds'}
+                onToggle={() => toggleRow('rounds')}
+                wheel="count"
+                value={draft.rounds}
+                onChange={(rounds) => patch({ rounds })}
+                min={1}
+                max={20}
+                unit={t('edit.rounds')}
+                valueSize={21}
+                chevron
+              />
+              <ValueRow
+                title={t('edit.blockRest')}
+                display={durationShort(draft.blockRestSec) || t('common.none')}
+                open={open === 'blockRest'}
+                onToggle={() => toggleRow('blockRest')}
+                wheel="time"
+                value={draft.blockRestSec}
+                onChange={(blockRestSec) => patch({ blockRestSec })}
+                valueSize={21}
+                chevron
+              />
+              <ValueRow
+                title={t('edit.roundRest')}
+                display={durationShort(draft.roundRestSec) || t('common.none')}
+                open={open === 'roundRest'}
+                onToggle={() => toggleRow('roundRest')}
+                wheel="time"
+                value={draft.roundRestSec}
+                onChange={(roundRestSec) => patch({ roundRestSec })}
+                valueSize={21}
+                chevron
+              />
+
+              <View style={[styles.sectionRow, tip === 'startEnd' && styles.raised]}>
+                <Text style={[styles.section, { marginTop: 0, marginBottom: 0 }]}>{t('edit.startEnd')}</Text>
+                <InfoTip text={t('tips.startEnd')} {...toInfoTip(tip, setTip, 'startEnd')} />
+              </View>
+              {startEndRows}
+            </>
+          )}
+
+          <Text style={styles.section}>{t('edit.alerts')}</Text>
+          <Pressable
+            style={styles.linkRow}
+            onPress={() => router.push('/settings')}
+          >
+            <Text style={styles.rowTitle}>{t('edit.alertsRow')}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={styles.rowValueMuted}>{alertsSummary()}</Text>
+              <Text style={styles.chevron}>›</Text>
+            </View>
+          </Pressable>
+        </ScrollView>
+
+        {/* 하단 고정 — 값을 바꾸는 내내 갱신된다 */}
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 14) }]}>
+          <View style={styles.totals}>
+            <Text style={[styles.totalText, TABULAR]}>{t('edit.totalTime', { time: durationLong(total) })}</Text>
+            <Text style={[styles.totalText, TABULAR]}>{t('edit.workTime', { time: durationLong(pure) })}</Text>
+          </View>
+          <WhiteButton label={t('common.save')} onPress={save} />
+        </View>
+      </View>
+
+      <BlockSheet
+        block={sheet?.block ?? null}
+        canDelete={!sheet?.isNew && draft.blocks.length > 1}
+        onClose={() => setSheet(null)}
+        onSave={(b) => {
+          if (sheet?.isNew) patch({ blocks: [...draft.blocks, b] });
+          else patch({ blocks: draft.blocks.map((x) => (x.id === b.id ? b : x)) });
+          setSheet(null);
+        }}
+        onDelete={(bid) => {
+          patch({ blocks: draft.blocks.filter((b) => b.id !== bid) });
+          setSheet(null);
+        }}
+      />
+    </Screen>
+  );
+}
+
+function toInfoTip(
+  tip: string | null,
+  setTip: React.Dispatch<React.SetStateAction<string | null>>,
+  key: string
+) {
+  return {
+    open: tip === key,
+    onToggle: () => setTip((t) => (t === key ? null : key)),
+  };
+}
+
+const styles = StyleSheet.create({
+  topBar: {
+    height: 52,
+    paddingHorizontal: GUTTER,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  cancel: { fontSize: 17, fontWeight: '600', color: C.textSecondary },
+  topTitle: { fontSize: 17, fontWeight: '700', color: C.textPrimary },
+  nameRow: {
+    paddingTop: 10,
+    paddingBottom: 16,
+    marginBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: C.divider,
+  },
+  nameLabel: { fontSize: 13, color: C.textTertiary },
+  nameInput: {
+    marginTop: 10,
+    fontSize: 22,
+    fontWeight: '700',
+    color: C.textPrimary,
+    padding: 0,
+    letterSpacing: -0.44,
+  },
+  sectionRow: { flexDirection: 'row', alignItems: 'center', marginTop: 40, marginBottom: 10 },
+  section: {
+    marginTop: 40,
+    marginBottom: 10,
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.78,
+    color: C.textTertiary,
+  },
+  addBlock: { height: 52 },
+  addBlockLabel: { fontSize: 15, fontWeight: '600', color: C.textPrimary },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  linkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: C.divider,
+  },
+  raised: { zIndex: 30, elevation: 30 },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+  },
+  titleWrap: { flexDirection: 'row', alignItems: 'center', flexShrink: 1 },
+  rowTitle: { fontSize: 18, fontWeight: '600', color: C.textPrimary },
+  rowValueMuted: { fontSize: 16, color: C.textSecondary },
+  chevron: { fontSize: 20, color: C.textTertiary, marginLeft: 8 },
+  footer: {
+    paddingHorizontal: GUTTER,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: C.divider,
+    backgroundColor: 'rgba(10,10,12,0.6)',
+  },
+  totals: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
+  totalText: { fontSize: 16, color: C.textSecondary },
+});
