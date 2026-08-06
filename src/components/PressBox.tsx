@@ -16,6 +16,7 @@ import {
 
 type Props = {
   onPress?: () => void;
+  onLongPress?: () => void;
   disabled?: boolean;
   /** 버튼의 생김새 — 배경·모서리·그림자. 눌리면 이 겹이 함께 줄어든다 */
   style?: StyleProp<ViewStyle>;
@@ -34,6 +35,7 @@ type Props = {
 
 export function PressBox({
   onPress,
+  onLongPress,
   disabled,
   style,
   outerStyle,
@@ -65,6 +67,7 @@ export function PressBox({
   return (
     <Pressable
       onPress={disabled ? undefined : onPress}
+      onLongPress={disabled ? undefined : onLongPress}
       onPressIn={() => !disabled && to(1)}
       onPressOut={() => to(0)}
       hitSlop={hitSlop}

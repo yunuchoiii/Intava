@@ -2,6 +2,7 @@
 import { useRouter } from 'expo-router';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
@@ -21,11 +22,17 @@ import { presetSummary, presetTimeLine } from '../src/engine/labels';
 import { totalSec } from '../src/engine/segments';
 import { t } from '../src/i18n';
 import { selectionTick } from '../src/feedback';
-import { sortPresets, useStore } from '../src/store';
+import { sortPresets, useStore, type SortKey } from '../src/store';
 import { C, E2, GUTTER, LIFT, RADIUS, TABULAR } from '../src/theme';
 import { kindOf, type Preset, type PresetKind } from '../src/types';
 
 const TABS: PresetKind[] = ['routine', 'timer'];
+
+const SORT_LABEL: Record<SortKey, string> = {
+  recent: 'list.sortRecent',
+  name: 'list.sortName',
+  created: 'list.sortCreated',
+};
 
 /**
  * 목록 행은 눌리는 카드다 — 안쪽 여백만큼 목록 자체를 바깥으로 물려서
@@ -43,7 +50,7 @@ export default function Home() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const { presets, ready } = useStore();
+  const { presets, ready, settings, setSettings, duplicatePreset, deletePreset } = useStore();
   const [tab, setTab] = useState<PresetKind>('routine');
   const pager = useRef<ScrollView>(null);
   // 손가락으로 끄는 동안에만 탭 표시를 따라가게 한다. 첫 레이아웃 때 iOS가
@@ -51,12 +58,49 @@ export default function Home() {
   const swiping = useRef(false);
 
   const grouped = useMemo(() => {
-    const sorted = sortPresets(presets);
+    const sorted = sortPresets(presets, settings.sort);
     return {
       routine: sorted.filter((p) => kindOf(p) === 'routine'),
       timer: sorted.filter((p) => kindOf(p) === 'timer'),
     };
-  }, [presets]);
+  }, [presets, settings.sort]);
+
+  /** 정렬 — 기준을 돌려가며 고른다. 세 가지뿐이라 별도 화면을 열 이유가 없다 */
+  const cycleSort = useCallback(() => {
+    const order: SortKey[] = ['recent', 'name', 'created'];
+    const next = order[(order.indexOf(settings.sort) + 1) % order.length];
+    setSettings({ sort: next });
+    selectionTick();
+  }, [settings.sort, setSettings]);
+
+  /** 행을 길게 누르면 — 복제 · 삭제 */
+  const rowActions = useCallback(
+    (preset: Preset) => {
+      selectionTick();
+      Alert.alert(preset.name, undefined, [
+        { text: t('list.duplicate'), onPress: () => duplicatePreset(preset.id) },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: () =>
+            Alert.alert(
+              t('list.deleteConfirmTitle', { name: preset.name }),
+              t('list.deleteConfirmBody'),
+              [
+                { text: t('common.cancel'), style: 'cancel' },
+                {
+                  text: t('common.delete'),
+                  style: 'destructive',
+                  onPress: () => deletePreset(preset.id),
+                },
+              ]
+            ),
+        },
+        { text: t('common.cancel'), style: 'cancel' },
+      ]);
+    },
+    [duplicatePreset, deletePreset]
+  );
 
   const empty = ready && grouped[tab].length === 0;
 
@@ -107,6 +151,11 @@ export default function Home() {
           timerCount={grouped.timer.length}
         />
 
+        <Pressable onPress={cycleSort} style={styles.sortRow} hitSlop={8}>
+          <Text style={styles.sortText}>{t(SORT_LABEL[settings.sort])}</Text>
+          <Text style={styles.sortChevron}>⇅</Text>
+        </Pressable>
+
         <ScrollView
           ref={pager}
           horizontal
@@ -125,7 +174,14 @@ export default function Home() {
           style={{ flex: 1 }}
         >
           {TABS.map((k) => (
-            <TabPage key={k} kind={k} list={grouped[k]} width={width} ready={ready} />
+            <TabPage
+              key={k}
+              kind={k}
+              list={grouped[k]}
+              width={width}
+              ready={ready}
+              onRowActions={rowActions}
+            />
           ))}
         </ScrollView>
 
@@ -142,11 +198,13 @@ function TabPage({
   list,
   width,
   ready,
+  onRowActions,
 }: {
   kind: PresetKind;
   list: Preset[];
   width: number;
   ready: boolean;
+  onRowActions: (p: Preset) => void;
 }) {
   return (
     <View style={{ width, paddingTop: 14 }}>
@@ -161,7 +219,7 @@ function TabPage({
           {list.map((p, i) => (
             <React.Fragment key={p.id}>
               {i > 0 && <View style={styles.rowDivider} />}
-              <PresetRow preset={p} />
+              <PresetRow preset={p} onLongPress={() => onRowActions(p)} />
             </React.Fragment>
           ))}
         </ScrollView>
@@ -223,7 +281,7 @@ function Segmented({
   );
 }
 
-function PresetRow({ preset }: { preset: Preset }) {
+function PresetRow({ preset, onLongPress }: { preset: Preset; onLongPress: () => void }) {
   const router = useRouter();
   const { markRun } = useStore();
   const total = useMemo(() => totalSec(preset), [preset]);
@@ -236,6 +294,7 @@ function PresetRow({ preset }: { preset: Preset }) {
   return (
     <PressBox
       onPress={() => router.push({ pathname: '/edit', params: { id: preset.id } })}
+      onLongPress={onLongPress}
       radius={ROW_RADIUS}
       scaleTo={0.98}
       dim={0.22}
@@ -369,6 +428,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
+  sortRow: {
+    marginTop: 14,
+    marginBottom: -4,
+    paddingHorizontal: GUTTER,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    alignSelf: 'flex-start',
+  },
+  sortText: { fontSize: 13, fontWeight: '600', color: C.textTertiary },
+  sortChevron: { fontSize: 13, color: C.textTertiary },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -13,7 +13,7 @@ import React, {
   useState,
 } from 'react';
 import { DEFAULT_SETTINGS, type Preset, type Settings } from './types';
-import { t } from './i18n';
+import { currentLanguage, t } from './i18n';
 
 const SCHEMA_VERSION = 1;
 const KEY_PRESETS = 'intava:presets';
@@ -125,6 +125,7 @@ type StoreValue = {
   savePreset: (p: Preset) => void;
   deletePreset: (id: string) => void;
   markRun: (id: string) => void;
+  duplicatePreset: (id: string) => void;
   setSettings: (patch: Partial<Settings>) => void;
 };
 
@@ -187,6 +188,27 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         );
       },
       deletePreset: (id: string) => persist((prev) => prev.filter((p) => p.id !== id)),
+      /** 복제 — 종목까지 새 id를 준다. 원본과 id를 공유하면 한쪽을 고칠 때 같이 바뀐다 */
+      duplicatePreset: (id: string) =>
+        persist((prev) => {
+          const src = prev.find((p) => p.id === id);
+          if (!src) return prev;
+          const now = Date.now();
+          const copy: Preset = {
+            ...src,
+            id: uid(),
+            name: duplicateName(
+              src.name,
+              prev.map((p) => p.name)
+            ),
+            blocks: src.blocks.map((b) => ({ ...b, id: uid() })),
+            createdAt: now,
+            updatedAt: now,
+            lastRunAt: undefined,
+          };
+          const at = prev.findIndex((p) => p.id === id);
+          return [...prev.slice(0, at + 1), copy, ...prev.slice(at + 1)];
+        }),
       markRun: (id: string) =>
         persist((prev) => prev.map((p) => (p.id === id ? { ...p, lastRunAt: Date.now() } : p))),
       setSettings: (patch: Partial<Settings>) => {
@@ -207,7 +229,41 @@ export function useStore(): StoreValue {
   return v;
 }
 
-/** 목록 정렬 — 최근 실행순(lastRunAt desc, 없으면 updatedAt) */
-export function sortPresets(list: Preset[]): Preset[] {
-  return [...list].sort((a, b) => (b.lastRunAt ?? b.updatedAt) - (a.lastRunAt ?? a.updatedAt));
+/**
+ * 복제본 이름 — 이미 있는 이름이면 뒤에 번호를 올린다.
+ *   전신 서킷 → 전신 서킷 사본 → 전신 서킷 사본 2 → 전신 서킷 사본 3
+ *
+ * 사본을 다시 복제해도 "사본 사본"이 되지 않는다. 접미사는 카탈로그에서
+ * 빈 이름으로 한 번 렌더해 얻는다 — 언어마다 다른 말(사본/copy/のコピー/副本)을
+ * 코드에 박아두지 않으려는 것이다.
+ */
+export function duplicateName(source: string, existing: string[]): string {
+  const marker = t('list.duplicateSuffix', { name: '' }).trim();
+  const stripped = source.replace(/\s*\d+$/, '').trim();
+  const base = marker && stripped.endsWith(marker)
+    ? stripped
+    : t('list.duplicateSuffix', { name: source });
+
+  let name = base;
+  for (let n = 2; existing.includes(name); n++) {
+    name = t('list.duplicateNumbered', { base, n });
+  }
+  return name;
+}
+
+/** 목록 정렬 기준 */
+export type SortKey = 'recent' | 'name' | 'created';
+
+export function sortPresets(list: Preset[], key: SortKey = 'recent'): Preset[] {
+  const sorted = [...list];
+  switch (key) {
+    case 'name':
+      // 언어별 정렬 규칙을 따른다 — 한글·가나·병음 순서가 로케일마다 다르다
+      return sorted.sort((a, b) => a.name.localeCompare(b.name, currentLanguage()));
+    case 'created':
+      return sorted.sort((a, b) => b.createdAt - a.createdAt);
+    default:
+      // 최근 실행순 — 실행한 적 없으면 마지막 수정 시각으로
+      return sorted.sort((a, b) => (b.lastRunAt ?? b.updatedAt) - (a.lastRunAt ?? a.updatedAt));
+  }
 }

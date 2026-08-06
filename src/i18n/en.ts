@@ -216,6 +216,27 @@ export const en: Catalog = {
     keepScreenOn: 'This app expects to be used with the screen off.',
   },
 
+  list: {
+    sortRecent: 'Recently used',
+    sortName: 'By name',
+    sortCreated: 'By date added',
+    sortTitle: 'Sort',
+    actions: '{{name}}',
+    duplicate: 'Duplicate',
+    duplicateSuffix: '{{name}} copy',
+    duplicateNumbered: '{{base}} {{n}}',
+    deleteConfirmTitle: 'Delete {{name}}?',
+    deleteConfirmBody: 'This cannot be undone.',
+    a11yMore: 'More options for {{name}}',
+  },
+
+  pickBlock: {
+    title: 'Add exercise',
+    fromTimer: 'Take from an existing timer',
+    newBlock: '＋ Create a new exercise',
+    empty: 'No timers to take from',
+  },
+
   seed: {
     circuit: 'Full-body circuit',
     squat: 'Squats',

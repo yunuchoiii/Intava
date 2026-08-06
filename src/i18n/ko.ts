@@ -225,6 +225,27 @@ export const ko = {
     keepScreenOn: '이 앱은 화면이 꺼진 채로 쓰이는 것을 정상으로 봅니다.',
   },
 
+  list: {
+    sortRecent: '최근 실행순',
+    sortName: '이름순',
+    sortCreated: '등록순',
+    sortTitle: '정렬',
+    actions: '{{name}}',
+    duplicate: '복제',
+    duplicateSuffix: '{{name}} 사본',
+    duplicateNumbered: '{{base}} {{n}}',
+    deleteConfirmTitle: '{{name}}을(를) 삭제할까요?',
+    deleteConfirmBody: '되돌릴 수 없습니다.',
+    a11yMore: '{{name}} 더보기',
+  },
+
+  pickBlock: {
+    title: '종목 추가',
+    fromTimer: '만들어 둔 타이머에서 가져오기',
+    newBlock: '＋ 새 종목 만들기',
+    empty: '가져올 타이머가 없습니다',
+  },
+
   seed: {
     circuit: '전신 서킷',
     squat: '스쿼트',

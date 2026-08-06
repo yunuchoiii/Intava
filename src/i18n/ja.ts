@@ -209,6 +209,27 @@ export const ja: Catalog = {
     keepScreenOn: 'このアプリは画面を消したまま使うことを前提にしています。',
   },
 
+  list: {
+    sortRecent: '最近使った順',
+    sortName: '名前順',
+    sortCreated: '追加順',
+    sortTitle: '並べ替え',
+    actions: '{{name}}',
+    duplicate: '複製',
+    duplicateSuffix: '{{name}}のコピー',
+    duplicateNumbered: '{{base}} {{n}}',
+    deleteConfirmTitle: '{{name}} を削除しますか？',
+    deleteConfirmBody: '元に戻せません。',
+    a11yMore: '{{name}} のその他の操作',
+  },
+
+  pickBlock: {
+    title: '種目を追加',
+    fromTimer: '作成済みのタイマーから取り込む',
+    newBlock: '＋ 新しい種目を作る',
+    empty: '取り込めるタイマーがありません',
+  },
+
   seed: {
     circuit: '全身サーキット',
     squat: 'スクワット',

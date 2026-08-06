@@ -40,6 +40,8 @@ export function kindOf(p: Preset): PresetKind {
 }
 
 export type Settings = {
+  /** 홈 목록 정렬 — 화면을 떠났다 와도 유지된다 */
+  sort: 'recent' | 'name' | 'created';
   sound: boolean;
   vibration: boolean;
   countdownBeep: boolean;
@@ -48,6 +50,7 @@ export type Settings = {
 };
 
 export const DEFAULT_SETTINGS: Settings = {
+  sort: 'recent',
   sound: true,
   vibration: true,
   countdownBeep: true,

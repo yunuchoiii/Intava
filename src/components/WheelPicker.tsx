@@ -15,6 +15,7 @@ import {
   type NativeScrollEvent,
 } from 'react-native';
 import { selectionTick } from '../feedback';
+import { t } from '../i18n';
 import { C, TABULAR } from '../theme';
 
 const H = 176;
@@ -166,9 +167,12 @@ export function TimeWheel({
   onChange: (sec: number) => void;
   allowZero?: boolean;
 }) {
-  const minutes = useMemo(() => Array.from({ length: MAX_MIN + 1 }, (_, i) => `${i}분`), []);
+  const minutes = useMemo(
+    () => Array.from({ length: MAX_MIN + 1 }, (_, i) => t('duration.min', { m: i })),
+    []
+  );
   const seconds = useMemo(
-    () => Array.from({ length: 60 / SEC_STEP }, (_, i) => `${i * SEC_STEP}초`),
+    () => Array.from({ length: 60 / SEC_STEP }, (_, i) => t('duration.sec', { s: i * SEC_STEP })),
     []
   );
 

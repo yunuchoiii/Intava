@@ -15,6 +15,35 @@ type Props = {
   color?: string;
 };
 
+/** 표면 톤 버튼 — 흰 버튼(주요 실행)보다 한 단계 조용한 확정 동작에 쓴다 */
+export function SurfaceButton({
+  label,
+  onPress,
+  disabled,
+  height = 68,
+  radius = RADIUS.button,
+  style,
+}: Props) {
+  return (
+    <PressBox
+      onPress={onPress}
+      disabled={disabled}
+      radius={radius}
+      scaleTo={0.975}
+      dim={0.22}
+      accessibilityLabel={label}
+      outerStyle={style}
+      style={[{ height, borderRadius: radius, backgroundColor: C.surface }, E2]}
+    >
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ fontSize: 18, fontWeight: '700', color: C.textPrimary, letterSpacing: -0.2 }}>
+          {label}
+        </Text>
+      </View>
+    </PressBox>
+  );
+}
+
 export function WhiteButton({
   label,
   onPress,

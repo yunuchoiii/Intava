@@ -17,8 +17,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlockList } from '../src/components/BlockList';
+import { BlockPickerSheet } from '../src/components/BlockPickerSheet';
 import { BlockSheet } from '../src/components/BlockSheet';
-import { WhiteButton } from '../src/components/Buttons';
+import { SurfaceButton } from '../src/components/Buttons';
 import { Surface } from '../src/components/Surface';
 import { PressBox } from '../src/components/PressBox';
 import { InfoTip } from '../src/components/InfoTip';
@@ -35,7 +36,7 @@ export default function Edit() {
   const { id, kind } = useLocalSearchParams<{ id?: string; kind?: 'routine' | 'timer' }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { getPreset, savePreset, settings } = useStore();
+  const { getPreset, savePreset, settings, presets } = useStore();
 
   const initial = useMemo(
     () => getPreset(id) ?? emptyPreset(kind === 'timer' ? 'timer' : 'routine'),
@@ -45,12 +46,18 @@ export default function Edit() {
   const [open, setOpen] = useState<string | null>(null);
   const [tip, setTip] = useState<string | null>(null);
   const [sheet, setSheet] = useState<{ block: Block; isNew: boolean } | null>(null);
+  const [picking, setPicking] = useState(false);
   const [startEndOpen, setStartEndOpen] = useState(false);
   // 종목을 끌어 옮기는 동안에는 화면이 같이 스크롤되면 안 된다
   const [reordering, setReordering] = useState(false);
 
   // 편집 화면의 모양은 저장된 종류를 따른다 — 종목이 1개라고 루틴이 타이머로 바뀌면 안 된다
   const simple = kindOf(draft) === 'timer';
+  /** 가져올 수 있는 타이머 — 편집 중인 자기 자신은 뺀다 */
+  const timers = useMemo(
+    () => presets.filter((p) => p.id !== draft.id && kindOf(p) === 'timer' && p.blocks.length > 0),
+    [presets, draft.id]
+  );
   const total = totalSec(draft);
   const pure = workSec(draft);
 
@@ -78,6 +85,14 @@ export default function Edit() {
     if (!b) return;
     patch({ blocks: [{ ...b, ...p }] });
   };
+
+  const newBlock = (): Block => ({
+    id: uid(),
+    name: t('defaults.blockName', { n: draft.blocks.length + 1 }),
+    workSec: 30,
+    restSec: 60,
+    sets: 3,
+  });
 
   const normalized = (): Preset => ({
     ...draft,
@@ -259,18 +274,7 @@ export default function Edit() {
                 dim={0.22}
                 style={{ marginTop: 12, marginBottom: 14 }}
                 accessibilityLabel={t('edit.a11yAddBlock')}
-                onPress={() =>
-                  setSheet({
-                    block: {
-                      id: uid(),
-                      name: t('defaults.blockName', { n: draft.blocks.length + 1 }),
-                      workSec: 40,
-                      restSec: 20,
-                      sets: 3,
-                    },
-                    isNew: true,
-                  })
-                }
+                onPress={() => setPicking(true)}
               >
                 <Surface radius={RADIUS.tile} style={styles.addBlock}>
                   <View style={styles.center}>
@@ -346,9 +350,24 @@ export default function Edit() {
             <Text style={[styles.totalText, TABULAR]}>{t('edit.totalTime', { time: durationLong(total) })}</Text>
             <Text style={[styles.totalText, TABULAR]}>{t('edit.workTime', { time: durationLong(pure) })}</Text>
           </View>
-          <WhiteButton label={t('common.save')} onPress={save} />
+          <SurfaceButton label={t('common.save')} onPress={save} />
         </View>
       </View>
+
+      <BlockPickerSheet
+        visible={picking}
+        timers={timers}
+        onClose={() => setPicking(false)}
+        onCreateNew={() => {
+          setPicking(false);
+          setSheet({ block: newBlock(), isNew: true });
+        }}
+        onPickTimer={(block) => {
+          setPicking(false);
+          // 가져온 값은 복사본이다 — 새 id를 줘야 원본 타이머와 얽히지 않는다
+          patch({ blocks: [...draft.blocks, { ...block, id: uid() }] });
+        }}
+      />
 
       <BlockSheet
         block={sheet?.block ?? null}

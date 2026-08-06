@@ -1,4 +1,5 @@
 import { Stack } from 'expo-router';
+import { DarkTheme, ThemeProvider } from 'expo-router/react-navigation';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -16,6 +17,21 @@ import { StoreProvider } from '../src/store';
  * 그냥 두면 자동으로 사라지면서 JS가 준비되기 전의 빈 루트 뷰(검정)가 한 번 비친다.
  */
 void SplashScreen.preventAutoHideAsync();
+
+/**
+ * 네비게이션 컨테이너의 기본 테마는 라이트(흰 배경)다. 그대로 두면 화면이
+ * 전환되는 동안 카드 뒤로 흰 바탕이 비친다.
+ */
+const NAV_THEME = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    background: C.bgPlain,
+    card: C.bgPlain,
+    text: C.textPrimary,
+    border: C.divider,
+  },
+};
 
 /** 네이티브 스플래시의 로고 크기와 같아야 이어붙는 순간이 보이지 않는다 */
 const SPLASH_LOGO_WIDTH = 200;
@@ -46,7 +62,8 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: C.bgBase }} onLayout={onReady}>
       <SafeAreaProvider>
-        <StoreProvider>
+        <ThemeProvider value={NAV_THEME}>
+          <StoreProvider>
           <StatusBar style="light" />
           <Stack
             screenOptions={{
@@ -59,7 +76,12 @@ export default function RootLayout() {
             <Stack.Screen name="edit" />
             <Stack.Screen name="run" options={{ animation: 'fade', gestureEnabled: false }} />
             <Stack.Screen name="done" options={{ animation: 'fade', gestureEnabled: false }} />
-            <Stack.Screen name="settings" options={{ animation: 'slide_from_bottom' }} />
+            {/* 볼륨 슬라이더를 왼쪽에서 끌면 화면 가장자리 뒤로가기 제스처와 겹친다.
+                아래에서 올라오는 화면이라 스와이프로 닫는 동작이 자연스럽지도 않다 */}
+            <Stack.Screen
+              name="settings"
+              options={{ animation: 'slide_from_bottom', gestureEnabled: false }}
+            />
           </Stack>
 
           {!splashGone && (
@@ -74,7 +96,8 @@ export default function RootLayout() {
               </View>
             </Animated.View>
           )}
-        </StoreProvider>
+          </StoreProvider>
+        </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

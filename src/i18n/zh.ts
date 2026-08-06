@@ -208,6 +208,27 @@ export const zh: Catalog = {
     keepScreenOn: '这个应用默认你会在息屏状态下使用。',
   },
 
+  list: {
+    sortRecent: '最近使用',
+    sortName: '按名称',
+    sortCreated: '按添加时间',
+    sortTitle: '排序',
+    actions: '{{name}}',
+    duplicate: '复制',
+    duplicateSuffix: '{{name}} 副本',
+    duplicateNumbered: '{{base}} {{n}}',
+    deleteConfirmTitle: '要删除 {{name}} 吗？',
+    deleteConfirmBody: '此操作无法撤销。',
+    a11yMore: '{{name}} 的更多操作',
+  },
+
+  pickBlock: {
+    title: '添加动作',
+    fromTimer: '从已有的计时器中获取',
+    newBlock: '＋ 新建动作',
+    empty: '没有可获取的计时器',
+  },
+
   seed: {
     circuit: '全身循环',
     squat: '深蹲',

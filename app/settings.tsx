@@ -27,11 +27,17 @@ export default function SettingsScreen() {
     <Screen>
       <View style={{ flex: 1, paddingTop: insets.top + 6 }}>
         <View style={styles.topBar}>
-          <Pressable onPress={() => router.back()} hitSlop={12}>
-            <Text style={styles.cancel}>{t('common.close')}</Text>
-          </Pressable>
+          {/* 좌우를 같은 폭으로 두어야 제목이 가운데 온다. 폭을 고정하면
+              "Close"처럼 긴 라벨이 줄바꿈된다 */}
+          <View style={styles.topSide}>
+            <Pressable onPress={() => router.back()} hitSlop={12}>
+              <Text style={styles.cancel} numberOfLines={1}>
+                {t('common.close')}
+              </Text>
+            </Pressable>
+          </View>
           <Text style={styles.topTitle}>{t('settings.title')}</Text>
-          <View style={{ width: 40 }} />
+          <View style={styles.topSide} />
         </View>
 
         <ScrollView
@@ -180,7 +186,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  cancel: { fontSize: 17, fontWeight: '600', color: C.textSecondary, width: 40 },
+  topSide: { flex: 1 },
+  cancel: { fontSize: 17, fontWeight: '600', color: C.textSecondary },
   topTitle: { fontSize: 17, fontWeight: '700', color: C.textPrimary },
   section: {
     marginTop: 26,
