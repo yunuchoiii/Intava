@@ -18,6 +18,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlockList } from '../src/components/BlockList';
 import { Chevron, Collapsible } from '../src/components/Collapsible';
+import { ClearButton } from '../src/components/ClearButton';
 import { BlockPickerSheet } from '../src/components/BlockPickerSheet';
 import { BlockSheet } from '../src/components/BlockSheet';
 import { useMiniTimerSpace } from '../src/components/MiniTimer';
@@ -54,6 +55,7 @@ export default function Edit() {
   const [sheet, setSheet] = useState<{ block: Block; isNew: boolean } | null>(null);
   const [picking, setPicking] = useState(false);
   const [startEndOpen, setStartEndOpen] = useState(false);
+  const [nameFocused, setNameFocused] = useState(false);
   // 종목을 끌어 옮기는 동안에는 화면이 같이 스크롤되면 안 된다
   const [reordering, setReordering] = useState(false);
 
@@ -189,16 +191,21 @@ export default function Edit() {
         >
           <View style={styles.nameRow}>
             <Text style={styles.nameLabel}>{t('edit.name')}</Text>
-            <TextInput
-              value={draft.name}
-              onChangeText={setName}
-              style={styles.nameInput}
-              placeholder={t(simple ? 'defaults.timerName' : 'defaults.routineName')}
-              placeholderTextColor={C.textTertiary}
-              selectionColor={C.textPrimary}
-              maxLength={24}
-              returnKeyType="done"
-            />
+            <View style={styles.nameInputRow}>
+              <TextInput
+                value={draft.name}
+                onChangeText={setName}
+                style={[styles.nameInput, { flex: 1 }]}
+                placeholder={t(simple ? 'defaults.timerName' : 'defaults.routineName')}
+                placeholderTextColor={C.textTertiary}
+                selectionColor={C.textPrimary}
+                maxLength={24}
+                returnKeyType="done"
+                onFocus={() => setNameFocused(true)}
+                onBlur={() => setNameFocused(false)}
+              />
+              {nameFocused && draft.name.length > 0 && <ClearButton onPress={() => setName('')} />}
+            </View>
           </View>
 
           {simple ? (
@@ -262,10 +269,6 @@ export default function Edit() {
                 blocks={draft.blocks}
                 onPress={(block) => setSheet({ block, isNew: false })}
                 onReorder={(blocks) => patch({ blocks })}
-                onDelete={(bid) => {
-                  if (draft.blocks.length <= 1) return;
-                  patch({ blocks: draft.blocks.filter((b) => b.id !== bid) });
-                }}
               />
               <PressBox
                 radius={ACTION_RADIUS}
@@ -429,6 +432,7 @@ const styles = StyleSheet.create({
     borderBottomColor: C.divider,
   },
   nameLabel: { fontSize: 13, color: C.textTertiary },
+  nameInputRow: { flexDirection: 'row', alignItems: 'center' },
   nameInput: {
     marginTop: 10,
     fontSize: 22,

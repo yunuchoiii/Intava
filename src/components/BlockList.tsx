@@ -1,12 +1,19 @@
 /**
  * 종목 목록 (핸드오프 5.2)
- * 탭하면 종목 편집 시트, 꾹 누르면 순서 변경, 왼쪽으로 밀면 삭제.
+ * 탭하면 종목 편집 시트, 꾹 누르면 순서 변경.
  *
- * 손잡이 아이콘은 없앴다. 손잡이가 행 한쪽에 있으면 왼쪽으로 미는 손이 늘 거기서
- * 출발해, 지우려던 것이 순서 바꾸기로 새 버린다. 두 동작을 위치가 아니라 **시간**으로
- * 가른다 — 바로 움직이면 밀기, 머물렀다 움직이면 끌기.
+ * **밀어서 삭제는 없다.** 지우는 길은 시트 안의 삭제 버튼 하나다.
  *
- * 제스처를 다루는 규칙 세 가지 — 셋 다 지켜야 제대로 걸린다.
+ * 한동안 밀어서 지우게 두었는데 끝내 손에 붙지 않았다. 한 손가락을 두고 세 동작이
+ * 다투는데(세로 스크롤 · 가로 삭제 · 꾹 눌러 옮기기) PanResponder에는 "동시에 인식"이나
+ * "저것이 실패하면 이것" 같은 개념이 없어, 판정을 전부 손으로 해야 했다. 한 구멍을
+ * 막으면 다른 데서 샜다. 게다가 확인 단계가 없어 임계값을 낮추면 무섭고 높이면
+ * 힘들었다 — 어떤 숫자를 골라도 한쪽이 나빴다.
+ *
+ * 지우는 일은 드물고 되돌릴 수 없다. 시트를 한 번 여는 값은 그 대가로 싸다.
+ * 남은 두 동작은 시간으로 깨끗이 갈린다 — 바로 움직이면 스크롤, 머물렀다 움직이면 끌기.
+ *
+ * 제스처 규칙 셋.
  *
  * 1. **팬 리스폰더는 한 번만 만든다.** 드래그 중에는 매 프레임 부모가 리렌더되는데,
  *    그때 PanResponder를 새로 만들면 제스처 누적값(gestureState)이 0부터 다시
@@ -25,13 +32,6 @@ import { ABS, C, E2, TABULAR } from '../theme';
 import type { Block } from '../types';
 
 export const ROW_H = 62;
-/**
- * 행 너비의 이만큼을 끌어야 지운다.
- *
- * 고정된 거리(72pt)에 튕기는 속도까지 봐주던 때에는 살짝 스친 손짓에도 종목이 사라졌다.
- * 지우는 일은 되돌릴 수 없으니 확실히 끌었을 때만 받는다 — 속도로 질러가는 길도 없앴다.
- */
-const DELETE_RATIO = 0.5;
 /** 이만큼 머물렀다 움직이면 순서를 옮기려는 손이다 */
 const LONG_PRESS_MS = 280;
 
@@ -39,12 +39,11 @@ type Props = {
   blocks: Block[];
   onPress: (block: Block) => void;
   onReorder: (next: Block[]) => void;
-  onDelete: (id: string) => void;
   /** 끌고 있는 동안 부모 스크롤을 멈추기 위한 신호 */
   onDragActive?: (active: boolean) => void;
 };
 
-export function BlockList({ blocks, onPress, onReorder, onDelete, onDragActive }: Props) {
+export function BlockList({ blocks, onPress, onReorder, onDragActive }: Props) {
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   const [dragTo, setDragTo] = useState<number | null>(null);
 
@@ -67,7 +66,6 @@ export function BlockList({ blocks, onPress, onReorder, onDelete, onDragActive }
           dragFrom={dragFrom}
           dragTo={dragTo}
           onPress={() => onPress(b)}
-          onDelete={() => onDelete(b.id)}
           onDragStart={(from) => {
             setDragFrom(from);
             setDragTo(from);
@@ -97,7 +95,6 @@ type RowProps = {
   dragFrom: number | null;
   dragTo: number | null;
   onPress: () => void;
-  onDelete: () => void;
   onDragStart: (from: number) => void;
   onDragMove: (to: number) => void;
   onDragEnd: (from: number, to: number) => void;
@@ -106,14 +103,11 @@ type RowProps = {
 function Row(props: RowProps) {
   const { index, block, count, dragFrom, dragTo } = props;
 
-  const tx = useRef(new Animated.Value(0)).current;
   const dy = useRef(new Animated.Value(0)).current;
   /** 비켜서는 행의 이동 — 값이 튀지 않고 흘러가야 한다 */
   const slide = useRef(new Animated.Value(0)).current;
   /** 집어 들렸는지 — 0이면 목록에 누워 있고 1이면 떠 있다 */
   const lift = useRef(new Animated.Value(0)).current;
-  /** 지우는 데 필요한 거리를 여기서 잰다 — 기기 폭에 따라 달라진다 */
-  const rowWidth = useRef(0);
 
   /**
    * 세로 이동은 **둘을 더해서** 하나의 값으로 넘긴다.
@@ -130,16 +124,6 @@ function Row(props: RowProps) {
     () => lift.interpolate({ inputRange: [0, 1], outputRange: [1, 1.03] }),
     [lift]
   );
-
-  /**
-   * 삭제 표시는 행 뒤에 가려져 있다가 비켜준 만큼 드러난다. 그런데 조금만 밀면
-   * 글자가 중간에서 잘려 보인다 — 글자 폭만큼 열린 뒤에야 또렷해지도록 겹쳐 띄운다.
-   */
-  const deleteOpacity = tx.interpolate({
-    inputRange: [-56, -18],
-    outputRange: [1, 0],
-    extrapolate: 'clamp',
-  });
 
   /** 리스폰더를 한 번만 만들기 위해, 매 렌더 바뀌는 값들은 ref로 넘긴다 */
   const live = useRef(props);
@@ -200,7 +184,7 @@ function Row(props: RowProps) {
    * 이 손짓이 무엇인지 — 아직 모름 / 꾹 눌러 대기 / 끌어 옮기는 중 / 밀어 지우는 중.
    * ref로 두는 이유는 리스폰더 콜백이 한 번만 만들어지기 때문이다(규칙 1).
    */
-  const mode = useRef<'idle' | 'armed' | 'dragging' | 'swiping' | 'blocked'>('idle');
+  const mode = useRef<'idle' | 'armed' | 'dragging'>('idle');
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const clearTimer = useCallback(() => {
     if (timer.current) clearTimeout(timer.current);
@@ -240,76 +224,30 @@ function Row(props: RowProps) {
           return false;
         },
         onMoveShouldSetPanResponderCapture: (_e, g) => {
-          /**
-           * 마지막 하나는 지울 수 없다(루틴에는 종목이 최소 하나 있어야 한다).
-           * 그럴 때는 아예 밀리지 않게 둔다 — 붉은 자리와 "삭제"를 보여주고서
-           * 지우지 않으면, 앱이 약속을 어긴 것처럼 보인다.
-           */
-          const canDelete = live.current.count > 1;
-          const sidewaysRaw = Math.abs(g.dx) > 10 && Math.abs(g.dx) > Math.abs(g.dy) * 1.5;
-          const sideways = canDelete && sidewaysRaw;
-
-          // 지울 수 없는데 옆으로 밀었다면, 손짓을 여기서 삼킨다.
-          // 그냥 두면 Pressable이 탭으로 받아 편집 시트가 열린다 — 민 적 없는 사람처럼.
-          if (sidewaysRaw && !canDelete) {
-            clearTimer();
-            mode.current = 'blocked';
-            return true;
-          }
-
+          // 집어 든 뒤라면 넘겨받는다
           if (mode.current === 'armed') {
-            // 집어 들었더라도 손이 옆으로 가면 지우려는 것이다 — 도로 내려놓는다.
-            // 시간으로만 가르면 손을 살짝 얹었다 미는 사람은 늘 순서 바꾸기에 걸린다.
-            if (sideways) {
-              live.current.onDragEnd(live.current.index, live.current.index);
-              mode.current = 'swiping';
-            } else {
-              mode.current = 'dragging';
-            }
+            mode.current = 'dragging';
             return true;
           }
-
-          if (sideways) {
-            clearTimer();
-            mode.current = 'swiping';
-            return true;
-          }
-          // 그 밖의 움직임(세로 스크롤 등)이면 길게 누르기만 접고 넘기지 않는다
+          // 그 전에 움직였다면 스크롤하려는 손이다 — 길게 누르기를 접고 비켜준다
           if (Math.abs(g.dx) > 8 || Math.abs(g.dy) > 8) clearTimer();
           return false;
         },
         // 끌고 있는 동안에는 스크롤뷰에 돌려주지 않는다
         onPanResponderTerminationRequest: () => mode.current !== 'dragging',
         onPanResponderMove: (_e, g) => {
-          if (mode.current === 'blocked') return;
-          if (mode.current === 'dragging') {
-            dy.setValue(g.dy);
-            live.current.onDragMove(targetIndex(g.dy));
-          } else {
-            tx.setValue(Math.min(0, g.dx));
-          }
+          if (mode.current !== 'dragging') return;
+          dy.setValue(g.dy);
+          live.current.onDragMove(targetIndex(g.dy));
         },
         onPanResponderRelease: (_e, g) => {
           clearTimer();
-          if (mode.current === 'blocked') {
+          if (mode.current !== 'dragging') {
             mode.current = 'idle';
-            return;
-          }
-          if (mode.current === 'dragging') {
-            mode.current = 'idle';
-            drop(g.dy);
             return;
           }
           mode.current = 'idle';
-          if (-g.dx >= rowWidth.current * DELETE_RATIO) {
-            Animated.timing(tx, { toValue: -600, duration: 160, useNativeDriver: true }).start(() => {
-              live.current.onDelete();
-              // 지워졌다면 이 행은 사라졌고, 거절당했다면 화면 밖에 남는다 — 되돌려 놓는다
-              tx.setValue(0);
-            });
-          } else {
-            Animated.spring(tx, { toValue: 0, useNativeDriver: true, bounciness: 4 }).start();
-          }
+          drop(g.dy);
         },
         onPanResponderTerminate: () => {
           clearTimer();
@@ -318,10 +256,9 @@ function Row(props: RowProps) {
             live.current.onDragEnd(live.current.index, live.current.index);
           }
           mode.current = 'idle';
-          Animated.spring(tx, { toValue: 0, useNativeDriver: true }).start();
         },
       }),
-    [dy, tx, targetIndex, clearTimer, drop]
+    [dy, targetIndex, clearTimer, drop]
   );
 
   /**
@@ -345,49 +282,32 @@ function Row(props: RowProps) {
           transform: [{ translateY: shiftY }, { scale: liftScale }],
         },
       ]}
-      onLayout={(e) => {
-        rowWidth.current = e.nativeEvent.layout.width;
-      }}
       {...rowPan.panHandlers}
     >
-      {/* 행 뒤에서 기다리는 삭제 표시 — 행이 비켜준 만큼만 드러난다 */}
-      <Animated.View style={[styles.deleteBg, { opacity: deleteOpacity }]} pointerEvents="none">
-        <Text style={styles.deleteText}>{t('common.delete')}</Text>
-      </Animated.View>
+      <View style={styles.row}>
+        {/* 집어 든 표시 — 절대 배치라 행의 폭·여백을 건드리지 않는다 */}
+        {isDragged && <View style={styles.dragHighlight} pointerEvents="none" />}
 
-      {/*
-        가로로 미끄러지는 겹은 따로 둔다. 바깥 겹까지 함께 밀면 뒤에 있어야 할
-        삭제 표시가 행을 따라다녀 손잡이 아이콘과 겹친다.
-        배경도 불투명해야 한다 — 비쳐 보이면 가리는 의미가 없다.
-      */}
-      <Animated.View style={[styles.slider, { transform: [{ translateX: tx }] }]}>
-        <View style={styles.row}>
-          {/* 집어 든 표시 — 절대 배치라 행의 폭·여백을 건드리지 않는다 */}
-          {isDragged && <View style={styles.dragHighlight} pointerEvents="none" />}
-
-          <Pressable
-            style={styles.rowText}
-            onPress={() => live.current.onPress()}
-            onPressOut={cancelIfArmed}
-            accessibilityRole="button"
-            accessibilityLabel={t('edit.a11yEditBlock', { name: block.name })}
-            accessibilityHint={count > 1 ? t('edit.a11yReorder', { name: block.name }) : undefined}
-          >
-            <Text style={styles.name}>{block.name}</Text>
-            <Text style={[styles.summary, TABULAR]}>
-              {blockSummary(block.workSec, block.restSec, block.sets)}
-            </Text>
-          </Pressable>
-        </View>
-      </Animated.View>
+        <Pressable
+          style={styles.rowText}
+          onPress={() => live.current.onPress()}
+          onPressOut={cancelIfArmed}
+          accessibilityRole="button"
+          accessibilityLabel={t('edit.a11yEditBlock', { name: block.name })}
+          accessibilityHint={count > 1 ? t('edit.a11yReorder', { name: block.name }) : undefined}
+        >
+          <Text style={styles.name}>{block.name}</Text>
+          <Text style={[styles.summary, TABULAR]}>
+            {blockSummary(block.workSec, block.restSec, block.sets)}
+          </Text>
+        </Pressable>
+      </View>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   rowWrap: { position: 'absolute', left: 0, right: 0, height: ROW_H },
-  /** 가로로 미끄러지는 겹 — 배경색은 화면 바탕과 같아서 보이지 않는다 */
-  slider: { flex: 1, backgroundColor: C.bgPlain },
   row: { flex: 1, flexDirection: 'row', alignItems: 'center' },
   rowText: { flex: 1, paddingVertical: 8 },
   /**
@@ -408,18 +328,6 @@ const styles = StyleSheet.create({
     backgroundColor: C.surface,
     ...E2,
   },
-  /** 행이 비켜준 만큼만 보이는 붉은 자리 — 무엇을 하려는 중인지 손이 알아야 한다 */
-  deleteBg: {
-    ...ABS,
-    top: 3,
-    bottom: 3,
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    paddingRight: 16,
-    borderRadius: 12,
-    backgroundColor: C.dangerBg,
-  },
-  deleteText: { color: C.danger, fontSize: 15, fontWeight: '700' },
   name: { fontSize: 18, lineHeight: 24, fontWeight: '600', color: C.textPrimary },
   summary: { marginTop: 5, fontSize: 14, lineHeight: 19, color: C.textSecondary },
 });
