@@ -5,8 +5,10 @@
  * 웜업·준비·쿨다운은 0으로 내리면 그 구간이 사라진다 — 별도 on/off 토글이 없다.
  */
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Animated,
+  Easing,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -115,13 +117,6 @@ export default function Edit() {
     if (parts.length === 0) return t('common.none');
     if (parts.length === 1) return t('edit.onlyOne', { item: parts[0] });
     return parts.join(' · ');
-  };
-
-  const alertsSummary = () => {
-    const on = [settings.sound, settings.vibration, settings.countdownBeep].filter(Boolean).length;
-    if (on === 3) return t('edit.allOn');
-    if (on === 0) return t('edit.allOff');
-    return t('edit.someOn', { count: on });
   };
 
   const startEndRows = (
@@ -331,17 +326,6 @@ export default function Edit() {
             </>
           )}
 
-          <Text style={styles.section}>{t('edit.alerts')}</Text>
-          <Pressable
-            style={styles.linkRow}
-            onPress={() => router.push('/settings')}
-          >
-            <Text style={styles.rowTitle}>{t('edit.alertsRow')}</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={styles.rowValueMuted}>{alertsSummary()}</Text>
-              <Text style={styles.chevron}>›</Text>
-            </View>
-          </Pressable>
         </ScrollView>
 
         {/* 하단 고정 — 값을 바꾸는 내내 갱신된다 */}
@@ -371,11 +355,31 @@ export default function Edit() {
 
       <BlockSheet
         block={sheet?.block ?? null}
+        isNew={sheet?.isNew}
         canDelete={!sheet?.isNew && draft.blocks.length > 1}
         onClose={() => setSheet(null)}
-        onSave={(b) => {
+        onSave={(b, alsoTimer) => {
           if (sheet?.isNew) patch({ blocks: [...draft.blocks, b] });
           else patch({ blocks: draft.blocks.map((x) => (x.id === b.id ? b : x)) });
+          // 체크했으면 같은 값으로 타이머도 하나 만든다 — 다음 루틴에서 가져다 쓸 수 있게
+          if (alsoTimer) {
+            const now = Date.now();
+            savePreset({
+              id: uid(),
+              kind: 'timer',
+              name: b.name,
+              warmupSec: 0,
+              prepareSec: 10,
+              blocks: [{ ...b, id: uid() }],
+              blockRestSec: 30,
+              rounds: 1,
+              roundRestSec: 90,
+              cooldownSec: 0,
+              skipLastRest: true,
+              createdAt: now,
+              updatedAt: now,
+            });
+          }
           setSheet(null);
         }}
         onDelete={(bid) => {
@@ -384,6 +388,61 @@ export default function Edit() {
         }}
       />
     </Screen>
+  );
+}
+
+/** 펼침 표시 — 열리면 아래를 가리키도록 돈다 */
+function Chevron({ open }: { open: boolean }) {
+  const spin = useRef(new Animated.Value(open ? 1 : 0)).current;
+  useEffect(() => {
+    Animated.timing(spin, {
+      toValue: open ? 1 : 0,
+      duration: 220,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [open, spin]);
+  const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '90deg'] });
+  return (
+    <Animated.Text style={[styles.chevron, { transform: [{ rotate }] }]}>›</Animated.Text>
+  );
+}
+
+/**
+ * 위에서 아래로 스르륵 열리는 상자.
+ *
+ * 내용의 높이는 미리 알 수 없으니 한 번 그려서 재고, 그 값을 목표로 애니메이션한다.
+ * 높이는 네이티브 드라이버 대상이 아니라 JS로 돌지만, 한 번에 하나만 열린다.
+ */
+function Collapsible({ open, children }: { open: boolean; children: React.ReactNode }) {
+  const [height, setHeight] = useState(0);
+  const anim = useRef(new Animated.Value(open ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(anim, {
+      toValue: open ? 1 : 0,
+      duration: 240,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [open, anim]);
+
+  return (
+    <Animated.View
+      style={{
+        height: height ? anim.interpolate({ inputRange: [0, 1], outputRange: [0, height] }) : undefined,
+        opacity: anim,
+        overflow: 'hidden',
+      }}
+      pointerEvents={open ? 'auto' : 'none'}
+    >
+      <View
+        style={height ? styles.measured : undefined}
+        onLayout={(e) => setHeight(e.nativeEvent.layout.height)}
+      >
+        {children}
+      </View>
+    </Animated.View>
   );
 }
 
@@ -445,6 +504,8 @@ const styles = StyleSheet.create({
     borderBottomColor: C.divider,
   },
   raised: { zIndex: 30, elevation: 30 },
+  /** 높이를 잰 뒤에는 절대 배치로 두어 부모 높이를 애니메이션이 결정하게 한다 */
+  measured: { position: 'absolute', left: 0, right: 0, top: 0 },
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',

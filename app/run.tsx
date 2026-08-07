@@ -1,5 +1,5 @@
 /** 5.6 실행 화면 — 이 앱의 심장 */
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -7,57 +7,25 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FloodTile } from '../src/components/Surface';
 import { PressBox } from '../src/components/PressBox';
-import { NextIcon, PauseIcon, PlayIcon, PrevIcon, SpeakerIcon } from '../src/components/Icons';
+import { NextIcon, PauseIcon, PencilIcon, PlayIcon, PrevIcon } from '../src/components/Icons';
 import { PhaseFlood } from '../src/components/PhaseFlood';
 import { Ring } from '../src/components/Ring';
-import { endSession, setCueVolume, startSession } from '../src/audio';
 import { clock, describeSegment, isSimple, jumpLabel, subLabel, titleLabel } from '../src/engine/labels';
-import { useRunner } from '../src/engine/useRunner';
 import { ensurePermission } from '../src/notify';
+import { useSession } from '../src/session';
 import { useStore } from '../src/store';
 import { t } from '../src/i18n';
 import { C, GUTTER, PHASE_COLOR, TABULAR } from '../src/theme';
 
 export default function Run() {
-  const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { getPreset, settings } = useStore();
-  const preset = getPreset(id);
-  const [finished, setFinished] = useState(false);
-
-  const onDone = useCallback(() => setFinished(true), []);
-  // 프리셋이 아직 로드되지 않았을 때를 위한 빈 자리 — 훅 순서는 유지해야 한다
-  const safePreset = useMemo(
-    () =>
-      preset ?? {
-        id: 'none',
-        name: '',
-        warmupSec: 0,
-        prepareSec: 0,
-        blocks: [],
-        blockRestSec: 0,
-        rounds: 1,
-        roundRestSec: 0,
-        cooldownSec: 0,
-        skipLastRest: true,
-        createdAt: 0,
-        updatedAt: 0,
-      },
-    [preset]
-  );
-
-  const run = useRunner(safePreset, settings, onDone);
-
+  const { settings } = useStore();
+  const run = useSession();
+  const preset = run.preset;
   useEffect(() => {
-    void startSession(settings.volume);
     void ensurePermission();
-    return () => endSession();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    setCueVolume(settings.volume);
-  }, [settings.volume]);
+  }, []);
 
   useEffect(() => {
     if (!settings.keepScreenOn) return;
@@ -67,14 +35,11 @@ export default function Run() {
     };
   }, [settings.keepScreenOn]);
 
-  const runRef = React.useRef(run);
-  runRef.current = run;
-
+  // 전체가 끝나면 완료 화면으로 — 세션은 완료 화면에서 정리한다
   useEffect(() => {
-    if (!finished || !preset) return;
-    runRef.current.stop();
+    if (!run.done || !preset) return;
     router.replace({ pathname: '/done', params: { id: preset.id } });
-  }, [finished, preset?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [run.done, preset?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!preset) {
     // 여기 걸리면 데이터가 어긋난 것이다. 빈 화면에 가두지 않는다.
@@ -137,15 +102,15 @@ export default function Run() {
           </Text>
 
           <PressBox
-            onPress={() => router.push('/settings')}
+            onPress={() => router.push({ pathname: '/edit', params: { id: preset.id } })}
             radius={16}
             scaleTo={0.9}
             dim={0.2}
-            accessibilityLabel={t('run.a11ySound')}
+            accessibilityLabel={t('run.a11yEdit')}
           >
             <FloodTile radius={16} style={styles.tile}>
               <View style={[styles.center, { opacity: 0.9 }]}>
-                <SpeakerIcon muted={!settings.sound} />
+                <PencilIcon />
               </View>
             </FloodTile>
           </PressBox>
@@ -170,7 +135,7 @@ export default function Run() {
             ratio={run.ratio}
             remainSec={run.remain}
             durSec={run.seg?.dur ?? 0}
-            title={titleLabel(run.seg, run.paused)}
+            title={titleLabel(run.seg, run.paused, preset)}
             clock={clock(run.remain)}
             sub={subLabel(run.seg, preset)}
             warn={!run.done && run.remain <= 3 && !run.paused}

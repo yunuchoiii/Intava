@@ -1,10 +1,7 @@
 /** 5.4 종목 편집 시트 — 하단 시트, 뒤 화면은 45% 어둡게 */
-import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -16,30 +13,35 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { durationShort } from '../engine/labels';
 import { t } from '../i18n';
-import { ABS, C, E3, GUTTER, RADIUS } from '../theme';
+import { C, GUTTER, RADIUS } from '../theme';
 import type { Block } from '../types';
 import { PressBox } from './PressBox';
+import { Sheet } from './Sheet';
 import { ValueRow } from './ValueRow';
 import { WhiteButton } from './Buttons';
 
 type Props = {
   block: Block | null;
   canDelete: boolean;
+  /** 새로 만드는 중인지 — 그때만 "타이머로도 저장"을 묻는다 */
+  isNew?: boolean;
   onClose: () => void;
-  onSave: (b: Block) => void;
+  onSave: (b: Block, alsoSaveAsTimer: boolean) => void;
   onDelete: (id: string) => void;
 };
 
 type Field = 'work' | 'rest' | 'sets' | null;
 
-export function BlockSheet({ block, canDelete, onClose, onSave, onDelete }: Props) {
+export function BlockSheet({ block, canDelete, isNew, onClose, onSave, onDelete }: Props) {
   const insets = useSafeAreaInsets();
   const [draft, setDraft] = useState<Block | null>(block);
   const [open, setOpen] = useState<Field>(null);
+  const [alsoTimer, setAlsoTimer] = useState(false);
 
   useEffect(() => {
     setDraft(block);
     setOpen(null);
+    setAlsoTimer(false);
   }, [block]);
 
   if (!draft) return null;
@@ -47,26 +49,8 @@ export function BlockSheet({ block, canDelete, onClose, onSave, onDelete }: Prop
   const toggle = (f: Exclude<Field, null>) => setOpen(open === f ? null : f);
 
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose} />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.sheetWrap}
-      >
-        <View style={[styles.sheet, E3]}>
-          <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFill} />
-          <LinearGradient
-            colors={[C.sheetTop, C.sheetBottom]}
-            style={StyleSheet.absoluteFill}
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
-          />
-          <View style={styles.sheetBorder} pointerEvents="none" />
-
-          <View style={styles.grabWrap}>
-            <View style={styles.grab} />
-          </View>
-
+    <Sheet visible onClose={onClose}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <ScrollView
             style={{ maxHeight: 560 }}
             contentContainerStyle={{ paddingHorizontal: GUTTER, paddingBottom: 8 }}
@@ -124,6 +108,16 @@ export function BlockSheet({ block, canDelete, onClose, onSave, onDelete }: Prop
             </View>
           </ScrollView>
 
+          {/* 새로 만드는 종목은 타이머로도 남길 수 있다 — 다음 루틴에서 그대로 가져다 쓴다 */}
+          {isNew && (
+            <Pressable style={styles.saveAsTimer} onPress={() => setAlsoTimer((v) => !v)}>
+              <View style={[styles.checkbox, alsoTimer && styles.checkboxOn]}>
+                {alsoTimer && <Text style={styles.check}>✓</Text>}
+              </View>
+              <Text style={styles.saveAsTimerLabel}>{t('sheet.alsoSaveAsTimer')}</Text>
+            </Pressable>
+          )}
+
           <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
             {canDelete && (
               <PressBox
@@ -141,32 +135,37 @@ export function BlockSheet({ block, canDelete, onClose, onSave, onDelete }: Prop
               label={t('common.done')}
               height={64}
               style={{ flex: 1 }}
-              onPress={() => onSave({ ...draft, name: draft.name.trim() || t('defaults.block') })}
+              onPress={() =>
+                onSave({ ...draft, name: draft.name.trim() || t('defaults.block') }, alsoTimer)
+              }
             />
           </View>
-        </View>
       </KeyboardAvoidingView>
-    </Modal>
+    </Sheet>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { ...ABS, backgroundColor: 'rgba(0,0,0,0.45)' },
-  sheetWrap: { flex: 1, justifyContent: 'flex-end' },
-  sheet: {
-    borderTopLeftRadius: RADIUS.sheet,
-    borderTopRightRadius: RADIUS.sheet,
-    overflow: 'hidden',
+  saveAsTimer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: GUTTER,
+    paddingTop: 6,
+    paddingBottom: 2,
   },
-  sheetBorder: {
-    ...ABS,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.14)',
-    borderTopLeftRadius: RADIUS.sheet,
-    borderTopRightRadius: RADIUS.sheet,
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 7,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.28)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  grabWrap: { alignItems: 'center', paddingTop: 10, paddingBottom: 6 },
-  grab: { width: 44, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.24)' },
+  checkboxOn: { backgroundColor: C.white, borderColor: C.white },
+  check: { fontSize: 14, fontWeight: '800', color: C.onWhite, lineHeight: 17 },
+  saveAsTimerLabel: { fontSize: 15, color: C.textSecondary },
   nameRow: { paddingTop: 12, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: C.divider },
   nameLabel: { fontSize: 15, color: C.textTertiary },
   nameInput: {

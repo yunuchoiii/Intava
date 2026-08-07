@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import React, { useMemo, useRef, useState } from 'react';
 import {
   LayoutChangeEvent,
+  Linking,
   PanResponder,
   Pressable,
   ScrollView,
@@ -78,6 +79,23 @@ export default function SettingsScreen() {
             }}
           />
           <Text style={styles.note}>{t('tips.volume')}</Text>
+
+          <ToggleRow
+            title={t('settings.push')}
+            note={t('settings.pushNote')}
+            value={settings.notifications}
+            onChange={(notifications) => setSettings({ notifications })}
+          />
+
+          <Text style={styles.section}>{t('settings.app')}</Text>
+          {/* 언어는 iOS의 앱별 언어 설정에서 바꾼다 — 앱 안에 또 만들면 두 곳이 어긋난다 */}
+          <Pressable style={styles.linkRow} onPress={() => Linking.openSettings()}>
+            <View style={{ flex: 1, paddingRight: 16 }}>
+              <Text style={styles.rowTitle}>{t('settings.language')}</Text>
+              <Text style={styles.note}>{t('settings.languageNote')}</Text>
+            </View>
+            <Text style={styles.chevron}>›</Text>
+          </Pressable>
 
           <Text style={styles.section}>{t('settings.screen')}</Text>
           <ToggleRow
@@ -197,6 +215,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.78,
     color: C.textTertiary,
   },
+  linkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: C.divider,
+  },
+  chevron: { fontSize: 20, color: C.textTertiary },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',

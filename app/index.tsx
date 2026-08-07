@@ -1,6 +1,6 @@
 /** 5.1 홈 — 운동 직전에 화면을 오래 붙들지 않게 한다. 실행까지 한 번의 탭. */
 import { useRouter } from 'expo-router';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   NativeScrollEvent,
@@ -22,6 +22,7 @@ import { presetSummary, presetTimeLine } from '../src/engine/labels';
 import { totalSec } from '../src/engine/segments';
 import { t } from '../src/i18n';
 import { selectionTick } from '../src/feedback';
+import { useSession } from '../src/session';
 import { sortPresets, useStore, type SortKey } from '../src/store';
 import { C, E2, GUTTER, LIFT, RADIUS, TABULAR } from '../src/theme';
 import { kindOf, type Preset, type PresetKind } from '../src/types';
@@ -48,6 +49,7 @@ const ADD_RADIUS = ADD_HEIGHT / 2;
 
 export default function Home() {
   const router = useRouter();
+  const session = useSession();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { presets, ready, settings, setSettings, duplicatePreset, deletePreset } = useStore();
@@ -103,6 +105,18 @@ export default function Home() {
   );
 
   const empty = ready && grouped[tab].length === 0;
+
+  /**
+   * 앱을 다시 열었을 때 진행 중인 타이머가 있으면 그 화면으로 돌아간다.
+   * 앱이 백그라운드에서 정지됐다 살아난 경우가 여기 해당한다 —
+   * 알림만 계속 울리고 앱에는 아무것도 없던 상태를 없앤다. 한 번만 한다.
+   */
+  const restored = useRef(false);
+  useEffect(() => {
+    if (restored.current || !session.preset || session.done) return;
+    restored.current = true;
+    router.push('/run');
+  }, [session.preset, session.done, router]);
 
   /** 세그먼트 탭을 누르면 페이지를 옮긴다 — 스와이프와 같은 상태를 공유한다 */
   const goTab = useCallback(
@@ -283,12 +297,12 @@ function Segmented({
 
 function PresetRow({ preset, onLongPress }: { preset: Preset; onLongPress: () => void }) {
   const router = useRouter();
-  const { markRun } = useStore();
+  const session = useSession();
   const total = useMemo(() => totalSec(preset), [preset]);
 
   const start = () => {
-    markRun(preset.id);
-    router.push({ pathname: '/run', params: { id: preset.id } });
+    session.start(preset.id);
+    router.push('/run');
   };
 
   return (

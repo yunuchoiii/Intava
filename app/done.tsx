@@ -1,6 +1,6 @@
 /** 5.7 완료 — DONE 색 플러드 */
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WhiteButton } from '../src/components/Buttons';
@@ -8,6 +8,7 @@ import { PressBox } from '../src/components/PressBox';
 import { PhaseFlood } from '../src/components/PhaseFlood';
 import { clock, isSimple } from '../src/engine/labels';
 import { totalSec, totalSets, workSec } from '../src/engine/segments';
+import { useSession } from '../src/session';
 import { useStore } from '../src/store';
 import { t } from '../src/i18n';
 import { GUTTER, PHASE_COLOR, TABULAR } from '../src/theme';
@@ -18,7 +19,13 @@ export default function Done() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { getPreset } = useStore();
+  const session = useSession();
   const preset = getPreset(id);
+
+  // 완료 화면에 닿았으면 그 세션은 끝난 것이다 — 미니 바가 남지 않게 정리한다
+  useEffect(() => {
+    session.stop();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const stats = useMemo(() => {
     if (!preset) return null;
@@ -62,7 +69,10 @@ export default function Done() {
           label={t('doneScreen.again')}
           height={72}
           color={PHASE_COLOR.DONE}
-          onPress={() => router.replace({ pathname: '/run', params: { id: preset.id } })}
+          onPress={() => {
+            session.start(preset.id);
+            router.replace('/run');
+          }}
         />
         <PressBox
           onPress={() => router.replace('/')}

@@ -5,16 +5,15 @@
  * 루틴에 종목을 넣을 때 그 값을 그대로 가져오면 같은 숫자를 두 번 입력하지 않아도 된다.
  * 가져온 뒤에는 원본과 무관한 복사본이라, 한쪽을 고쳐도 다른 쪽은 그대로다.
  */
-import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { blockSummary } from '../engine/labels';
 import { t } from '../i18n';
-import { ABS, C, E3, GUTTER, RADIUS, TABULAR } from '../theme';
+import { C, GUTTER, RADIUS, TABULAR } from '../theme';
 import type { Block, Preset } from '../types';
 import { PressBox } from './PressBox';
+import { Sheet } from './Sheet';
 
 type Props = {
   visible: boolean;
@@ -32,23 +31,7 @@ export function BlockPickerSheet({ visible, timers, onClose, onPickTimer, onCrea
   if (!visible) return null;
 
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose} />
-      <View style={styles.sheetWrap}>
-        <View style={[styles.sheet, E3]}>
-          <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFill} />
-          <LinearGradient
-            colors={[C.sheetTop, C.sheetBottom]}
-            style={StyleSheet.absoluteFill}
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
-          />
-          <View style={styles.sheetBorder} pointerEvents="none" />
-
-          <View style={styles.grabWrap}>
-            <View style={styles.grab} />
-          </View>
-
+    <Sheet visible={visible} onClose={onClose}>
           <Text style={styles.title}>{t('pickBlock.title')}</Text>
 
           <View style={{ paddingHorizontal: GUTTER }}>
@@ -104,30 +87,12 @@ export function BlockPickerSheet({ visible, timers, onClose, onPickTimer, onCrea
             </ScrollView>
           )}
 
-          <View style={{ height: Math.max(insets.bottom, 16) }} />
-        </View>
-      </View>
-    </Modal>
+      <View style={{ height: Math.max(insets.bottom, 16) }} />
+    </Sheet>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { ...ABS, backgroundColor: 'rgba(0,0,0,0.45)' },
-  sheetWrap: { flex: 1, justifyContent: 'flex-end' },
-  sheet: {
-    borderTopLeftRadius: RADIUS.sheet,
-    borderTopRightRadius: RADIUS.sheet,
-    overflow: 'hidden',
-  },
-  sheetBorder: {
-    ...ABS,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.14)',
-    borderTopLeftRadius: RADIUS.sheet,
-    borderTopRightRadius: RADIUS.sheet,
-  },
-  grabWrap: { alignItems: 'center', paddingTop: 10, paddingBottom: 6 },
-  grab: { width: 44, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.24)' },
   title: {
     paddingHorizontal: GUTTER,
     paddingTop: 6,
@@ -137,7 +102,8 @@ const styles = StyleSheet.create({
     letterSpacing: -0.44,
     color: C.textPrimary,
   },
-  newTile: { height: 52, backgroundColor: C.surface },
+  // 반경을 빼먹으면 각진 상자로 보인다 — PressBox의 radius는 눌림 겹에만 쓰인다
+  newTile: { height: 52, borderRadius: RADIUS.tile, backgroundColor: C.surface },
   newLabel: { fontSize: 16, fontWeight: '600', color: C.textPrimary },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   section: {

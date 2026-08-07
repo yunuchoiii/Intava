@@ -120,11 +120,21 @@ export function subLabel(seg: Segment | null, preset: Preset): string {
   }
 }
 
-/** 링 안쪽 위 제목 — 운동 중이면 종목 이름, 그 외엔 페이즈 이름 */
-export function titleLabel(seg: Segment | null, paused: boolean): string {
+/**
+ * 링 안쪽 위 제목.
+ *
+ * 루틴에서는 지금 하는 종목 이름이 가장 쓸모 있다. 그런데 타이머는 종목 이름이
+ * 곧 타이머 이름이라(둘을 같이 움직인다) 화면에 이름만 덩그러니 남아 무슨
+ * 구간인지 알 수 없다 — 그래서 타이머에서는 "운동 30초"처럼 구간과 길이를 쓴다.
+ */
+export function titleLabel(seg: Segment | null, paused: boolean, preset?: Preset): string {
   if (paused) return t('phase.paused');
   if (!seg) return t('phase.DONE');
-  return seg.phase === 'WORK' ? (seg.name ?? t('phase.WORK')) : phaseLabel(seg.phase);
+  if (seg.phase !== 'WORK') return phaseLabel(seg.phase);
+  if (preset && isSimple(preset)) {
+    return t('run.titleWithDur', { phase: phaseLabel('WORK'), dur: durationShort(seg.dur) });
+  }
+  return seg.name ?? t('phase.WORK');
 }
 
 /** 홈 목록 요약 줄 */

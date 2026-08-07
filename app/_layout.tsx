@@ -10,6 +10,8 @@ import { ScreenBackground } from '../src/components/Screen';
 import { Wordmark } from '../src/components/Wordmark';
 import { C } from '../src/theme';
 import { installHandler } from '../src/notify';
+import { MiniTimer } from '../src/components/MiniTimer';
+import { SessionProvider } from '../src/session';
 import { StoreProvider } from '../src/store';
 
 /**
@@ -64,6 +66,7 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <ThemeProvider value={NAV_THEME}>
           <StoreProvider>
+            <SessionProvider>
           <StatusBar style="light" />
           <Stack
             screenOptions={{
@@ -73,7 +76,8 @@ export default function RootLayout() {
             }}
           >
             <Stack.Screen name="index" />
-            <Stack.Screen name="edit" />
+            {/* 편집 중 스와이프로 나가면 입력하던 값이 조용히 사라진다 */}
+            <Stack.Screen name="edit" options={{ gestureEnabled: false }} />
             <Stack.Screen name="run" options={{ animation: 'fade', gestureEnabled: false }} />
             <Stack.Screen name="done" options={{ animation: 'fade', gestureEnabled: false }} />
             {/* 볼륨 슬라이더를 왼쪽에서 끌면 화면 가장자리 뒤로가기 제스처와 겹친다.
@@ -83,6 +87,8 @@ export default function RootLayout() {
               options={{ animation: 'slide_from_bottom', gestureEnabled: false }}
             />
           </Stack>
+
+          <MiniTimer />
 
           {!splashGone && (
             <Animated.View
@@ -96,6 +102,7 @@ export default function RootLayout() {
               </View>
             </Animated.View>
           )}
+            </SessionProvider>
           </StoreProvider>
         </ThemeProvider>
       </SafeAreaProvider>

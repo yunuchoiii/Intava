@@ -43,6 +43,8 @@ export type Settings = {
   /** 홈 목록 정렬 — 화면을 떠났다 와도 유지된다 */
   sort: 'recent' | 'name' | 'created';
   sound: boolean;
+  /** 잠금화면 알림 — 앱이 정지돼도 구간 전환을 알려주는 안전망 */
+  notifications: boolean;
   vibration: boolean;
   countdownBeep: boolean;
   keepScreenOn: boolean;
@@ -52,6 +54,7 @@ export type Settings = {
 export const DEFAULT_SETTINGS: Settings = {
   sort: 'recent',
   sound: true,
+  notifications: true,
   vibration: true,
   countdownBeep: true,
   keepScreenOn: false,

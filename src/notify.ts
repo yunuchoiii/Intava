@@ -115,23 +115,33 @@ type ScheduleArgs = {
   elapsed: number;
   sound: boolean;
   vibration: boolean;
+  /** 설정에서 잠금화면 알림을 껐으면 예약 자체를 하지 않는다 */
+  enabled?: boolean;
+  /** 이 예약이 아직 최신인지 — 도중에 더 새 요청이 오면 중단한다 */
+  isCurrent?: () => boolean;
 };
 
 /**
- * 예약 시 기존 예약은 전부 취소 후 재생성한다 — 일시정지·스킵으로 시각이 밀린다.
  * 앞으로의 구간 전환 시각을 절대 시각(DATE 트리거)으로 넣는다.
+ * **취소는 호출하는 쪽 책임이다** — 취소와 예약 사이에 다른 요청이 끼어들면
+ * 알림이 중복되므로, 부르는 곳에서 토큰을 잡고 취소한 뒤 이 함수를 부른다.
  */
 export async function scheduleUpcoming(args: ScheduleArgs): Promise<void> {
-  const { plan, preset, zeroAt, elapsed, sound, vibration } = args;
-  await cancelAll();
+  const { plan, preset, zeroAt, elapsed, sound, vibration, enabled, isCurrent } = args;
+  const current = () => (isCurrent ? isCurrent() : true);
+  if (enabled === false) return;
   if (!sound && !vibration) return;
   if (!(await ensurePermission())) return;
   await ensureChannels();
+  if (!current()) return;
 
   const now = Date.now();
   let count = 0;
 
   for (let i = 0; i < plan.segs.length && count < MAX_PENDING; i++) {
+    // 예약 하나하나가 비동기다. 도중에 더 새 요청이 들어왔으면 여기서 멈춘다 —
+    // 안 그러면 취소된 예약 위에 옛 예약이 덧쌓여 같은 알림이 두 번 뜬다
+    if (!current()) return;
     const seg = plan.segs[i];
     if (seg.start <= elapsed) continue; // 이미 지난 전환
     const at = zeroAt + seg.start * 1000;
@@ -143,7 +153,7 @@ export async function scheduleUpcoming(args: ScheduleArgs): Promise<void> {
   }
 
   // 마지막 — 전체 완료
-  if (count < MAX_PENDING) {
+  if (count < MAX_PENDING && current()) {
     const end = zeroAt + plan.total * 1000;
     if (end > now + 500) {
       await schedule('DONE', t('notify.doneTitle'), t('notify.doneBody', { name: preset.name }), end, sound);

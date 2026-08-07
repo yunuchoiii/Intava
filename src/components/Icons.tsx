@@ -112,6 +112,22 @@ export function GearIcon({ size = 22, color = '#FFFFFF' }: IconProps) {
   );
 }
 
+/** 편집 — 연필 */
+export function PencilIcon({ size = 21, color = '#FFFFFF' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path
+        d="M4 16.6L15.2 5.4a1.6 1.6 0 0 1 2.3 0l1.1 1.1a1.6 1.6 0 0 1 0 2.3L7.4 20H4v-3.4z"
+        fill="none"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinejoin="round"
+      />
+      <Path d="M13.6 7l3.4 3.4" stroke={color} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
 export function PauseIcon({ size = 26, color = '#FFFFFF' }: IconProps) {
   return (
     <Svg width={size} height={(size * 30) / 26} viewBox="0 0 17 19">
