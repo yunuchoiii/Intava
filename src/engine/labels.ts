@@ -47,13 +47,19 @@ export function isSimple(p: Preset): boolean {
   return p.blocks.length === 1 && p.rounds === 1;
 }
 
-/** 다음 구간 예고 — "다음 · 휴식 15초" 의 뒷부분 */
+/**
+ * 다음 구간 예고 — "다음 · 휴식 15초" 의 뒷부분.
+ *
+ * 운동 구간도 종목 이름이 아니라 "운동"으로 부른다. titleLabel과 같은 이유다 —
+ * 이름은 그것이 운동인지 휴식인지 말해주지 않고, 타이머에서는 이름이 곧
+ * 타이머 이름이라 화면이 같은 말로 덮인다.
+ */
 export function describeSegment(seg: Segment | undefined): string {
   if (!seg) return t('segment.none');
   const dur = durationShort(seg.dur);
   switch (seg.phase) {
     case 'WORK':
-      return t('segment.work', { name: seg.name, dur });
+      return t('segment.work', { dur });
     case 'PREPARE':
       return t('segment.prepare', { dur });
     case 'WARMUP':
@@ -74,7 +80,7 @@ export function jumpLabel(seg: Segment | undefined): string {
   if (!seg) return t('jump.none');
   switch (seg.phase) {
     case 'WORK':
-      return t('jump.work', { name: seg.name });
+      return t('jump.work');
     case 'PREPARE':
       return t('jump.prepare');
     case 'WARMUP':
@@ -182,7 +188,7 @@ export function notificationText(
           round: seg.round,
           rounds: preset.rounds,
         });
-    return { title: t('notify.workTitle', { name: seg.name, dur: durationShort(seg.dur) }), body };
+    return { title: t('notify.workTitle', { dur: durationShort(seg.dur) }), body };
   }
   return {
     title: describeSegment(seg),
@@ -191,5 +197,5 @@ export function notificationText(
 }
 
 function nextName(seg: Segment): string {
-  return seg.phase === 'WORK' ? (seg.name ?? t('phase.WORK')) : phaseLabel(seg.phase);
+  return phaseLabel(seg.phase);
 }

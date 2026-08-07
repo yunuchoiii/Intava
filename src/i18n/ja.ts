@@ -156,7 +156,7 @@ export const ja: Catalog = {
   },
 
   segment: {
-    work: '{{name}} {{dur}}',
+    work: '運動 {{dur}}',
     prepare: '準備 {{dur}}',
     warmup: 'ウォームアップ {{dur}}',
     cooldown: 'クールダウン {{dur}}',
@@ -167,7 +167,7 @@ export const ja: Catalog = {
   },
 
   jump: {
-    work: '{{name}} を開始',
+    work: '運動を開始',
     prepare: '準備を開始',
     warmup: 'ウォームアップを開始',
     cooldown: 'クールダウンを開始',
@@ -200,7 +200,7 @@ export const ja: Catalog = {
     channelRound: 'ラウンド休憩',
     channelCooldown: 'クールダウン',
     channelDone: 'ワークアウト完了',
-    workTitle: '{{name}} {{dur}}',
+    workTitle: '運動 {{dur}}',
     bodySets: '{{set}} / {{sets}}セット',
     bodySetsRounds: '{{set}} / {{sets}}セット · {{round}} / {{rounds}}ラウンド',
     bodyNext: '次 · {{what}}',

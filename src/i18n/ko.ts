@@ -171,7 +171,7 @@ export const ko = {
 
   /** 다음 구간 예고 */
   segment: {
-    work: '{{name}} {{dur}}',
+    work: '운동 {{dur}}',
     prepare: '준비 {{dur}}',
     warmup: '웜업 {{dur}}',
     cooldown: '쿨다운 {{dur}}',
@@ -183,7 +183,7 @@ export const ko = {
 
   /** 「다음」 버튼 라벨 — 도착할 구간 */
   jump: {
-    work: '{{name}} 시작',
+    work: '운동 시작',
     prepare: '준비 시작',
     warmup: '웜업 시작',
     cooldown: '쿨다운 시작',
@@ -216,7 +216,7 @@ export const ko = {
     channelRound: '라운드 휴식',
     channelCooldown: '쿨다운',
     channelDone: '운동 완료',
-    workTitle: '{{name}} {{dur}}',
+    workTitle: '운동 {{dur}}',
     bodySets: '{{set}} / {{sets}}세트',
     bodySetsRounds: '{{set}} / {{sets}}세트 · {{round}} / {{rounds}}라운드',
     bodyNext: '다음 · {{what}}',

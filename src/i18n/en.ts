@@ -163,7 +163,7 @@ export const en: Catalog = {
   },
 
   segment: {
-    work: '{{name}} {{dur}}',
+    work: 'Work {{dur}}',
     prepare: 'Prepare {{dur}}',
     warmup: 'Warm-up {{dur}}',
     cooldown: 'Cool-down {{dur}}',
@@ -174,7 +174,7 @@ export const en: Catalog = {
   },
 
   jump: {
-    work: 'Start {{name}}',
+    work: 'Start work',
     prepare: 'Start prepare',
     warmup: 'Start warm-up',
     cooldown: 'Start cool-down',
@@ -207,7 +207,7 @@ export const en: Catalog = {
     channelRound: 'Round rest',
     channelCooldown: 'Cool-down',
     channelDone: 'Workout complete',
-    workTitle: '{{name}} {{dur}}',
+    workTitle: 'Work {{dur}}',
     bodySets: 'Set {{set}} of {{sets}}',
     bodySetsRounds: 'Set {{set}} of {{sets}} · round {{round}} of {{rounds}}',
     bodyNext: 'Next · {{what}}',

@@ -10,7 +10,7 @@ import { PressBox } from '../src/components/PressBox';
 import { NextIcon, PauseIcon, PencilIcon, PlayIcon, PrevIcon } from '../src/components/Icons';
 import { PhaseFlood } from '../src/components/PhaseFlood';
 import { Ring } from '../src/components/Ring';
-import { clock, describeSegment, isSimple, jumpLabel, subLabel, titleLabel } from '../src/engine/labels';
+import { clock, isSimple, jumpLabel, subLabel, titleLabel } from '../src/engine/labels';
 import { ensurePermission } from '../src/notify';
 import { useSession } from '../src/session';
 import { useStore } from '../src/store';
@@ -166,10 +166,6 @@ export default function Run() {
         </View>
 
         <View style={{ paddingHorizontal: GUTTER, gap: 20 }}>
-          <Text style={styles.nextText} numberOfLines={1}>
-            {t('run.next', { what: describeSegment(run.next) })}
-          </Text>
-
           <View style={styles.controls}>
             <ControlButton label={prevLabel} onPress={run.skipPrev}>
               <PrevIcon />
@@ -277,7 +273,6 @@ const styles = StyleSheet.create({
   blockNow: { fontWeight: '700', opacity: 1 },
   blockOther: { fontWeight: '600', opacity: 0.5 },
   ringWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 0 },
-  nextText: { fontSize: 17, fontWeight: '600', textAlign: 'center', color: '#FFFFFF', opacity: 0.85 },
   controls: { flexDirection: 'row', gap: 26, alignItems: 'center', justifyContent: 'center' },
   control: { width: 96, alignItems: 'center', gap: 6 },
   controlLabel: { fontSize: 12.5, fontWeight: '600', color: '#FFFFFF', opacity: 0.8 },

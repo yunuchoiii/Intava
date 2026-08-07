@@ -156,7 +156,7 @@ export const zh: Catalog = {
   },
 
   segment: {
-    work: '{{name}} {{dur}}',
+    work: '运动 {{dur}}',
     prepare: '准备 {{dur}}',
     warmup: '热身 {{dur}}',
     cooldown: '放松 {{dur}}',
@@ -167,7 +167,7 @@ export const zh: Catalog = {
   },
 
   jump: {
-    work: '开始 {{name}}',
+    work: '开始运动',
     prepare: '开始准备',
     warmup: '开始热身',
     cooldown: '开始放松',
@@ -200,7 +200,7 @@ export const zh: Catalog = {
     channelRound: '轮次休息',
     channelCooldown: '放松',
     channelDone: '训练完成',
-    workTitle: '{{name}} {{dur}}',
+    workTitle: '运动 {{dur}}',
     bodySets: '第{{set}} / {{sets}}组',
     bodySetsRounds: '第{{set}} / {{sets}}组 · 第{{round}} / {{rounds}}轮',
     bodyNext: '下一个 · {{what}}',
