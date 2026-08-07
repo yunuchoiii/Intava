@@ -1,12 +1,12 @@
 /**
- * intava 워드마크 — 디자이너가 낸 PNG를 그대로 쓴다.
+ * intava 가로 잠금형 — 끊긴 링 심볼 + 글자. 디자이너가 낸 PNG를 그대로 쓴다.
  *
  * SVG 원본은 글자가 아직 <text>(League Spartan 800)라 앱에서 폰트로 다시
- * 그려야 하는데, 그러면 자간·막대 위치가 원본과 미세하게 어긋난다.
+ * 그려야 하는데, 그러면 자간이 원본과 미세하게 어긋난다.
  * 시안과 한 픽셀도 다르지 않아야 하는 자리라 래스터를 쓴다.
  *
- * 가이드가 금지한 것: 대문자, 막대 길이·위치 조정, 기울임·그림자,
- * 글자와 막대 사이 벌리기. 크기만 바꿔 쓴다.
+ * 가이드가 금지한 것: 두 호의 비율(240°/120°) 변경, 이음매 틈 메우기,
+ * 링 회전, 링에 그라디언트, 글자에 색 넣기. 크기만 바꿔 쓴다.
  */
 import React from 'react';
 import { Image, type ImageStyle, type StyleProp } from 'react-native';
@@ -18,10 +18,15 @@ const SRC = {
   white: require('../../assets/logo/lockup-white.png'),
 };
 
-/** 원본 1224 × 500 */
-export const WORDMARK_RATIO = 500 / 1224;
-/** 가이드가 정한 최소 가로 크기 — 이보다 작으면 tava가 뭉개진다 */
-export const WORDMARK_MIN_WIDTH = 88;
+/** 원본 938 × 360 */
+export const WORDMARK_RATIO = 360 / 938;
+/**
+ * 최소 가로 크기.
+ * 가이드는 심볼이 28px 아래로 내려가면 이음매 틈이 안티에일리어싱으로 메워져
+ * 하나의 링으로 보인다고 못 박았다. 잠금형 안에서 링이 가로폭의 24.3%를
+ * 차지하므로 28 / 0.243 ≈ 116이 하한이다.
+ */
+export const WORDMARK_MIN_WIDTH = 116;
 
 type Props = {
   /** 가로 크기(px). 세로는 비율로 따라온다 */
