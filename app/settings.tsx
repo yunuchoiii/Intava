@@ -188,11 +188,22 @@ function Slider({
   const x = clamp01(value) * width;
 
   return (
+    /*
+      트랙과 원은 그림일 뿐 손가락을 받지 않는다.
+
+      locationX는 **닿은 뷰** 기준 좌표다. 원이 손가락을 받으면 24pt짜리 원이 기준이
+      되어 0~24 사이 값이 나오고, 그걸 슬라이더 폭으로 나누니 값이 0 근처로 튄다.
+      끌면 원이 따라 움직여 계속 어긋난다 — 원을 잡았을 때만 이상하던 이유다.
+      받는 곳을 이 겹 하나로 못 박으면 기준이 늘 슬라이더 전체가 된다.
+    */
     <View style={styles.sliderHit} onLayout={onLayout} {...pan.panHandlers}>
-      <View style={styles.sliderTrack}>
+      <View style={styles.sliderTrack} pointerEvents="none">
         <View style={[styles.sliderFill, { width: x }]} />
       </View>
-      <View style={[styles.sliderThumb, { left: Math.max(0, Math.min(width - 24, x - 12)) }]} />
+      <View
+        style={[styles.sliderThumb, { left: Math.max(0, Math.min(width - 24, x - 12)) }]}
+        pointerEvents="none"
+      />
     </View>
   );
 }
