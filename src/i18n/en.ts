@@ -125,6 +125,7 @@ export const en: Catalog = {
     exitBody: 'Your progress so far will not be saved.',
     exitContinue: 'Keep going',
     exitConfirm: 'End',
+    a11yBack: 'Back',
     a11yExit: 'End workout',
     a11yEdit: 'Edit routine',
     a11ySound: 'Sound and vibration settings',

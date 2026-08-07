@@ -63,6 +63,8 @@ export type Session = RunSnapshot & {
   skipPrev: () => void;
   restart: () => void;
   stop: () => void;
+  /** 링을 잡는 순간 — 값을 맞추는 동안 시간이 흐르면 손가락과 숫자가 서로 밀린다 */
+  beginScrub: () => void;
   scrubRemain: (remainSec: number) => void;
   commitScrub: () => void;
 };
@@ -196,6 +198,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const lastIdx = useRef(-1);
   const lastTick = useRef('');
   const doneFired = useRef(false);
+  /** 드래그하느라 우리가 멈춘 것인지 — 사용자가 멈춰둔 것과 구분해야 한다 */
+  const autoPaused = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearTimer = () => {
@@ -382,6 +386,18 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         persist(null);
         setSnap(EMPTY);
       },
+      beginScrub: () => {
+        const s = storedRef.current;
+        if (!s || s.pausedAt != null) {
+          // 이미 멈춰 있었다면 드래그가 끝나도 그대로 둔다
+          autoPaused.current = false;
+          return;
+        }
+        autoPaused.current = true;
+        persist({ ...s, pausedAt: Date.now() });
+        setSyncId((n) => n + 1);
+        void reschedule();
+      },
       scrubRemain: (remainSec: number) => {
         const p = planRef.current;
         if (!p) return;
@@ -391,7 +407,19 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         const clamped = Math.max(0.05, Math.min(seg.dur, remainSec));
         seekTo(seg.start + seg.dur - clamped, false, false);
       },
-      commitScrub: () => void reschedule(),
+      commitScrub: () => {
+        const s = storedRef.current;
+        if (autoPaused.current && s?.pausedAt != null) {
+          // 멈춰 있던 만큼 기준 시각을 뒤로 밀어 이어서 흐르게 한다
+          persist({ ...s, zeroAt: s.zeroAt + (Date.now() - s.pausedAt), pausedAt: null });
+          lastIdx.current = snapshotAt(elapsedNow()).idx;
+          lastTick.current = '';
+        }
+        autoPaused.current = false;
+        setSyncId((n) => n + 1);
+        tick();
+        void reschedule();
+      },
     };
 
     return {

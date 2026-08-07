@@ -47,6 +47,7 @@ type Props = {
   /** 바뀌면 애니메이션이 기준을 다시 잡는다 (구간 전환·일시정지·점프) */
   syncKey: string;
   /** 드래그로 남은 시간을 조정 */
+  onScrubStart?: () => void;
   onScrub?: (remainSec: number) => void;
   onScrubEnd?: () => void;
 };
@@ -61,6 +62,7 @@ export function Ring({
   warn,
   paused,
   syncKey,
+  onScrubStart,
   onScrub,
   onScrubEnd,
 }: Props) {
@@ -155,6 +157,7 @@ export function Ring({
           startRemain.current = remainRef.current;
           lastSecond.current = Math.ceil(remainRef.current);
           setScrubbing(true);
+          onScrubStart?.();
         },
         onPanResponderMove: (e) => {
           const a = angleOf(e);
@@ -187,7 +190,7 @@ export function Ring({
           onScrubEnd?.();
         },
       }),
-    [onScrub, onScrubEnd, prog]
+    [onScrubStart, onScrub, onScrubEnd, prog]
   );
 
   return (

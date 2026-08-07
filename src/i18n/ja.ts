@@ -118,6 +118,7 @@ export const ja: Catalog = {
     exitBody: 'ここまでの進行は保存されません。',
     exitContinue: '続ける',
     exitConfirm: '終了',
+    a11yBack: '戻る',
     a11yExit: 'ワークアウトを終了',
     a11yEdit: 'ルーティンを編集',
     a11ySound: '音・振動の設定',

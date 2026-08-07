@@ -83,16 +83,17 @@ export default function Run() {
 
       <View style={{ flex: 1, paddingTop: insets.top + 6, paddingBottom: Math.max(insets.bottom, 12) }}>
         <View style={styles.header}>
+          {/* 나가도 타이머는 계속 돈다 — 하단 미니 바로 이어진다 */}
           <PressBox
-            onPress={confirmExit}
+            onPress={() => router.back()}
             radius={16}
             scaleTo={0.9}
             dim={0.2}
-            accessibilityLabel={t('run.a11yExit')}
+            accessibilityLabel={t('run.a11yBack')}
           >
             <FloodTile radius={16} style={styles.tile}>
               <View style={styles.center}>
-                <Text style={styles.tileGlyph}>✕</Text>
+                <Text style={styles.backGlyph}>‹</Text>
               </View>
             </FloodTile>
           </PressBox>
@@ -101,19 +102,36 @@ export default function Run() {
             {preset.name}
           </Text>
 
-          <PressBox
-            onPress={() => router.push({ pathname: '/edit', params: { id: preset.id } })}
-            radius={16}
-            scaleTo={0.9}
-            dim={0.2}
-            accessibilityLabel={t('run.a11yEdit')}
-          >
-            <FloodTile radius={16} style={styles.tile}>
-              <View style={[styles.center, { opacity: 0.9 }]}>
-                <PencilIcon />
-              </View>
-            </FloodTile>
-          </PressBox>
+          <View style={styles.headerActions}>
+            <PressBox
+              onPress={() => router.push({ pathname: '/edit', params: { id: preset.id } })}
+              radius={16}
+              scaleTo={0.9}
+              dim={0.2}
+              accessibilityLabel={t('run.a11yEdit')}
+            >
+              <FloodTile radius={16} style={styles.tile}>
+                <View style={[styles.center, { opacity: 0.9 }]}>
+                  <PencilIcon />
+                </View>
+              </FloodTile>
+            </PressBox>
+
+            {/* 운동 자체를 끝내는 것 — 화면을 벗어나는 것과 다른 동작이다 */}
+            <PressBox
+              onPress={confirmExit}
+              radius={16}
+              scaleTo={0.9}
+              dim={0.2}
+              accessibilityLabel={t('run.a11yExit')}
+            >
+              <FloodTile radius={16} style={styles.tile}>
+                <View style={styles.center}>
+                  <Text style={styles.tileGlyph}>✕</Text>
+                </View>
+              </FloodTile>
+            </PressBox>
+          </View>
         </View>
 
         {/* 종목 이름 줄 — 버튼이 아니라 표시. 배경·테두리를 주지 않는다 */}
@@ -141,6 +159,7 @@ export default function Run() {
             warn={!run.done && run.remain <= 3 && !run.paused}
             paused={run.paused}
             syncKey={`${run.idx}:${run.syncId}`}
+            onScrubStart={run.beginScrub}
             onScrub={run.done ? undefined : run.scrubRemain}
             onScrubEnd={run.commitScrub}
           />
@@ -241,6 +260,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: GUTTER,
   },
   tile: { width: 48, height: 48 },
+  headerActions: { flexDirection: 'row', gap: 8 },
+  backGlyph: { fontSize: 30, fontWeight: '600', color: '#FFFFFF', opacity: 0.9, marginTop: -4 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   tileGlyph: { fontSize: 20, color: '#FFFFFF', opacity: 0.9 },
   routineName: { fontSize: 15, fontWeight: '600', color: '#FFFFFF', opacity: 0.85, flex: 1, textAlign: 'center' },

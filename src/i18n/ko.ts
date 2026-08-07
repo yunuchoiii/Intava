@@ -131,6 +131,7 @@ export const ko = {
     exitBody: '지금까지의 진행은 저장되지 않습니다.',
     exitContinue: '계속하기',
     exitConfirm: '종료',
+    a11yBack: '뒤로',
     a11yExit: '운동 종료',
     a11yEdit: '루틴 편집',
     a11ySound: '소리 · 진동 설정',

@@ -118,6 +118,7 @@ export const zh: Catalog = {
     exitBody: '目前的进度不会被保存。',
     exitContinue: '继续',
     exitConfirm: '结束',
+    a11yBack: '返回',
     a11yExit: '结束训练',
     a11yEdit: '编辑循环',
     a11ySound: '声音与振动设置',
