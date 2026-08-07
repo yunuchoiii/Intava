@@ -24,8 +24,14 @@ type Props = {
   outerStyle?: StyleProp<ViewStyle>;
   /** 눌렸을 때 크기 배율 */
   scaleTo?: number;
-  /** 눌렸을 때 덮이는 검정 농도 */
+  /** 눌렸을 때 덮이는 겹의 농도 */
   dim?: number;
+  /**
+   * 눌렸을 때 덮이는 색. 기본은 검정 — 밝은 표면을 어둡게 누른다.
+   * 바탕이 없는 버튼은 검정을 덮어도 배경보다 어두워질 뿐이라 눌린 티가 안 난다.
+   * 그럴 때 배경보다 한 단계 밝은 색을 준다.
+   */
+  dimColor?: string;
   /** 어두워지는 겹이 버튼 모서리를 따라가도록 반경을 알려준다 */
   radius?: number;
   hitSlop?: number;
@@ -41,6 +47,7 @@ export function PressBox({
   outerStyle,
   scaleTo = 0.96,
   dim = 0.18,
+  dimColor = '#000',
   radius = 0,
   hitSlop,
   accessibilityLabel,
@@ -82,7 +89,7 @@ export function PressBox({
           pointerEvents="none"
           style={[
             StyleSheet.absoluteFill,
-            { backgroundColor: '#000', borderRadius: radius, opacity: shade },
+            { backgroundColor: dimColor, borderRadius: radius, opacity: shade },
           ]}
         />
       </Animated.View>
