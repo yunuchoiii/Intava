@@ -44,8 +44,8 @@ const ROW_PAD = 12;
 const ROW_INSET = GUTTER - ROW_PAD;
 const ROW_RADIUS = 18;
 
-/** 추가 버튼 — 알약 모양이라 반경은 높이의 절반 */
-const ADD_HEIGHT = 68;
+/** 추가 버튼 — 정렬 줄 오른쪽 끝에 앉는 작은 알약. 반경은 높이의 절반 */
+const ADD_HEIGHT = 38;
 const ADD_RADIUS = ADD_HEIGHT / 2;
 
 export default function Home() {
@@ -169,10 +169,21 @@ export default function Home() {
           timerCount={grouped.timer.length}
         />
 
-        <Pressable onPress={cycleSort} style={styles.sortRow} hitSlop={8}>
-          <Text style={styles.sortText}>{t(SORT_LABEL[settings.sort])}</Text>
-          <Text style={styles.sortChevron}>⇅</Text>
-        </Pressable>
+        {/* 정렬은 왼쪽, 추가는 오른쪽 — 목록을 다루는 두 손잡이가 한 줄에 있다 */}
+        <View style={styles.toolRow}>
+          <Pressable
+            onPress={cycleSort}
+            style={({ pressed }) => [styles.sortRow, pressed && styles.sortRowPressed]}
+            hitSlop={{ top: 4, bottom: 4, left: GUTTER, right: 8 }}
+            accessibilityRole="button"
+            accessibilityLabel={t(SORT_LABEL[settings.sort])}
+          >
+            <Text style={styles.sortText}>{t(SORT_LABEL[settings.sort])}</Text>
+            <Text style={styles.sortChevron}>⇅</Text>
+          </Pressable>
+
+          <AddButton kind={tab} primary={empty} />
+        </View>
 
         <ScrollView
           ref={pager}
@@ -202,10 +213,6 @@ export default function Home() {
             />
           ))}
         </ScrollView>
-
-        <View style={{ paddingHorizontal: GUTTER, paddingTop: 12 }}>
-          <AddButton kind={tab} primary={empty} />
-        </View>
       </View>
     </Screen>
   );
@@ -225,7 +232,7 @@ function TabPage({
   onRowActions: (p: Preset) => void;
 }) {
   return (
-    <View style={{ width, paddingTop: 14 }}>
+    <View style={{ width, paddingTop: 4 }}>
       {ready && list.length === 0 ? (
         <EmptyState kind={kind} />
       ) : (
@@ -379,19 +386,15 @@ function AddButton({ kind, primary }: { kind: PresetKind; primary: boolean }) {
   const go = () => router.push({ pathname: '/edit', params: { kind } });
 
   /**
-   * 알약 모양 + 왼쪽 끝의 원형 ＋ + 아래로 깔리는 그림자.
-   * ＋는 절대 배치라 라벨은 글자 수와 무관하게 버튼 정중앙에 온다.
+   * 알약 안에 ＋와 라벨이 나란히 선다. 정렬 줄에 얹히는 작은 버튼이라 예전처럼
+   * ＋를 왼쪽 끝에 절대 배치하지 않는다 — 폭이 글자 길이를 따라 줄었다 늘었다 한다.
    */
-  const inner = (color: string, size: number, weight: '600' | '700') => (
-    <>
-      <View style={styles.center}>
-        <Text style={{ fontSize: size, fontWeight: weight, color }}>{label}</Text>
-      </View>
-      <View style={styles.addPlusSlot} pointerEvents="none">
-        {/* 전각 ＋는 em 박스 안에서 작게 그려진다 — 크게 보이려면 훨씬 키워야 한다 */}
-        <Text style={{ fontSize: 44, fontWeight: '300', lineHeight: 52, color }}>＋</Text>
-      </View>
-    </>
+  const inner = (color: string, weight: '600' | '700') => (
+    <View style={styles.addInner}>
+      {/* 전각 ＋는 em 박스 안에서 작게 그려진다 — 눈에 보이려면 글자보다 훨씬 키워야 한다 */}
+      <Text style={[styles.addPlus, { color }]}>＋</Text>
+      <Text style={{ fontSize: 14, fontWeight: weight, color }}>{label}</Text>
+    </View>
   );
 
   if (primary) {
@@ -399,7 +402,7 @@ function AddButton({ kind, primary }: { kind: PresetKind; primary: boolean }) {
       <PressBox
         onPress={go}
         radius={ADD_RADIUS}
-        scaleTo={0.975}
+        scaleTo={0.95}
         dim={0.14}
         style={[styles.addPill, LIFT]}
         accessibilityLabel={label}
@@ -407,21 +410,15 @@ function AddButton({ kind, primary }: { kind: PresetKind; primary: boolean }) {
         <View
           style={[StyleSheet.absoluteFill, { borderRadius: ADD_RADIUS, backgroundColor: C.white }]}
         />
-        {inner(C.onWhite, 18, '700')}
+        {inner(C.onWhite, '700')}
       </PressBox>
     );
   }
 
   return (
-    <PressBox
-      onPress={go}
-      radius={ADD_RADIUS}
-      scaleTo={0.975}
-      dim={0.22}
-      accessibilityLabel={label}
-    >
-      <Surface radius={ADD_RADIUS} style={styles.addPill} elevation={LIFT}>
-        {inner(C.textPrimary, 17, '600')}
+    <PressBox onPress={go} radius={ADD_RADIUS} scaleTo={0.95} dim={0.22} accessibilityLabel={label}>
+      <Surface radius={ADD_RADIUS} style={styles.addPill}>
+        {inner(C.textPrimary, '600')}
       </Surface>
     </PressBox>
   );
@@ -446,17 +443,35 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  sortRow: {
-    marginTop: 14,
-    marginBottom: -4,
+  /**
+   * 글자만 놓으면 누를 수 있는 높이가 18pt뿐이라 잘 안 눌린다.
+   * 위아래 여백을 실제로 넣어 손가락이 닿는 넓이를 확보하고, 그만큼 바깥 여백을
+   * 줄여 글자 자리는 그대로 둔다. 위쪽 여백은 세그먼트 아래 빈 곳이라 온전히 쓰이고,
+   * 아래쪽은 목록이 조금 겹친다 — hitSlop이 아니라 padding이어야 하는 이유다.
+   */
+  /**
+   * 정렬(왼쪽)과 추가(오른쪽)가 나란한 줄.
+   * 세그먼트 쪽으로는 넉넉히 띄우고 목록 쪽으로는 붙인다 — 이 줄은 목록을 다루는
+   * 손잡이라 목록에 딸려 보여야 한다. 아래 간격은 TabPage의 paddingTop이 맡는다.
+   */
+  toolRow: {
+    marginTop: 18,
+    marginBottom: 2,
     paddingHorizontal: GUTTER,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    alignSelf: 'flex-start',
+    justifyContent: 'space-between',
   },
-  sortText: { fontSize: 13, fontWeight: '600', color: C.textTertiary },
-  sortChevron: { fontSize: 13, color: C.textTertiary },
+  sortRow: {
+    paddingVertical: 12,
+    paddingRight: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  sortRowPressed: { opacity: 0.5 },
+  sortText: { fontSize: 14, fontWeight: '600', color: C.textTertiary },
+  sortChevron: { fontSize: 14, color: C.textTertiary },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -503,13 +518,15 @@ const styles = StyleSheet.create({
     borderRadius: ADD_RADIUS,
     overflow: 'hidden',
   },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  /** 버튼 왼쪽 끝의 ＋ 자리 */
-  addPlusSlot: {
-    position: 'absolute',
-    left: 22,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
+  addInner: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: 12,
+    paddingRight: 16,
+    gap: 2,
   },
+  /** 전각 ＋는 글리프가 em 박스보다 한참 작다. lineHeight로 세로 중심을 잡는다 */
+  addPlus: { fontSize: 26, fontWeight: '300', lineHeight: 30, marginTop: -1 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });
