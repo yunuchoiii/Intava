@@ -2,6 +2,7 @@
 import { useRouter } from 'expo-router';
 import React, { useMemo, useRef, useState } from 'react';
 import {
+  Alert,
   LayoutChangeEvent,
   Linking,
   PanResponder,
@@ -16,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMiniTimerSpace } from '../src/components/MiniTimer';
 import { Screen } from '../src/components/Screen';
 import { preview } from '../src/audio';
+import { exportBackup, pickBackup } from '../src/backup';
 import { useStore } from '../src/store';
 import { t } from '../src/i18n';
 import { C, GUTTER, TABULAR } from '../src/theme';
@@ -24,7 +26,33 @@ export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const miniSpace = useMiniTimerSpace();
-  const { settings, setSettings } = useStore();
+  const { presets, settings, setSettings, mergePresets } = useStore();
+
+  const doExport = async () => {
+    const ok = await exportBackup(presets, settings);
+    if (!ok) Alert.alert(t('backup.failTitle'), t('backup.failBody'));
+  };
+
+  const doImport = async () => {
+    const picked = await pickBackup();
+    if (picked === null) return; // 취소
+    if (picked === 'invalid') {
+      Alert.alert(t('backup.badTitle'), t('backup.badBody'));
+      return;
+    }
+    const count = picked.presets.length;
+    Alert.alert(t('backup.askTitle'), t('backup.askBody', { count }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('backup.import'),
+        onPress: () => {
+          mergePresets(picked.presets);
+          setSettings(picked.settings);
+          Alert.alert(t('backup.doneTitle'), t('backup.doneBody', { count }));
+        },
+      },
+    ]);
+  };
 
   return (
     <Screen>
@@ -110,6 +138,18 @@ export default function SettingsScreen() {
             onChange={(keepScreenOn) => setSettings({ keepScreenOn })}
             last
           />
+
+          {/*
+            루틴은 이 기기 안에만 있다 — 앱을 지우거나 기기를 바꾸면 사라진다.
+            밖으로 꺼내 둘 수 있는 유일한 길이라 설정 맨 아래에 둔다.
+          */}
+          <Text style={styles.section}>{t('backup.data')}</Text>
+          <ActionRow
+            title={t('backup.export')}
+            note={t('backup.exportNote')}
+            onPress={doExport}
+          />
+          <ActionRow title={t('backup.import')} note={t('backup.importNote')} onPress={doImport} last />
         </ScrollView>
       </View>
     </Screen>
@@ -142,6 +182,37 @@ function ToggleRow({
         thumbColor="#FFFFFF"
       />
     </View>
+  );
+}
+
+function ActionRow({
+  title,
+  note,
+  onPress,
+  last,
+}: {
+  title: string;
+  note: string;
+  onPress: () => void;
+  last?: boolean;
+}) {
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        styles.linkRow,
+        last && { borderBottomWidth: 0 },
+        pressed && { opacity: 0.55 },
+      ]}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+    >
+      <View style={{ flex: 1, paddingRight: 16 }}>
+        <Text style={styles.rowTitle}>{title}</Text>
+        <Text style={styles.note}>{note}</Text>
+      </View>
+      <Text style={styles.chevron}>›</Text>
+    </Pressable>
   );
 }
 
@@ -222,7 +293,7 @@ const styles = StyleSheet.create({
   },
   topSide: { flex: 1 },
   cancel: { fontSize: 17, fontWeight: '600', color: C.textSecondary },
-  topTitle: { fontSize: 17, fontWeight: '700', color: C.textPrimary },
+  topTitle: { fontSize: 20, fontWeight: '700', letterSpacing: -0.3, color: C.textPrimary },
   section: {
     marginTop: 26,
     marginBottom: 4,

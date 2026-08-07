@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   cancel: { fontSize: 17, fontWeight: '600', color: C.textSecondary },
-  topTitle: { fontSize: 17, fontWeight: '700', color: C.textPrimary },
+  topTitle: { fontSize: 20, fontWeight: '700', letterSpacing: -0.3, color: C.textPrimary },
   nameRow: {
     paddingTop: 10,
     paddingBottom: 16,
