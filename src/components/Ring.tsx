@@ -9,7 +9,7 @@
  */
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
@@ -117,31 +117,33 @@ export function Ring({
 
   // ---- 드래그로 남은 시간 조정 -------------------------------------------
 
-  const boxRef = useRef<View>(null);
-  const center = useRef({ x: 0, y: 0 });
   const lastAngle = useRef(0);
   const accum = useRef(0);
   const startRemain = useRef(0);
   const lastSecond = useRef(0);
 
-  const measure = useCallback(() => {
-    boxRef.current?.measureInWindow((x, y, w, h) => {
-      center.current = { x: x + w / 2, y: y + h / 2 };
-    });
-  }, []);
+  /**
+   * 손가락 자리는 링 안쪽 좌표(locationX/Y)로 읽는다. 화면 전체 좌표(pageX/Y)를 쓰면
+   * 링의 중심이 화면 어디에 있는지 재야 하는데, 그 값이 어긋나기 쉽다 — 실행 화면은
+   * 접힌 자리(축소·화면 밖)에서 펼쳐지고, 변형은 배치를 바꾸지 않아 다시 재지지 않는다.
+   * 일시정지 중에는 다시 그려지지도 않아 잘못 잰 값이 그대로 남는다.
+   * 안쪽 좌표는 조상이 어떻게 움직이든 늘 이 상자 기준이라 잴 것이 없다.
+   */
+  const at = (e: GestureResponderEvent) => ({
+    dx: e.nativeEvent.locationX - CENTER,
+    dy: e.nativeEvent.locationY - CENTER,
+  });
 
   /** 12시가 0, 시계방향으로 증가 */
   const angleOf = (e: GestureResponderEvent) => {
-    const dx = e.nativeEvent.pageX - center.current.x;
-    const dy = e.nativeEvent.pageY - center.current.y;
+    const { dx, dy } = at(e);
     let a = Math.atan2(dx, -dy);
     if (a < 0) a += Math.PI * 2;
     return a;
   };
 
   const onBand = (e: GestureResponderEvent) => {
-    const dx = e.nativeEvent.pageX - center.current.x;
-    const dy = e.nativeEvent.pageY - center.current.y;
+    const { dx, dy } = at(e);
     const r = Math.hypot(dx, dy);
     return r >= GRAB_MIN && r <= GRAB_MAX;
   };
@@ -181,6 +183,9 @@ export function Ring({
           }
           onScrub?.(next);
         },
+        // 링을 한 번 잡았으면 끝까지 링이 쥔다. 실행 화면 전체에 걸린
+        // 끌어내려 닫기가 문지르는 도중에 손가락을 빼앗아 가지 않게 한다.
+        onPanResponderTerminationRequest: () => false,
         onPanResponderRelease: () => {
           setScrubbing(false);
           onScrubEnd?.();
@@ -194,12 +199,7 @@ export function Ring({
   );
 
   return (
-    <View
-      ref={boxRef}
-      onLayout={measure}
-      style={{ width: RING_SIZE, height: RING_SIZE }}
-      {...pan.panHandlers}
-    >
+    <View style={{ width: RING_SIZE, height: RING_SIZE }}>
       {/* 내부 유리 원판 */}
       <View style={styles.disc}>
         <BlurView intensity={16} tint="light" style={StyleSheet.absoluteFill} />
@@ -248,6 +248,13 @@ export function Ring({
       <Text numberOfLines={1} style={[styles.sub, TABULAR]}>
         {sub}
       </Text>
+
+      {/*
+        손가락을 받는 겹. 링 상자와 정확히 같은 크기여야 안쪽 좌표(locationX/Y)가
+        링 기준이 된다 — 회전한 Svg나 글자가 손가락을 받으면 그 조각 기준이 되어
+        각도 계산이 어긋난다. 맨 위에 두되 그리는 것은 없다.
+      */}
+      <View style={StyleSheet.absoluteFill} {...pan.panHandlers} />
     </View>
   );
 }
