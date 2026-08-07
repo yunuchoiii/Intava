@@ -121,20 +121,16 @@ export function subLabel(seg: Segment | null, preset: Preset): string {
 }
 
 /**
- * 링 안쪽 위 제목.
+ * 링 안쪽 위 제목 — 지금 무슨 구간을 몇 초 하는지.
  *
- * 루틴에서는 지금 하는 종목 이름이 가장 쓸모 있다. 그런데 타이머는 종목 이름이
- * 곧 타이머 이름이라(둘을 같이 움직인다) 화면에 이름만 덩그러니 남아 무슨
- * 구간인지 알 수 없다 — 그래서 타이머에서는 "운동 30초"처럼 구간과 길이를 쓴다.
+ * 이름(종목명·타이머명)은 쓰지 않는다. 이름만 있으면 지금이 운동인지 휴식인지
+ * 알 수 없고, 타이머는 종목 이름이 곧 타이머 이름이라 화면 전체가 같은 말로
+ * 도배된다. 루틴에서 종목 이름은 링 위쪽 종목 줄이 이미 보여준다.
  */
-export function titleLabel(seg: Segment | null, paused: boolean, preset?: Preset): string {
+export function titleLabel(seg: Segment | null, paused: boolean, _preset?: Preset): string {
   if (paused) return t('phase.paused');
   if (!seg) return t('phase.DONE');
-  if (seg.phase !== 'WORK') return phaseLabel(seg.phase);
-  if (preset && isSimple(preset)) {
-    return t('run.titleWithDur', { phase: phaseLabel('WORK'), dur: durationShort(seg.dur) });
-  }
-  return seg.name ?? t('phase.WORK');
+  return t('run.titleWithDur', { phase: phaseLabel(seg.phase), dur: durationShort(seg.dur) });
 }
 
 /** 홈 목록 요약 줄 */

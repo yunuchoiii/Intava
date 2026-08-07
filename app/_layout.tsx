@@ -81,11 +81,14 @@ export default function RootLayout() {
             {/* 나가도 타이머는 세션에 남는다 — 스와이프로 나가는 것을 막을 이유가 없다 */}
             <Stack.Screen name="run" options={{ animation: 'fade' }} />
             <Stack.Screen name="done" options={{ animation: 'fade', gestureEnabled: false }} />
-            {/* 볼륨 슬라이더를 왼쪽에서 끌면 화면 가장자리 뒤로가기 제스처와 겹친다.
-                아래에서 올라오는 화면이라 스와이프로 닫는 동작이 자연스럽지도 않다 */}
+            {/*
+              볼륨 슬라이더가 좌우 여백 24pt에서 시작해 가장자리 뒤로가기 제스처와
+              겹쳤다. 제스처를 없애는 대신, 시작할 수 있는 폭을 슬라이더보다 좁게
+              잡아 둘 다 산다.
+            */}
             <Stack.Screen
               name="settings"
-              options={{ animation: 'slide_from_bottom', gestureEnabled: false }}
+              options={{ animation: 'slide_from_bottom', gestureResponseDistance: { start: 16 } }}
             />
           </Stack>
 
