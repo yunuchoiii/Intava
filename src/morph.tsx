@@ -28,6 +28,14 @@ type MorphApi = {
   radius: Animated.Value;
   /** 손가락이 값을 쥐고 있는 동안 참 — 화면이 제멋대로 펼쳐지지 않게 한다 */
   dragging: React.MutableRefObject<boolean>;
+  /**
+   * 실행 화면을 접어 내린 시각.
+   *
+   * 끌어내려 홈에 닿자마자 화면이 다시 열리는 일이 있었다. 손을 뗀 뒤 화면이
+   * 사라지기까지 260ms가 걸리는데, 그 사이에 늦게 도착한 손짓이 미니 바에 닿으면
+   * 방금 닫은 것을 도로 여는 셈이 된다. 접자마자 잠깐은 열지 않는다.
+   */
+  collapsedAt: React.MutableRefObject<number>;
   set: (v: number) => void;
   animate: (to: number, opts?: Opts) => void;
   /** 돌고 있는 애니메이션을 멈춘다 — 손가락이 값을 넘겨받기 전에 */
@@ -40,6 +48,7 @@ export function MorphProvider({ children }: { children: React.ReactNode }) {
   const p = useRef(new Animated.Value(1)).current;
   const radius = useRef(new Animated.Value(1)).current;
   const dragging = useRef(false);
+  const collapsedAt = useRef(0);
   const pathname = usePathname();
 
   const api = useMemo<MorphApi>(() => {
@@ -78,7 +87,7 @@ export function MorphProvider({ children }: { children: React.ReactNode }) {
       radius.stopAnimation();
     };
 
-    return { p, radius, dragging, set, animate, stop };
+    return { p, radius, dragging, collapsedAt, set, animate, stop };
   }, [p, radius]);
 
   /**

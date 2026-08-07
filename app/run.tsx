@@ -124,6 +124,7 @@ export default function Run() {
           morph.dragging.current = false;
           if (g.dy > 110 || g.vy > 0.7) {
             // 끝까지 접은 뒤에 나간다. 그때 화면은 이미 투명해져 미니 바만 남아 있다
+            morph.collapsedAt.current = Date.now();
             morph.animate(1, { duration: 260, onDone: dismiss });
           } else {
             morph.animate(0, { velocity: (g.vy * 1000) / screenH });
