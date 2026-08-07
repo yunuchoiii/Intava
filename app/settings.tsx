@@ -16,11 +16,20 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMiniTimerSpace } from '../src/components/MiniTimer';
 import { Screen } from '../src/components/Screen';
+import Constants from 'expo-constants';
 import { preview } from '../src/audio';
 import { exportBackup, pickBackup } from '../src/backup';
 import { useStore } from '../src/store';
 import { t } from '../src/i18n';
 import { C, GUTTER, TABULAR } from '../src/theme';
+
+/** 설치된 앱의 버전 — 문제를 알릴 때 사용자가 그대로 읽어줄 수 있어야 한다 */
+const appVersion = (() => {
+  const v = Constants.expoConfig?.version;
+  const b = Constants.expoConfig?.ios?.buildNumber;
+  if (!v) return '—';
+  return b ? `${v} (${b})` : v;
+})();
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -98,6 +107,14 @@ export default function SettingsScreen() {
             value={settings.countdownBeep}
             onChange={(countdownBeep) => setSettings({ countdownBeep })}
           />
+          {/* 소리·진동과 같은 갈래다 — 볼륨 아래 홀로 있던 것을 알림으로 들인다 */}
+          <ToggleRow
+            title={t('settings.push')}
+            note={t('settings.pushNote')}
+            value={settings.notifications}
+            onChange={(notifications) => setSettings({ notifications })}
+            last
+          />
 
           <Text style={styles.section}>{t('settings.volume')}</Text>
           <View style={styles.volumeHead}>
@@ -113,13 +130,6 @@ export default function SettingsScreen() {
           />
           <Text style={styles.note}>{t('tips.volume')}</Text>
 
-          <ToggleRow
-            title={t('settings.push')}
-            note={t('settings.pushNote')}
-            value={settings.notifications}
-            onChange={(notifications) => setSettings({ notifications })}
-          />
-
           <Text style={styles.section}>{t('settings.app')}</Text>
           {/* 언어는 iOS의 앱별 언어 설정에서 바꾼다 — 앱 안에 또 만들면 두 곳이 어긋난다 */}
           <Pressable style={styles.linkRow} onPress={() => Linking.openSettings()}>
@@ -129,6 +139,10 @@ export default function SettingsScreen() {
             </View>
             <Text style={styles.chevron}>›</Text>
           </Pressable>
+          <View style={[styles.linkRow, { borderBottomWidth: 0, justifyContent: 'space-between' }]}>
+            <Text style={styles.rowTitle}>{t('settings.version')}</Text>
+            <Text style={[styles.value, TABULAR]}>{appVersion}</Text>
+          </View>
 
           <Text style={styles.section}>{t('settings.screen')}</Text>
           <ToggleRow

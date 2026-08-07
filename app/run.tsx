@@ -19,7 +19,7 @@ import { PressBox } from '../src/components/PressBox';
 import { NextIcon, PauseIcon, PencilIcon, PlayIcon, PrevIcon } from '../src/components/Icons';
 import { PhaseFlood } from '../src/components/PhaseFlood';
 import { Ring } from '../src/components/Ring';
-import { clock, isSimple, jumpLabel, subLabel, titleLabel } from '../src/engine/labels';
+import { clock, isSimple, segLabel, subLabel, titleLabel } from '../src/engine/labels';
 import { useMorph } from '../src/morph';
 import { ensurePermission } from '../src/notify';
 import { useSession } from '../src/session';
@@ -211,8 +211,13 @@ export default function Run() {
     ]);
   };
 
-  const prevLabel =
-    run.seg && run.elapsed - run.seg.start > 1.2 ? t('run.prevRestart') : t('run.prevBack');
+  /**
+   * 왼쪽 버튼 — skipPrev가 실제로 하는 일을 그대로 적는다.
+   * 구간에 1.2초 넘게 들어와 있으면 그 구간을 처음으로 되돌리고, 아니면 앞 구간으로 간다.
+   * 첫 구간에는 앞이 없으니 늘 "다시 처음"이다.
+   */
+  const prevSeg = run.seg && run.elapsed - run.seg.start <= 1.2 ? run.prev : undefined;
+  const prevLabel = prevSeg ? segLabel(prevSeg) : t('run.prevRestart');
   const barPct = run.total > 0 ? Math.min(100, (run.elapsed / run.total) * 100) : 0;
 
   return (
@@ -317,7 +322,7 @@ export default function Run() {
               {run.paused ? <PlayIcon color={color} /> : <PauseIcon color={color} />}
             </PressBox>
 
-            <ControlButton label={jumpLabel(run.next)} onPress={run.skipNext}>
+            <ControlButton label={segLabel(run.next)} onPress={run.skipNext}>
               <NextIcon />
             </ControlButton>
           </View>

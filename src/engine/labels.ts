@@ -76,24 +76,17 @@ export function describeSegment(seg: Segment | undefined): string {
 }
 
 /** 「다음」 버튼 라벨 — 도착할 구간을 쓴다 */
-export function jumpLabel(seg: Segment | undefined): string {
+/**
+ * 구간 버튼의 문구 — 그 버튼을 누르면 **실제로 무엇이 오는지** 그대로 적는다.
+ * "휴식 시작"처럼 동작을 덧붙이지 않는다. 운동과 그 사이 휴식에만 세트 번호를 붙인다 —
+ * 라운드 휴식·종목 전환에 실려 있는 set은 방금 끝낸 세트라 그 구간을 가리키지 않는다.
+ */
+export function segLabel(seg: Segment | undefined): string {
   if (!seg) return t('jump.none');
-  switch (seg.phase) {
-    case 'WORK':
-      return t('jump.work');
-    case 'PREPARE':
-      return t('jump.prepare');
-    case 'WARMUP':
-      return t('jump.warmup');
-    case 'COOLDOWN':
-      return t('jump.cooldown');
-    case 'BLOCK_REST':
-      return t('jump.blockRest');
-    case 'ROUND_REST':
-      return t('jump.roundRest');
-    default:
-      return t('jump.setRest');
-  }
+  const name = phaseLabel(seg.phase);
+  const numbered = seg.phase === 'WORK' || seg.phase === 'SET_REST';
+  if (!numbered || seg.set == null) return name;
+  return t('jump.withSet', { name, set: seg.set });
 }
 
 /** 링 안쪽 아래 줄 */
