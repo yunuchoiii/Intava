@@ -101,6 +101,21 @@ export const en: Catalog = {
     a11yDelete: 'Delete exercise',
   },
 
+  backup: {
+    data: 'Data',
+    export: 'Export',
+    exportNote: 'Save your routines and settings to a single file.',
+    import: 'Import',
+    importNote: 'Restore from an exported file. Matching routines are overwritten.',
+    failTitle: 'Could not export',
+    failBody: 'This device cannot share files.',
+    badTitle: 'Unreadable file',
+    badBody: 'This is not a file exported from intava.',
+    askTitle: 'Import?',
+    askBody: '{{count}} routines and your settings will be imported.',
+    doneTitle: 'Imported',
+    doneBody: '{{count}} routines imported.',
+  },
   settings: {
     title: 'Settings',
     alerts: 'Alerts',

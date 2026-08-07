@@ -94,6 +94,21 @@ export const ja: Catalog = {
     a11yDelete: '種目を削除',
   },
 
+  backup: {
+    data: 'データ',
+    export: '書き出し',
+    exportNote: 'ルーティンと設定を1つのファイルに保存します。',
+    import: '読み込み',
+    importNote: '書き出したファイルから復元します。同じルーティンは上書きされます。',
+    failTitle: '書き出せませんでした',
+    failBody: 'この端末ではファイルを共有できません。',
+    badTitle: '読み取れないファイル',
+    badBody: 'intava で書き出したファイルではありません。',
+    askTitle: '読み込みますか？',
+    askBody: 'ルーティン {{count}} 件と設定を読み込みます。',
+    doneTitle: '読み込みました',
+    doneBody: 'ルーティン {{count}} 件を読み込みました。',
+  },
   settings: {
     title: '設定',
     alerts: '通知',

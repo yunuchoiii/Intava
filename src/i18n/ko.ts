@@ -107,6 +107,21 @@ export const ko = {
     a11yDelete: '종목 삭제',
   },
 
+  backup: {
+    data: '데이터',
+    export: '내보내기',
+    exportNote: '루틴과 설정을 파일 하나로 저장합니다.',
+    import: '불러오기',
+    importNote: '내보낸 파일에서 되돌립니다. 같은 루틴은 덮어씁니다.',
+    failTitle: '내보내지 못했습니다',
+    failBody: '이 기기에서는 파일을 공유할 수 없습니다.',
+    badTitle: '읽을 수 없는 파일',
+    badBody: '인타바에서 내보낸 파일이 아닙니다.',
+    askTitle: '불러올까요?',
+    askBody: '루틴 {{count}}개와 설정을 가져옵니다. 이름이 같아도 다른 루틴이면 따로 추가됩니다.',
+    doneTitle: '불러왔습니다',
+    doneBody: '루틴 {{count}}개를 가져왔습니다.',
+  },
   settings: {
     title: '설정',
     alerts: '알림',

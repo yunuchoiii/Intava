@@ -67,7 +67,8 @@
           ]
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      "expo-sharing"
     ]
   }
 }

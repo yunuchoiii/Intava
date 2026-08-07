@@ -127,6 +127,8 @@ type StoreValue = {
   markRun: (id: string) => void;
   duplicatePreset: (id: string) => void;
   setSettings: (patch: Partial<Settings>) => void;
+  /** 백업 불러오기 — 같은 id는 덮어쓰고, 없는 것은 앞에 더한다 */
+  mergePresets: (incoming: Preset[]) => void;
 };
 
 const StoreContext = createContext<StoreValue | null>(null);
@@ -216,6 +218,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         setSettingsState(next);
         void save(KEY_SETTINGS, next);
       },
+      mergePresets: (incoming: Preset[]) =>
+        persist((prev) => {
+          const byId = new Map(prev.map((p) => [p.id, p]));
+          const added: Preset[] = [];
+          for (const p of incoming) {
+            if (byId.has(p.id)) byId.set(p.id, p);
+            else added.push(p);
+          }
+          // 기존 순서는 지키고, 새로 온 것만 앞에 놓는다
+          return [...added, ...prev.map((p) => byId.get(p.id) ?? p)];
+        }),
     }),
     [ready, presets, settings, persist]
   );
