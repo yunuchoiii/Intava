@@ -44,8 +44,8 @@ const ROW_PAD = 12;
 const ROW_INSET = GUTTER - ROW_PAD;
 const ROW_RADIUS = 18;
 
-/** 재생 버튼 — 바탕이 없어 경계가 안 보이므로 넉넉히 잡는다 */
-const PLAY_SIZE = 76;
+/** 재생 버튼 — 어두운 회색 원. 반경은 지름의 절반 */
+const PLAY_SIZE = 60;
 
 /** 추가 버튼 — 정렬 줄 오른쪽 끝에 앉는 작은 알약. 반경은 높이의 절반 */
 const ADD_HEIGHT = 38;
@@ -350,10 +350,8 @@ function PresetRow({ preset, onLongPress }: { preset: Preset; onLongPress: () =>
       {/*
         안쪽의 독립 버튼 — 여기를 누르면 행 전체가 아니라 이 버튼만 반응한다.
 
-        바탕 없이 아이콘만 있어서 어디까지가 버튼인지 눈에 보이지 않는다. 그래서
-        누르는 자리를 넉넉히 잡고(PLAY_SIZE), 누르면 배경이 한 단계 밝아져 그제서야
-        버튼의 크기가 드러난다 — 덮는 색을 검정이 아니라 옅은 흰색으로 준 이유다.
-        검정을 덮으면 이 어두운 바탕에서는 눌린 티가 나지 않는다.
+        누르면 배경이 한 단계 밝아진다. 덮는 색이 검정이 아니라 옅은 흰색인 이유는,
+        이미 어두운 회색 원이라 검정을 덮어봐야 눌린 티가 나지 않기 때문이다.
       */}
       <PressBox
         onPress={start}
@@ -365,7 +363,7 @@ function PresetRow({ preset, onLongPress }: { preset: Preset; onLongPress: () =>
         accessibilityLabel={t('home.a11yStart', { name: preset.name })}
       >
         {/* ▶ 광학 보정은 PlayIcon 안에 들어 있다 */}
-        <PlayIcon size={30} />
+        <PlayIcon size={20} />
       </PressBox>
     </PressBox>
   );
@@ -508,6 +506,7 @@ const styles = StyleSheet.create({
     width: PLAY_SIZE,
     height: PLAY_SIZE,
     borderRadius: PLAY_SIZE / 2,
+    backgroundColor: C.surface,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
