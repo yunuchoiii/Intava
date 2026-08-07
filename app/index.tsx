@@ -150,7 +150,8 @@ export default function Home() {
         style={{ flex: 1, paddingTop: insets.top + 6, paddingBottom: insets.bottom + 12 + miniSpace }}
       >
         <View style={styles.header}>
-          <Wordmark width={118} />
+          {/* 잠금형이 넓고 낮아져서 118로는 심볼이 28px 아래로 떨어진다 */}
+          <Wordmark width={140} />
           <PressBox
             onPress={() => router.push('/settings')}
             hitSlop={12}

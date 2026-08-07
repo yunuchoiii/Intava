@@ -18,15 +18,15 @@ const SRC = {
   white: require('../../assets/logo/lockup-white.png'),
 };
 
-/** 원본 938 × 360 */
-export const WORDMARK_RATIO = 360 / 938;
+/** 원본 1288 × 296 */
+export const WORDMARK_RATIO = 296 / 1288;
 /**
  * 최소 가로 크기.
  * 가이드는 심볼이 28px 아래로 내려가면 이음매 틈이 안티에일리어싱으로 메워져
- * 하나의 링으로 보인다고 못 박았다. 잠금형 안에서 링이 가로폭의 24.3%를
- * 차지하므로 28 / 0.243 ≈ 116이 하한이다.
+ * 하나의 링으로 보인다고 못 박았다. 잠금형 안에서 링이 가로폭의 21.2%를
+ * 차지하므로 28 / 0.212 ≈ 133이 하한이다.
  */
-export const WORDMARK_MIN_WIDTH = 116;
+export const WORDMARK_MIN_WIDTH = 133;
 
 type Props = {
   /** 가로 크기(px). 세로는 비율로 따라온다 */
