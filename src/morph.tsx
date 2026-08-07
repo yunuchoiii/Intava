@@ -85,9 +85,19 @@ export function MorphProvider({ children }: { children: React.ReactNode }) {
    * 실행 화면이 이 몸짓을 거치지 않고 사라지는 길도 있다 — 완료 화면으로 교체되거나,
    * ✕로 끝내거나. 그때 값이 0에 남아 있으면 미니 바가 투명한 채로 숨어버린다.
    * 실행 화면을 벗어나면 접힌 상태로 되돌려 둔다.
+   *
+   * 그리고 안전망 하나. 이 값이 어중간한 데서 멈추면 화면이 반투명하게 어긋난 자리에
+   * 굳어 아무것도 눌리지 않는다 — 제스처가 놓임/취소 어느 쪽으로도 끝나지 못하면
+   * 그렇게 될 수 있다. 화면이 정해진 뒤 잠깐 기다렸다가, 손가락이 쥐고 있지 않으면
+   * 제자리로 돌려놓는다. 원인을 못 찾더라도 갇히지는 않게.
    */
   useEffect(() => {
-    if (pathname !== '/run' && !dragging.current) api.set(1);
+    const rest = pathname === '/run' ? 0 : 1;
+    if (rest === 1 && !dragging.current) api.set(1);
+    const id = setTimeout(() => {
+      if (!dragging.current) api.set(rest);
+    }, 900);
+    return () => clearTimeout(id);
   }, [pathname, api]);
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;

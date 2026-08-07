@@ -8,7 +8,7 @@
  * 만큼 드러난다. 둘이 같은 값(morph)을 본다.
  */
 import { usePathname, useRouter } from 'expo-router';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, PanResponder, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { clock, phaseLabel, titleLabel } from '../engine/labels';
@@ -48,6 +48,25 @@ export function MiniTimer() {
   const pathname = usePathname();
   const running = useRunning();
   const onRun = pathname === '/run';
+
+  /**
+   * 바가 실제로 드러나 있는지 — 경로가 아니라 값을 보고 판단한다.
+   *
+   * 실행 화면 위에서는 바가 투명하게 깔려만 있어야 한다(그 아래 진행 바를 가로채지
+   * 않게). 그런데 접히다 만 상태로 굳으면 실행 화면은 화면 밖인데 바는 눌리지 않아
+   * 아무것도 손에 잡히지 않는다. 바가 보이면 누를 수 있어야 빠져나올 길이 남는다.
+   */
+  const [bared, setBared] = useState(!onRun);
+  const baredRef = useRef(bared);
+  useEffect(() => {
+    const id = morph.p.addListener(({ value }) => {
+      const next = value > 0.6;
+      if (next === baredRef.current) return;
+      baredRef.current = next;
+      setBared(next);
+    });
+    return () => morph.p.removeListener(id);
+  }, [morph.p]);
 
   /**
    * 바를 위로 끌어올리면 실행 화면이 자라 오른다. 손가락이 잡는 순간 화면을 띄우고,
@@ -104,7 +123,7 @@ export function MiniTimer() {
     <Animated.View
       style={[styles.wrap, { opacity: appear, transform: [{ translateY: rise }] }]}
       // 실행 화면이 펼쳐져 있을 때는 투명하게 깔려만 있다 — 그 아래 진행 바를 가로채지 않는다
-      pointerEvents={onRun ? 'none' : 'box-none'}
+      pointerEvents={!onRun || bared ? 'box-none' : 'none'}
       {...openPan.panHandlers}
     >
       <PressBox
