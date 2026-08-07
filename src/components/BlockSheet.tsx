@@ -13,6 +13,7 @@ import { durationShort } from '../engine/labels';
 import { t } from '../i18n';
 import { C, GUTTER, RADIUS } from '../theme';
 import type { Block } from '../types';
+import { ClearButton } from './ClearButton';
 import { PressBox } from './PressBox';
 import { Sheet } from './Sheet';
 import { ValueRow } from './ValueRow';
@@ -35,6 +36,7 @@ export function BlockSheet({ block, canDelete, isNew, onClose, onSave, onDelete 
   const [draft, setDraft] = useState<Block | null>(block);
   const [open, setOpen] = useState<Field>(null);
   const [alsoTimer, setAlsoTimer] = useState(false);
+  const [nameFocused, setNameFocused] = useState(false);
 
   useEffect(() => {
     setDraft(block);
@@ -57,16 +59,23 @@ export function BlockSheet({ block, canDelete, isNew, onClose, onSave, onDelete 
         <View>
           <View style={styles.nameRow}>
             <Text style={styles.nameLabel}>{t('sheet.blockName')}</Text>
-            <TextInput
-              value={draft.name}
-              onChangeText={(name) => patch({ name })}
-              style={styles.nameInput}
-              placeholder={t('sheet.blockNamePlaceholder')}
-              placeholderTextColor={C.textTertiary}
-              selectionColor={C.textPrimary}
-              maxLength={20}
-              returnKeyType="done"
-            />
+            <View style={styles.nameInputRow}>
+              <TextInput
+                value={draft.name}
+                onChangeText={(name) => patch({ name })}
+                style={[styles.nameInput, { flex: 1 }]}
+                placeholder={t('sheet.blockNamePlaceholder')}
+                placeholderTextColor={C.textTertiary}
+                selectionColor={C.textPrimary}
+                maxLength={20}
+                returnKeyType="done"
+                onFocus={() => setNameFocused(true)}
+                onBlur={() => setNameFocused(false)}
+              />
+              {nameFocused && draft.name.length > 0 && (
+                <ClearButton onPress={() => patch({ name: '' })} />
+              )}
+            </View>
           </View>
 
           <ValueRow
@@ -165,6 +174,7 @@ const styles = StyleSheet.create({
   saveAsTimerLabel: { fontSize: 15, color: C.textSecondary },
   nameRow: { paddingTop: 12, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: C.divider },
   nameLabel: { fontSize: 15, color: C.textTertiary },
+  nameInputRow: { flexDirection: 'row', alignItems: 'center' },
   nameInput: {
     marginTop: 10,
     fontSize: 28,

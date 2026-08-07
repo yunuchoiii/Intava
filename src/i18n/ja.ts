@@ -8,6 +8,7 @@ export const ja: Catalog = {
     close: '閉じる',
     delete: '削除',
     done: '完了',
+    clear: '消去',
     none: 'なし',
   },
 

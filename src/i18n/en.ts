@@ -14,6 +14,7 @@ export const en: Catalog = {
     close: 'Close',
     delete: 'Delete',
     done: 'Done',
+    clear: 'Clear',
     none: 'None',
   },
 

@@ -8,6 +8,7 @@ export const zh: Catalog = {
     close: '关闭',
     delete: '删除',
     done: '完成',
+    clear: '清除',
     none: '无',
   },
 

@@ -12,6 +12,7 @@ export const ko = {
     close: '닫기',
     delete: '삭제',
     done: '완료',
+    clear: '지우기',
     none: '없음',
   },
 
