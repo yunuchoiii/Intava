@@ -32,8 +32,11 @@ import { t } from '../src/i18n';
 import { durationLong, durationShort } from '../src/engine/labels';
 import { totalSec, workSec } from '../src/engine/segments';
 import { emptyPreset, uid, useStore } from '../src/store';
-import { C, GUTTER, RADIUS, TABULAR } from '../src/theme';
+import { C, GUTTER, TABULAR } from '../src/theme';
 import { kindOf, type Block, type Preset } from '../src/types';
+
+/** 종목 추가와 저장 — 한 화면의 두 버튼이라 모서리를 한 값에 묶어둔다 */
+const ACTION_RADIUS = 16;
 
 export default function Edit() {
   const { id, kind } = useLocalSearchParams<{ id?: string; kind?: 'routine' | 'timer' }>();
@@ -247,10 +250,10 @@ export default function Edit() {
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Text style={[styles.rowValueMuted, TABULAR]}>{startEndSummary()}</Text>
-                  <Text style={styles.chevron}>{startEndOpen ? '⌄' : '›'}</Text>
+                  <Chevron open={startEndOpen} />
                 </View>
               </Pressable>
-              {startEndOpen && <View>{startEndRows}</View>}
+              <Collapsible open={startEndOpen}>{startEndRows}</Collapsible>
             </>
           ) : (
             <>
@@ -266,14 +269,14 @@ export default function Edit() {
                 }}
               />
               <PressBox
-                radius={RADIUS.tile}
+                radius={ACTION_RADIUS}
                 scaleTo={0.97}
                 dim={0.22}
                 style={{ marginTop: 12, marginBottom: 14 }}
                 accessibilityLabel={t('edit.a11yAddBlock')}
                 onPress={() => setPicking(true)}
               >
-                <Surface radius={RADIUS.tile} style={styles.addBlock}>
+                <Surface radius={ACTION_RADIUS} style={styles.addBlock}>
                   <View style={styles.center}>
                     <Text style={styles.addBlockLabel}>{t('edit.addBlock')}</Text>
                   </View>
@@ -336,7 +339,12 @@ export default function Edit() {
             <Text style={[styles.totalText, TABULAR]}>{t('edit.totalTime', { time: durationLong(total) })}</Text>
             <Text style={[styles.totalText, TABULAR]}>{t('edit.workTime', { time: durationLong(pure) })}</Text>
           </View>
-          <SurfaceButton label={t('common.save')} onPress={save} />
+          <SurfaceButton
+            label={t('common.save')}
+            onPress={save}
+            height={58}
+            radius={ACTION_RADIUS}
+          />
         </View>
       </View>
 
@@ -393,7 +401,13 @@ export default function Edit() {
   );
 }
 
-/** 펼침 표시 — 열리면 아래를 가리키도록 돈다 */
+/**
+ * 펼침 표시 — 열리면 아래를 가리키도록 돈다.
+ *
+ * 글자를 직접 돌리지 않는다. `›`는 자기 글자 상자 안에서 한쪽으로 치우쳐 그려져서,
+ * 그대로 90도 돌리면 화살표가 줄 한가운데가 아니라 옆으로 비껴 앉는다.
+ * 크기를 못 박은 정사각형 상자 안에 글자를 가운데 두고, 그 상자를 돌린다.
+ */
 function Chevron({ open }: { open: boolean }) {
   const spin = useRef(new Animated.Value(open ? 1 : 0)).current;
   useEffect(() => {
@@ -406,7 +420,9 @@ function Chevron({ open }: { open: boolean }) {
   }, [open, spin]);
   const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '90deg'] });
   return (
-    <Animated.Text style={[styles.chevron, { transform: [{ rotate }] }]}>›</Animated.Text>
+    <Animated.View style={[styles.chevronBox, { transform: [{ rotate }] }]}>
+      <Text style={styles.chevron}>›</Text>
+    </Animated.View>
   );
 }
 
@@ -517,7 +533,14 @@ const styles = StyleSheet.create({
   titleWrap: { flexDirection: 'row', alignItems: 'center', flexShrink: 1 },
   rowTitle: { fontSize: 18, fontWeight: '600', color: C.textPrimary },
   rowValueMuted: { fontSize: 16, color: C.textSecondary },
-  chevron: { fontSize: 20, color: C.textTertiary, marginLeft: 8 },
+  chevronBox: {
+    width: 22,
+    height: 22,
+    marginLeft: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chevron: { fontSize: 20, lineHeight: 22, color: C.textTertiary },
   footer: {
     paddingHorizontal: GUTTER,
     paddingTop: 12,
