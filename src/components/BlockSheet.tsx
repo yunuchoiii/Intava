@@ -1,8 +1,6 @@
 /** 5.4 종목 편집 시트 — 하단 시트, 뒤 화면은 45% 어둡게 */
 import React, { useEffect, useState } from 'react';
 import {
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -50,97 +48,96 @@ export function BlockSheet({ block, canDelete, isNew, onClose, onSave, onDelete 
 
   return (
     <Sheet visible onClose={onClose}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <ScrollView
-            style={{ maxHeight: 560 }}
-            contentContainerStyle={{ paddingHorizontal: GUTTER, paddingBottom: 8 }}
-            keyboardShouldPersistTaps="handled"
-          >
-            <View>
-              <View style={styles.nameRow}>
-                <Text style={styles.nameLabel}>{t('sheet.blockName')}</Text>
-                <TextInput
-                  value={draft.name}
-                  onChangeText={(name) => patch({ name })}
-                  style={styles.nameInput}
-                  placeholder={t('sheet.blockNamePlaceholder')}
-                  placeholderTextColor={C.textTertiary}
-                  selectionColor={C.textPrimary}
-                  maxLength={20}
-                  returnKeyType="done"
-                />
-              </View>
-
-              <ValueRow
-                title={t('sheet.work')}
-                display={durationShort(draft.workSec)}
-                open={open === 'work'}
-                onToggle={() => toggle('work')}
-                wheel="time"
-                value={draft.workSec}
-                onChange={(workSec) => patch({ workSec })}
-                allowZero={false}
-              />
-
-              <ValueRow
-                title={t('sheet.setRest')}
-                display={durationShort(draft.restSec) || t('common.none')}
-                open={open === 'rest'}
-                onToggle={() => toggle('rest')}
-                wheel="time"
-                value={draft.restSec}
-                onChange={(restSec) => patch({ restSec })}
-              />
-
-              <ValueRow
-                title={t('sheet.sets')}
-                display={t('count.sets', { count: draft.sets })}
-                open={open === 'sets'}
-                onToggle={() => toggle('sets')}
-                wheel="count"
-                value={draft.sets}
-                onChange={(sets) => patch({ sets })}
-                min={1}
-                max={50}
-                unit={t('sheet.sets')}
-                divider={false}
-              />
-            </View>
-          </ScrollView>
-
-          {/* 새로 만드는 종목은 타이머로도 남길 수 있다 — 다음 루틴에서 그대로 가져다 쓴다 */}
-          {isNew && (
-            <Pressable style={styles.saveAsTimer} onPress={() => setAlsoTimer((v) => !v)}>
-              <View style={[styles.checkbox, alsoTimer && styles.checkboxOn]}>
-                {alsoTimer && <Text style={styles.check}>✓</Text>}
-              </View>
-              <Text style={styles.saveAsTimerLabel}>{t('sheet.alsoSaveAsTimer')}</Text>
-            </Pressable>
-          )}
-
-          <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-            {canDelete && (
-              <PressBox
-                onPress={() => onDelete(draft.id)}
-                radius={RADIUS.button}
-                scaleTo={0.95}
-                dim={0.2}
-                style={styles.delete}
-                accessibilityLabel={t('sheet.a11yDelete')}
-              >
-                <Text style={styles.deleteLabel}>{t('common.delete')}</Text>
-              </PressBox>
-            )}
-            <WhiteButton
-              label={t('common.done')}
-              height={64}
-              style={{ flex: 1 }}
-              onPress={() =>
-                onSave({ ...draft, name: draft.name.trim() || t('defaults.block') }, alsoTimer)
-              }
+      {/* 키보드가 올라오면 시트가 짧아진다 — 그때 줄어드는 쪽은 이 목록이다 */}
+      <ScrollView
+        style={{ maxHeight: 560, flexShrink: 1 }}
+        contentContainerStyle={{ paddingHorizontal: GUTTER, paddingBottom: 8 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View>
+          <View style={styles.nameRow}>
+            <Text style={styles.nameLabel}>{t('sheet.blockName')}</Text>
+            <TextInput
+              value={draft.name}
+              onChangeText={(name) => patch({ name })}
+              style={styles.nameInput}
+              placeholder={t('sheet.blockNamePlaceholder')}
+              placeholderTextColor={C.textTertiary}
+              selectionColor={C.textPrimary}
+              maxLength={20}
+              returnKeyType="done"
             />
           </View>
-      </KeyboardAvoidingView>
+
+          <ValueRow
+            title={t('sheet.work')}
+            display={durationShort(draft.workSec)}
+            open={open === 'work'}
+            onToggle={() => toggle('work')}
+            wheel="time"
+            value={draft.workSec}
+            onChange={(workSec) => patch({ workSec })}
+            allowZero={false}
+          />
+
+          <ValueRow
+            title={t('sheet.setRest')}
+            display={durationShort(draft.restSec) || t('common.none')}
+            open={open === 'rest'}
+            onToggle={() => toggle('rest')}
+            wheel="time"
+            value={draft.restSec}
+            onChange={(restSec) => patch({ restSec })}
+          />
+
+          <ValueRow
+            title={t('sheet.sets')}
+            display={t('count.sets', { count: draft.sets })}
+            open={open === 'sets'}
+            onToggle={() => toggle('sets')}
+            wheel="count"
+            value={draft.sets}
+            onChange={(sets) => patch({ sets })}
+            min={1}
+            max={50}
+            unit={t('sheet.sets')}
+            divider={false}
+          />
+        </View>
+      </ScrollView>
+
+      {/* 새로 만드는 종목은 타이머로도 남길 수 있다 — 다음 루틴에서 그대로 가져다 쓴다 */}
+      {isNew && (
+        <Pressable style={styles.saveAsTimer} onPress={() => setAlsoTimer((v) => !v)}>
+          <View style={[styles.checkbox, alsoTimer && styles.checkboxOn]}>
+            {alsoTimer && <Text style={styles.check}>✓</Text>}
+          </View>
+          <Text style={styles.saveAsTimerLabel}>{t('sheet.alsoSaveAsTimer')}</Text>
+        </Pressable>
+      )}
+
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+        {canDelete && (
+          <PressBox
+            onPress={() => onDelete(draft.id)}
+            radius={RADIUS.button}
+            scaleTo={0.95}
+            dim={0.2}
+            style={styles.delete}
+            accessibilityLabel={t('sheet.a11yDelete')}
+          >
+            <Text style={styles.deleteLabel}>{t('common.delete')}</Text>
+          </PressBox>
+        )}
+        <WhiteButton
+          label={t('common.done')}
+          height={64}
+          style={{ flex: 1 }}
+          onPress={() =>
+            onSave({ ...draft, name: draft.name.trim() || t('defaults.block') }, alsoTimer)
+          }
+        />
+      </View>
     </Sheet>
   );
 }

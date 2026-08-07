@@ -9,14 +9,18 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
+  Keyboard,
   Modal,
   PanResponder,
+  Platform,
   Pressable,
   StyleSheet,
+  useWindowDimensions,
   View,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ABS, C, E3, RADIUS } from '../theme';
 
 /** 이만큼 끌어내리면 닫는다 */
@@ -35,6 +39,29 @@ export function Sheet({ visible, onClose, children, style }: Props) {
   const anim = useRef(new Animated.Value(0)).current; // 0 = 닫힘, 1 = 열림
   const drag = useRef(new Animated.Value(0)).current; // 손가락으로 끌어내린 거리
   const closing = useRef(false);
+  const insets = useSafeAreaInsets();
+  const { height: screenH } = useWindowDimensions();
+
+  /**
+   * 키보드가 가리는 높이.
+   *
+   * KeyboardAvoidingView는 쓰지 않는다. behavior="padding"은 시트 **안쪽에** 키보드
+   * 높이만큼 여백을 넣는데, 시트는 이미 화면 바닥에 붙어 있어서 그만큼 통째로
+   * 밀려 올라간다 — 위가 화면 밖으로 잘리고 아래에는 빈 공간이 생긴다.
+   * 시트는 바닥을 키보드 위로 옮기고, 그만큼 키를 줄이는 게 맞다.
+   */
+  const [kb, setKb] = useState(0);
+  useEffect(() => {
+    const onFrame = (e: { endCoordinates: { screenY: number } }) =>
+      setKb(Math.max(0, screenH - e.endCoordinates.screenY));
+    const ios = Platform.OS === 'ios';
+    const show = Keyboard.addListener(ios ? 'keyboardWillChangeFrame' : 'keyboardDidShow', onFrame);
+    const hide = Keyboard.addListener(ios ? 'keyboardWillHide' : 'keyboardDidHide', () => setKb(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, [screenH]);
 
   const animateTo = useCallback(
     (to: number, after?: () => void) => {
@@ -102,8 +129,17 @@ export function Sheet({ visible, onClose, children, style }: Props) {
         <Pressable style={[StyleSheet.absoluteFill, styles.backdrop]} onPress={close} />
       </Animated.View>
 
-      <View style={styles.wrap} pointerEvents="box-none">
-        <Animated.View style={[styles.sheet, E3, { transform: [{ translateY }] }, style]}>
+      <View style={[styles.wrap, { paddingBottom: kb }]} pointerEvents="box-none">
+        <Animated.View
+          style={[
+            styles.sheet,
+            E3,
+            // 남은 자리보다 커지지 않는다 — 커지면 위가 화면 밖으로 잘린다
+            { maxHeight: screenH - kb - Math.max(insets.top, 24) - 12 },
+            { transform: [{ translateY }] },
+            style,
+          ]}
+        >
           <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFill} />
           <LinearGradient
             colors={[C.sheetTop, C.sheetBottom]}
