@@ -55,8 +55,16 @@ export type Session = RunSnapshot & {
   plan: Plan | null;
   total: number;
   next: Segment | undefined;
+  /** 바로 앞 구간 — 왼쪽 버튼이 무엇으로 돌아가는지 적으려면 필요하다 */
+  prev: Segment | undefined;
   /** 시간축이 끊긴 지점마다 증가 — 링 애니메이션이 기준을 다시 잡는 신호 */
   syncId: number;
+  /**
+   * 저장소에서 되살아난 세션인지 — 앱을 껐다 켠 경우에만 참이다.
+   * 홈이 실행 화면을 자동으로 열지 말지 가르는 신호다. 방금 손으로 시작한 것까지
+   * 되살아난 것으로 보면 화면이 두 번 밀린다.
+   */
+  restoredFromStorage: boolean;
   start: (presetId: string) => void;
   toggle: () => void;
   skipNext: () => void;
@@ -112,6 +120,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     else void AsyncStorage.removeItem(KEY);
   }, []);
 
+  const [restoredFromStorage, setRestoredFromStorage] = useState(false);
+
   /** 앱이 뜰 때 한 번 — 진행 중이던 세션을 되살린다 */
   useEffect(() => {
     let alive = true;
@@ -123,6 +133,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         if (typeof s?.zeroAt !== 'number' || typeof s?.presetId !== 'string') return;
         storedRef.current = s;
         setStored(s);
+        setRestoredFromStorage(true);
       } catch {
         // 읽기 실패는 세션이 없는 것으로 본다
       }
@@ -442,10 +453,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       plan,
       total: plan?.total ?? 0,
       next: plan?.segs[snap.idx + 1],
+      prev: snap.idx > 0 ? plan?.segs[snap.idx - 1] : undefined,
       syncId,
+      restoredFromStorage,
       ...controls,
     };
-  }, [snap, preset, plan, syncId, persist, seekTo, tick, reschedule, elapsedNow, snapshotAt, markRun]);
+  }, [snap, preset, plan, syncId, restoredFromStorage, persist, seekTo, tick, reschedule, elapsedNow, snapshotAt, markRun]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

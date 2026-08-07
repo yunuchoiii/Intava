@@ -121,6 +121,7 @@ export const zh: Catalog = {
     push: '通知',
     pushNote: '即使应用被完全停止，也会提示区间切换。',
     app: '应用',
+    version: '版本',
     language: '语言',
     languageNote: '在 iOS 设置中更改此应用的语言。',
     volume: '音量',
@@ -142,8 +143,10 @@ export const zh: Catalog = {
     resume: '继续',
     next: '下一个 · {{what}}',
     titleWithDur: '{{phase}} {{dur}}',
+    switchTitle: '已有计时器在运行',
+    switchBody: "要结束“{{running}}”并开始“{{next}}”吗？",
+    switchConfirm: '结束并开始',
     prevRestart: '重新开始',
-    prevBack: '上一个',
     elapsed: '已过 {{time}}',
     total: '共 {{time}}',
   },
@@ -183,14 +186,8 @@ export const zh: Catalog = {
   },
 
   jump: {
-    work: '开始运动',
-    prepare: '开始准备',
-    warmup: '开始热身',
-    cooldown: '开始放松',
-    blockRest: '换动作',
-    roundRest: '轮次休息',
-    setRest: '开始休息',
     none: '前往完成',
+    withSet: '{{name}} · 第{{set}}组',
   },
 
   doneScreen: {

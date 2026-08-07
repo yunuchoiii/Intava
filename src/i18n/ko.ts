@@ -134,6 +134,7 @@ export const ko = {
     push: '푸시 알림',
     pushNote: '앱이 완전히 멈춰도 구간 전환을 알려줍니다.',
     app: '앱',
+    version: '버전',
     language: '언어',
     languageNote: 'iOS 설정에서 이 앱의 언어를 바꿉니다.',
     volume: '볼륨',
@@ -155,8 +156,10 @@ export const ko = {
     resume: '재개',
     next: '다음 · {{what}}',
     titleWithDur: '{{phase}} {{dur}}',
+    switchTitle: '이미 실행 중입니다',
+    switchBody: "'{{running}}'을(를) 끝내고 '{{next}}'을(를) 시작할까요?",
+    switchConfirm: '끝내고 시작',
     prevRestart: '다시 처음',
-    prevBack: '이전으로',
     elapsed: '{{time}} 경과',
     total: '총 {{time}}',
   },
@@ -199,14 +202,8 @@ export const ko = {
 
   /** 「다음」 버튼 라벨 — 도착할 구간 */
   jump: {
-    work: '운동 시작',
-    prepare: '준비 시작',
-    warmup: '웜업 시작',
-    cooldown: '쿨다운 시작',
-    blockRest: '종목 전환',
-    roundRest: '라운드 휴식',
-    setRest: '휴식 시작',
     none: '완료로',
+    withSet: '{{name}} · {{set}}세트',
   },
 
   doneScreen: {

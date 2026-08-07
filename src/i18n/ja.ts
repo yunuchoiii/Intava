@@ -121,6 +121,7 @@ export const ja: Catalog = {
     push: '通知',
     pushNote: 'アプリが完全に止まっても区間の切り替えを知らせます。',
     app: 'アプリ',
+    version: 'バージョン',
     language: '言語',
     languageNote: 'iOSの設定でこのアプリの言語を変えます。',
     volume: '音量',
@@ -142,8 +143,10 @@ export const ja: Catalog = {
     resume: '再開',
     next: '次 · {{what}}',
     titleWithDur: '{{phase}} {{dur}}',
+    switchTitle: 'すでに実行中です',
+    switchBody: "「{{running}}」を終了して「{{next}}」を始めますか？",
+    switchConfirm: '終了して開始',
     prevRestart: '最初から',
-    prevBack: '前へ',
     elapsed: '{{time}} 経過',
     total: '合計 {{time}}',
   },
@@ -183,14 +186,8 @@ export const ja: Catalog = {
   },
 
   jump: {
-    work: '運動を開始',
-    prepare: '準備を開始',
-    warmup: 'ウォームアップを開始',
-    cooldown: 'クールダウンを開始',
-    blockRest: '種目の切替',
-    roundRest: 'ラウンド休憩',
-    setRest: '休憩を開始',
     none: '完了へ',
+    withSet: '{{name}} · {{set}}セット',
   },
 
   doneScreen: {

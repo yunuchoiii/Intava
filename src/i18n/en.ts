@@ -128,6 +128,7 @@ export const en: Catalog = {
     push: 'Notifications',
     pushNote: 'Tells you about segment changes even if the app is fully stopped.',
     app: 'App',
+    version: 'Version',
     language: 'Language',
     languageNote: 'Change the language for this app in iOS Settings.',
     volume: 'Volume',
@@ -149,8 +150,10 @@ export const en: Catalog = {
     resume: 'Resume',
     next: 'Next · {{what}}',
     titleWithDur: '{{phase}} {{dur}}',
+    switchTitle: 'A timer is already running',
+    switchBody: "End “{{running}}” and start “{{next}}”?",
+    switchConfirm: 'End and start',
     prevRestart: 'Restart',
-    prevBack: 'Previous',
     elapsed: '{{time}} elapsed',
     total: 'of {{time}}',
   },
@@ -190,14 +193,8 @@ export const en: Catalog = {
   },
 
   jump: {
-    work: 'Start work',
-    prepare: 'Start prepare',
-    warmup: 'Start warm-up',
-    cooldown: 'Start cool-down',
-    blockRest: 'Next exercise',
-    roundRest: 'Round rest',
-    setRest: 'Start rest',
     none: 'To finish',
+    withSet: '{{name}} · Set {{set}}',
   },
 
   doneScreen: {

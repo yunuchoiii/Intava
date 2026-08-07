@@ -112,16 +112,20 @@ export default function Home() {
   const empty = ready && grouped[tab].length === 0;
 
   /**
-   * 앱을 다시 열었을 때 진행 중인 타이머가 있으면 그 화면으로 돌아간다.
+   * 앱을 다시 열었을 때 진행 중이던 타이머가 있으면 그 화면으로 돌아간다.
    * 앱이 백그라운드에서 정지됐다 살아난 경우가 여기 해당한다 —
    * 알림만 계속 울리고 앱에는 아무것도 없던 상태를 없앤다. 한 번만 한다.
+   *
+   * **저장소에서 되살아난 세션만** 연다. 예전에는 세션이 생기기만 하면 열었는데,
+   * 그러면 목록의 ▶를 눌렀을 때 그 버튼과 여기가 각각 화면을 밀어 두 겹이 쌓였다.
+   * 한 번 끌어내려도 밑에 깔린 실행 화면이 다시 나타나던 것이 그 때문이다.
    */
   const restored = useRef(false);
   useEffect(() => {
-    if (restored.current || !session.preset || session.done) return;
+    if (restored.current || !session.restoredFromStorage || !session.preset || session.done) return;
     restored.current = true;
     router.push('/run');
-  }, [session.preset, session.done, router]);
+  }, [session.restoredFromStorage, session.preset, session.done, router]);
 
   /** 세그먼트 탭을 누르면 페이지를 옮긴다 — 스와이프와 같은 상태를 공유한다 */
   const goTab = useCallback(
@@ -315,7 +319,39 @@ function PresetRow({ preset, onLongPress }: { preset: Preset; onLongPress: () =>
   const session = useSession();
   const total = useMemo(() => totalSec(preset), [preset]);
 
+  /**
+   * ▶ — 이미 도는 타이머가 있으면 그 자리에서 갈아엎지 않는다.
+   *
+   * 같은 것이면 그냥 그 화면을 연다(다시 시작하면 진행이 날아간다).
+   * 다른 것이면 무엇을 끝내고 무엇을 시작하는지 이름을 대고 묻는다 —
+   * 되돌릴 수 없는 일이라 조용히 처리하면 안 된다.
+   */
   const start = () => {
+    const running = session.preset;
+
+    if (running && !session.done) {
+      if (running.id === preset.id) {
+        router.push('/run');
+        return;
+      }
+      Alert.alert(
+        t('run.switchTitle'),
+        t('run.switchBody', { running: running.name, next: preset.name }),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('run.switchConfirm'),
+            style: 'destructive',
+            onPress: () => {
+              session.start(preset.id);
+              router.push('/run');
+            },
+          },
+        ]
+      );
+      return;
+    }
+
     session.start(preset.id);
     router.push('/run');
   };
