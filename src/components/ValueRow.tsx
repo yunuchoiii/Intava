@@ -5,6 +5,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { C, TABULAR } from '../theme';
+import { Chevron, Collapsible } from './Collapsible';
 import { InfoTip } from './InfoTip';
 import { CountWheel, TimeWheel } from './WheelPicker';
 
@@ -86,12 +87,13 @@ export function ValueRow(props: Props) {
           >
             {display}
           </Text>
-          {chevron && <Text style={styles.chevron}>›</Text>}
+          {chevron && <Chevron open={open} />}
         </View>
       </Pressable>
 
-      {open &&
-        (props.wheel === 'time' ? (
+      {/* 휠도 시작·끝 줄과 같은 몸짓으로 열린다 — 튀어나오지 않고 흘러내린다 */}
+      <Collapsible open={open}>
+        {props.wheel === 'time' ? (
           <TimeWheel value={props.value} onChange={props.onChange} allowZero={props.allowZero} />
         ) : (
           <CountWheel
@@ -101,7 +103,8 @@ export function ValueRow(props: Props) {
             max={props.max}
             unit={props.unit}
           />
-        ))}
+        )}
+      </Collapsible>
     </View>
   );
 }

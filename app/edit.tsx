@@ -5,10 +5,8 @@
  * 웜업·준비·쿨다운은 0으로 내리면 그 구간이 사라진다 — 별도 on/off 토글이 없다.
  */
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-  Animated,
-  Easing,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,6 +17,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlockList } from '../src/components/BlockList';
+import { Chevron, Collapsible } from '../src/components/Collapsible';
 import { BlockPickerSheet } from '../src/components/BlockPickerSheet';
 import { BlockSheet } from '../src/components/BlockSheet';
 import { useMiniTimerSpace } from '../src/components/MiniTimer';
@@ -401,69 +400,6 @@ export default function Edit() {
   );
 }
 
-/**
- * 펼침 표시 — 열리면 아래를 가리키도록 돈다.
- *
- * 글자를 직접 돌리지 않는다. `›`는 자기 글자 상자 안에서 한쪽으로 치우쳐 그려져서,
- * 그대로 90도 돌리면 화살표가 줄 한가운데가 아니라 옆으로 비껴 앉는다.
- * 크기를 못 박은 정사각형 상자 안에 글자를 가운데 두고, 그 상자를 돌린다.
- */
-function Chevron({ open }: { open: boolean }) {
-  const spin = useRef(new Animated.Value(open ? 1 : 0)).current;
-  useEffect(() => {
-    Animated.timing(spin, {
-      toValue: open ? 1 : 0,
-      duration: 220,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start();
-  }, [open, spin]);
-  const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '90deg'] });
-  return (
-    <Animated.View style={[styles.chevronBox, { transform: [{ rotate }] }]}>
-      <Text style={styles.chevron}>›</Text>
-    </Animated.View>
-  );
-}
-
-/**
- * 위에서 아래로 스르륵 열리는 상자.
- *
- * 내용의 높이는 미리 알 수 없으니 한 번 그려서 재고, 그 값을 목표로 애니메이션한다.
- * 높이는 네이티브 드라이버 대상이 아니라 JS로 돌지만, 한 번에 하나만 열린다.
- */
-function Collapsible({ open, children }: { open: boolean; children: React.ReactNode }) {
-  const [height, setHeight] = useState(0);
-  const anim = useRef(new Animated.Value(open ? 1 : 0)).current;
-
-  useEffect(() => {
-    Animated.timing(anim, {
-      toValue: open ? 1 : 0,
-      duration: 240,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-  }, [open, anim]);
-
-  return (
-    <Animated.View
-      style={{
-        height: height ? anim.interpolate({ inputRange: [0, 1], outputRange: [0, height] }) : undefined,
-        opacity: anim,
-        overflow: 'hidden',
-      }}
-      pointerEvents={open ? 'auto' : 'none'}
-    >
-      <View
-        style={height ? styles.measured : undefined}
-        onLayout={(e) => setHeight(e.nativeEvent.layout.height)}
-      >
-        {children}
-      </View>
-    </Animated.View>
-  );
-}
-
 function toInfoTip(
   tip: string | null,
   setTip: React.Dispatch<React.SetStateAction<string | null>>,
@@ -523,7 +459,6 @@ const styles = StyleSheet.create({
   },
   raised: { zIndex: 30, elevation: 30 },
   /** 높이를 잰 뒤에는 절대 배치로 두어 부모 높이를 애니메이션이 결정하게 한다 */
-  measured: { position: 'absolute', left: 0, right: 0, top: 0 },
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -533,14 +468,6 @@ const styles = StyleSheet.create({
   titleWrap: { flexDirection: 'row', alignItems: 'center', flexShrink: 1 },
   rowTitle: { fontSize: 18, fontWeight: '600', color: C.textPrimary },
   rowValueMuted: { fontSize: 16, color: C.textSecondary },
-  chevronBox: {
-    width: 22,
-    height: 22,
-    marginLeft: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  chevron: { fontSize: 20, lineHeight: 22, color: C.textTertiary },
   footer: {
     paddingHorizontal: GUTTER,
     paddingTop: 12,
