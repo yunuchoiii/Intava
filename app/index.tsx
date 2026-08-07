@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Surface } from '../src/components/Surface';
 import { PressBox } from '../src/components/PressBox';
 import { GearIcon, PlayIcon } from '../src/components/Icons';
+import { useMiniTimerSpace } from '../src/components/MiniTimer';
 import { Screen } from '../src/components/Screen';
 import { Wordmark } from '../src/components/Wordmark';
 import { presetSummary, presetTimeLine } from '../src/engine/labels';
@@ -50,6 +51,7 @@ const ADD_RADIUS = ADD_HEIGHT / 2;
 export default function Home() {
   const router = useRouter();
   const session = useSession();
+  const miniSpace = useMiniTimerSpace();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { presets, ready, settings, setSettings, duplicatePreset, deletePreset } = useStore();
@@ -144,7 +146,9 @@ export default function Home() {
 
   return (
     <Screen gradient>
-      <View style={{ flex: 1, paddingTop: insets.top + 6, paddingBottom: insets.bottom + 12 }}>
+      <View
+        style={{ flex: 1, paddingTop: insets.top + 6, paddingBottom: insets.bottom + 12 + miniSpace }}
+      >
         <View style={styles.header}>
           <Wordmark width={118} />
           <PressBox

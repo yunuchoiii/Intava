@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlockList } from '../src/components/BlockList';
 import { BlockPickerSheet } from '../src/components/BlockPickerSheet';
 import { BlockSheet } from '../src/components/BlockSheet';
+import { useMiniTimerSpace } from '../src/components/MiniTimer';
 import { SurfaceButton } from '../src/components/Buttons';
 import { Surface } from '../src/components/Surface';
 import { PressBox } from '../src/components/PressBox';
@@ -38,6 +39,7 @@ export default function Edit() {
   const { id, kind } = useLocalSearchParams<{ id?: string; kind?: 'routine' | 'timer' }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const miniSpace = useMiniTimerSpace();
   const { getPreset, savePreset, settings, presets } = useStore();
 
   const initial = useMemo(
@@ -329,7 +331,7 @@ export default function Edit() {
         </ScrollView>
 
         {/* 하단 고정 — 값을 바꾸는 내내 갱신된다 */}
-        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 14) }]}>
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 14) + miniSpace }]}>
           <View style={styles.totals}>
             <Text style={[styles.totalText, TABULAR]}>{t('edit.totalTime', { time: durationLong(total) })}</Text>
             <Text style={[styles.totalText, TABULAR]}>{t('edit.workTime', { time: durationLong(pure) })}</Text>

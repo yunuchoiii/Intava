@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useMiniTimerSpace } from '../src/components/MiniTimer';
 import { Screen } from '../src/components/Screen';
 import { preview } from '../src/audio';
 import { useStore } from '../src/store';
@@ -22,6 +23,7 @@ import { C, GUTTER, TABULAR } from '../src/theme';
 export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const miniSpace = useMiniTimerSpace();
   const { settings, setSettings } = useStore();
 
   return (
@@ -42,7 +44,10 @@ export default function SettingsScreen() {
         </View>
 
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal: GUTTER, paddingBottom: insets.bottom + 32 }}
+          contentContainerStyle={{
+            paddingHorizontal: GUTTER,
+            paddingBottom: insets.bottom + 32 + miniSpace,
+          }}
           showsVerticalScrollIndicator={false}
         >
           <Text style={styles.section}>{t('settings.alerts')}</Text>

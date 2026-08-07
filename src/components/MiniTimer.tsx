@@ -14,14 +14,33 @@ import { LIFT, PHASE_COLOR, RADIUS, TABULAR } from '../theme';
 import { PauseIcon, PlayIcon } from './Icons';
 import { PressBox } from './PressBox';
 
+const BAR_H = 60;
+const BAR_GAP = 10;
+
+/** 미니 바가 떠 있는지 — 화면마다 조건을 따로 쓰면 어긋난다 */
+function useMiniTimerVisible(): boolean {
+  const run = useSession();
+  const pathname = usePathname();
+  return !!run.preset && !run.done && pathname !== '/run';
+}
+
+/**
+ * 미니 바가 가리는 만큼의 하단 여백.
+ * 하단에 고정된 것이 있는 화면(편집의 저장 버튼, 홈의 추가 버튼 등)은
+ * 이만큼 자리를 비워야 바에 덮이지 않는다.
+ */
+export function useMiniTimerSpace(): number {
+  return useMiniTimerVisible() ? BAR_H + BAR_GAP : 0;
+}
+
 export function MiniTimer() {
   const run = useSession();
   const router = useRouter();
-  const pathname = usePathname();
   const insets = useSafeAreaInsets();
-
   // 실행 화면에서는 본체가 이미 보인다
-  if (!run.preset || run.done || pathname === '/run') return null;
+  const visible = useMiniTimerVisible();
+
+  if (!visible || !run.preset) return null;
 
   const color = PHASE_COLOR[run.seg?.phase ?? 'DONE'];
   const title = run.seg
@@ -29,7 +48,7 @@ export function MiniTimer() {
     : phaseLabel('DONE');
 
   return (
-    <View style={[styles.wrap, { bottom: Math.max(insets.bottom, 10) }]} pointerEvents="box-none">
+    <View style={[styles.wrap, { bottom: Math.max(insets.bottom, BAR_GAP) }]} pointerEvents="box-none">
       <PressBox
         onPress={() => router.push('/run')}
         radius={RADIUS.button}
@@ -63,7 +82,7 @@ export function MiniTimer() {
 
 const styles = StyleSheet.create({
   wrap: { position: 'absolute', left: 16, right: 16 },
-  bar: { height: 60, borderRadius: RADIUS.button, overflow: 'hidden' },
+  bar: { height: BAR_H, borderRadius: RADIUS.button, overflow: 'hidden' },
   inner: {
     flex: 1,
     flexDirection: 'row',
