@@ -74,8 +74,9 @@ export default function Done() {
             router.replace('/run');
           }}
         />
+        {/* 홈까지 물러난다 — replace면 홈 위에 홈이 한 겹 더 쌓인다 */}
         <PressBox
-          onPress={() => router.replace('/')}
+          onPress={() => router.dismissTo('/')}
           scaleTo={0.96}
           dim={0}
           style={styles.home}

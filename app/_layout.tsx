@@ -11,6 +11,7 @@ import { Wordmark } from '../src/components/Wordmark';
 import { C } from '../src/theme';
 import { installHandler } from '../src/notify';
 import { MiniTimer } from '../src/components/MiniTimer';
+import { MorphProvider } from '../src/morph';
 import { SessionProvider } from '../src/session';
 import { StoreProvider } from '../src/store';
 
@@ -67,6 +68,7 @@ export default function RootLayout() {
         <ThemeProvider value={NAV_THEME}>
           <StoreProvider>
             <SessionProvider>
+              <MorphProvider>
           <StatusBar style="light" />
           <Stack
             screenOptions={{
@@ -76,19 +78,44 @@ export default function RootLayout() {
             }}
           >
             <Stack.Screen name="index" />
-            {/* 편집 중 스와이프로 나가면 입력하던 값이 조용히 사라진다 */}
+            {/*
+              편집 중 스와이프로 나가면 입력하던 값이 조용히 사라진다 — 제스처는 끈다.
+
+              모달로 띄우지 않는다. 미니 바는 스택 바깥(루트)에 얹혀 있어서, 이 화면이
+              모달로 뜨면 바를 덮어버린다 — 하단에 바 자리만 비어 보인다.
+              실행 화면 위로는 이 화면을 올리지 않는다(run.tsx의 편집 버튼 참고).
+            */}
             <Stack.Screen name="edit" options={{ gestureEnabled: false }} />
-            {/* 나가도 타이머는 세션에 남는다 — 스와이프로 나가는 것을 막을 이유가 없다 */}
-            <Stack.Screen name="run" options={{ animation: 'fade' }} />
+            {/*
+              실행 화면을 닫는 길은 위에서 아래로 끌어내리는 것 하나다. 가장자리에서
+              좌→우로 미는 뒤로가기는 끈다 — 두 방향이 같은 일을 하면 링을 문지르다
+              화면이 넘어간다.
+
+              투명 모달로 띄워 뒤 화면을 살려 둔다. 끌어내리는 동안 드러나는 것이
+              검은 바탕이 아니라 원래 있던 화면(홈이든 편집이든)이 된다.
+
+              화면 전환 애니메이션은 끈다 — 여닫는 몸짓은 MorphProvider가 그린다.
+            */}
+            <Stack.Screen
+              name="run"
+              options={{
+                animation: 'none',
+                gestureEnabled: false,
+                presentation: 'transparentModal',
+                contentStyle: { backgroundColor: 'transparent' },
+              }}
+            />
             <Stack.Screen name="done" options={{ animation: 'fade', gestureEnabled: false }} />
             {/*
               볼륨 슬라이더가 좌우 여백 24pt에서 시작해 가장자리 뒤로가기 제스처와
-              겹쳤다. 제스처를 없애는 대신, 시작할 수 있는 폭을 슬라이더보다 좁게
-              잡아 둘 다 산다.
+              겹친다. 시작 폭을 16pt로 좁혀 봤지만 소리를 줄이려다 화면이 넘어가는 일이
+              계속 났다 — 슬라이더는 왼쪽 끝까지 끌어야 하는 물건이라 양보할 수가 없다.
+              아래에서 올라오는 화면이라 좌→우 제스처가 원래 어울리지도 않는다. 끈다.
+              나가는 길은 왼쪽 위 닫기 버튼이다.
             */}
             <Stack.Screen
               name="settings"
-              options={{ animation: 'slide_from_bottom', gestureResponseDistance: { start: 16 } }}
+              options={{ animation: 'slide_from_bottom', gestureEnabled: false }}
             />
           </Stack>
 
@@ -106,6 +133,7 @@ export default function RootLayout() {
               </View>
             </Animated.View>
           )}
+              </MorphProvider>
             </SessionProvider>
           </StoreProvider>
         </ThemeProvider>

@@ -1,8 +1,17 @@
 /** 5.6 실행 화면 — 이 앱의 심장 */
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
-import React, { useEffect, useMemo, useRef } from 'react';
-import { Alert, Animated, PanResponder, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import {
+  Alert,
+  Animated,
+  PanResponder,
+  type LayoutChangeEvent,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FloodTile } from '../src/components/Surface';
@@ -11,6 +20,7 @@ import { NextIcon, PauseIcon, PencilIcon, PlayIcon, PrevIcon } from '../src/comp
 import { PhaseFlood } from '../src/components/PhaseFlood';
 import { Ring } from '../src/components/Ring';
 import { clock, isSimple, jumpLabel, subLabel, titleLabel } from '../src/engine/labels';
+import { useMorph } from '../src/morph';
 import { ensurePermission } from '../src/notify';
 import { useSession } from '../src/session';
 import { useStore } from '../src/store';
@@ -19,9 +29,21 @@ import { C, GUTTER, PHASE_COLOR, TABULAR } from '../src/theme';
 
 export default function Run() {
   const router = useRouter();
-  /** 끌어내린 거리 — 손을 놓으면 닫히거나 제자리로 돌아온다 */
-  const dragY = useRef(new Animated.Value(0)).current;
+  /** 미니 바와 공유하는 값 — 0은 가득 찬 상태, 1은 접힌 상태 */
+  const morph = useMorph();
   const insets = useSafeAreaInsets();
+  const { height: screenH } = useWindowDimensions();
+  /**
+   * 끌어내리기를 받지 않는 아래쪽 경계 — 컨트롤 줄부터 아래는 버튼의 자리다.
+   * 링은 자기 PanResponder가 밴드에서 손가락을 붙잡고 놓지 않으므로 따로 뺄 것이 없다.
+   */
+  const noDragTop = useRef(Number.POSITIVE_INFINITY);
+  const measureControls = useCallback((e: LayoutChangeEvent) => {
+    // 이 줄이 놓인 곳은 화면 맨 위에서부터 재도 같다 — 감싸는 겹이 원점에서 시작한다
+    noDragTop.current = e.nativeEvent.layout.y;
+  }, []);
+  /** 손가락이 처음 닿은 높이 — gestureState.y0는 붙잡은 뒤에야 채워져서 판단에 쓸 수 없다 */
+  const grabY = useRef(0);
   const { settings } = useStore();
   const run = useSession();
   const preset = run.preset;
@@ -43,6 +65,99 @@ export default function Run() {
     router.replace({ pathname: '/done', params: { id: preset.id } });
   }, [run.done, preset?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const dismiss = useCallback(() => {
+    if (router.canGoBack()) router.back();
+    else router.replace('/');
+  }, [router]);
+
+  /**
+   * 이 화면이 앞에 설 때마다 펼친다.
+   *
+   * 처음 뜰 때만 하면 안 된다. 편집이나 설정으로 나가면 이 화면은 덮인 채 남아 있고
+   * 그동안 값은 1(접힘)로 돌아가는데, 돌아왔을 때 되돌리지 않으면 화면이 투명한 채로
+   * 화면 밖에 머문다 — 아무것도 눌리지 않는 그 상태다.
+   *
+   * 처음 한 번은 미니 바 자리에서 자라 오르지만, 다녀온 뒤에는 이미 제자리에 있어야
+   * 하므로 애니메이션 없이 앉힌다. 손가락이 값을 쥐고 있으면 손에 맡긴다.
+   */
+  const opened = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (morph.dragging.current) return;
+      if (opened.current) {
+        morph.set(0);
+        return;
+      }
+      opened.current = true;
+      morph.animate(0, { duration: 340 });
+    }, [morph])
+  );
+
+  /**
+   * 화면 어디를 잡고 끌어내려도 따라 내려가고, 충분히 내려가면 접힌다 —
+   * 바텀시트처럼 다룬다. 접히면서 그대로 하단 미니 바가 된다.
+   *
+   * 두 곳만 비켜 간다. 링의 밴드는 링이 손가락을 붙잡고 놓지 않고(Ring의
+   * onPanResponderTerminationRequest), 컨트롤 줄부터 아래는 시작점으로 걸러낸다.
+   */
+  const dismissPan = useMemo(
+    () =>
+      PanResponder.create({
+        // 붙잡지는 않고 시작점만 적어 둔다 — 캡처 단계라 아래 버튼이 먼저 가져가도 지나간다
+        onStartShouldSetPanResponderCapture: (e) => {
+          grabY.current = e.nativeEvent.pageY;
+          return false;
+        },
+        onMoveShouldSetPanResponder: (_e, g) =>
+          g.dy > 8 &&
+          // 세로가 확실히 우세할 때만. 링 바깥을 스치듯 가로로 긋다가 닫히지 않게 한다
+          Math.abs(g.dy) > Math.abs(g.dx) * 1.5 &&
+          grabY.current < noDragTop.current,
+        onPanResponderGrant: () => {
+          // 아직 펼쳐지는 중일 수 있다 — 손가락이 값을 넘겨받는다
+          morph.stop();
+          morph.dragging.current = true;
+        },
+        // 손가락 이동은 화면 높이로 나눠 0~1로 읽는다 — 아래로 끌수록 1에 가까워진다
+        onPanResponderMove: (_e, g) => morph.set(Math.max(0, Math.min(1, g.dy / screenH))),
+        onPanResponderRelease: (_e, g) => {
+          morph.dragging.current = false;
+          if (g.dy > 110 || g.vy > 0.7) {
+            // 끝까지 접은 뒤에 나간다. 그때 화면은 이미 투명해져 미니 바만 남아 있다
+            morph.animate(1, { duration: 260, onDone: dismiss });
+          } else {
+            morph.animate(0, { velocity: (g.vy * 1000) / screenH });
+          }
+        },
+        onPanResponderTerminate: () => {
+          morph.dragging.current = false;
+          morph.animate(0);
+        },
+      }),
+    [morph, screenH, dismiss]
+  );
+
+  /**
+   * 접히는 몸짓 — 아래로 미끄러지면서 작아지고, 반쯤 가면 사라진다.
+   * 크기는 앞쪽에서 빨리 줄어든다. 조금만 끌어도 "작아지는 중"이 손에 읽혀야 한다.
+   */
+  const translateY = morph.p.interpolate({ inputRange: [0, 1], outputRange: [0, screenH] });
+  const scale = morph.p.interpolate({
+    inputRange: [0, 0.35, 1],
+    outputRange: [1, 0.9, 0.86],
+    extrapolate: 'clamp',
+  });
+  const fade = morph.p.interpolate({
+    inputRange: [0, 0.2, 0.55],
+    outputRange: [1, 1, 0],
+    extrapolate: 'clamp',
+  });
+  const corner = morph.radius.interpolate({
+    inputRange: [0, 0.12],
+    outputRange: [0, 28],
+    extrapolate: 'clamp',
+  });
+
   if (!preset) {
     // 여기 걸리면 데이터가 어긋난 것이다. 빈 화면에 가두지 않는다.
     return <MissingPreset />;
@@ -61,40 +176,24 @@ export default function Run() {
         ? (run.seg.blk ?? -1) + 1
         : -1;
 
-  const dismiss = () => {
-    if (router.canGoBack()) router.back();
-    else router.replace('/');
-  };
-
   /**
-   * 위쪽 손잡이를 잡고 끌어내리면 화면이 따라 내려가고, 충분히 내려가면 닫힌다.
-   * 닫혀도 타이머는 세션에 남아 하단 미니 바로 이어진다.
+   * 편집으로 간다 — 실행 화면 **위에** 올리지 않고, 먼저 미니 바로 접은 뒤에 연다.
+   *
+   * 이 화면은 투명 모달이라 그 위에 무엇을 밀어 넣으면 iOS가 모달로 띄운다. 그러면
+   * 편집 화면이 미니 바를 덮어 하단에 바 자리만 빈 채로 남고, 시트로 뜰 때는 아래로
+   * 끌어 닫는 제스처까지 붙어 종목을 끄는 손짓과 다툰다.
+   * 접고 나서 열면 편집 화면은 홈 위에 평범하게 놓이고, 타이머는 바에서 계속 돈다.
    */
-  const dismissPan = useMemo(
-    () =>
-      PanResponder.create({
-        onMoveShouldSetPanResponder: (_e, g) => g.dy > 6 && Math.abs(g.dy) > Math.abs(g.dx),
-        onPanResponderMove: (_e, g) => dragY.setValue(Math.max(0, g.dy)),
-        onPanResponderRelease: (_e, g) => {
-          if (g.dy > 120 || g.vy > 0.8) {
-            Animated.timing(dragY, {
-              toValue: 900,
-              duration: 220,
-              useNativeDriver: true,
-            }).start(() => {
-              dragY.setValue(0);
-              dismiss();
-            });
-          } else {
-            Animated.spring(dragY, { toValue: 0, useNativeDriver: true, bounciness: 4 }).start();
-          }
-        },
-        onPanResponderTerminate: () => {
-          Animated.spring(dragY, { toValue: 0, useNativeDriver: true }).start();
-        },
-      }),
-    [dragY] // eslint-disable-line react-hooks/exhaustive-deps
-  );
+  const goEdit = () => {
+    const id = preset.id;
+    morph.animate(1, {
+      duration: 260,
+      onDone: () => {
+        router.dismissTo('/');
+        router.push({ pathname: '/edit', params: { id } });
+      },
+    });
+  };
 
   const confirmExit = () => {
     Alert.alert(t('run.exitTitle'), t('run.exitBody'), [
@@ -103,8 +202,10 @@ export default function Run() {
         text: t('run.exitConfirm'),
         style: 'destructive',
         onPress: () => {
+          // 홈까지 물러난다. replace로 갈아끼우면 홈 위에 홈이 한 겹 더 쌓인다.
+          // 나가고 나서 세션을 비운다 — 순서가 바뀌면 프리셋 없는 실행 화면이 한 번 그려진다
+          router.dismissTo('/');
           run.stop();
-          router.replace('/');
         },
       },
     ]);
@@ -115,17 +216,21 @@ export default function Run() {
   const barPct = run.total > 0 ? Math.min(100, (run.elapsed / run.total) * 100) : 0;
 
   return (
+    /*
+      위에서 아래로 끌어내리면 접혀서 하단 미니 바가 된다 — 타이머는 계속 돈다.
+
+      겹이 둘인 이유: 자리·크기·투명도는 네이티브 드라이버로 돌고, 모서리 반경은
+      JS 쪽에서 돌아야 한다. 한 겹에 섞으면 RN이 거부한다.
+    */
     <Animated.View
-      style={[
-        { flex: 1, backgroundColor: color },
-        { transform: [{ translateY: dragY }] },
-      ]}
+      style={[styles.fill, { opacity: fade, transform: [{ translateY }, { scale }] }]}
+      {...dismissPan.panHandlers}
     >
+      <Animated.View style={[styles.fill, styles.card, { backgroundColor: color, borderRadius: corner }]}>
       <PhaseFlood color={color} />
 
       <View style={{ flex: 1, paddingTop: insets.top + 6, paddingBottom: Math.max(insets.bottom, 12) }}>
-        {/* 위에서 아래로 끌어내리면 닫힌다 — 타이머는 계속 돌고 하단 미니 바로 이어진다 */}
-        <View style={styles.handleArea} {...dismissPan.panHandlers}>
+        <View style={styles.handleArea}>
           <View style={styles.handle} />
         </View>
 
@@ -149,7 +254,7 @@ export default function Run() {
           </Text>
 
           <PressBox
-            onPress={() => router.push({ pathname: '/edit', params: { id: preset.id } })}
+            onPress={goEdit}
             radius={16}
             scaleTo={0.9}
             dim={0.2}
@@ -194,7 +299,8 @@ export default function Run() {
           />
         </View>
 
-        <View style={{ paddingHorizontal: GUTTER, gap: 20 }}>
+        {/* 여기부터 아래는 버튼의 자리 — 끌어내려 닫기를 받지 않는다 */}
+        <View onLayout={measureControls} style={{ paddingHorizontal: GUTTER, gap: 20 }}>
           <View style={styles.controls}>
             <ControlButton label={prevLabel} onPress={run.skipPrev}>
               <PrevIcon />
@@ -237,6 +343,7 @@ export default function Run() {
           </View>
         </View>
       </View>
+      </Animated.View>
     </Animated.View>
   );
 }
@@ -245,7 +352,7 @@ export default function Run() {
 function MissingPreset() {
   const router = useRouter();
   useEffect(() => {
-    router.replace('/');
+    router.dismissTo('/');
   }, [router]);
   return <View style={{ flex: 1, backgroundColor: C.bgPlain }} />;
 }
@@ -278,6 +385,9 @@ function ControlButton({
 }
 
 const styles = StyleSheet.create({
+  fill: { flex: 1 },
+  /** 접히면서 모서리가 둥글어진다 — 잘라내야 안쪽 그라디언트도 따라 둥글다 */
+  card: { overflow: 'hidden' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
