@@ -254,9 +254,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     timer.current = setTimeout(tick, waitMs);
   }, [elapsedNow, snapshotAt]);
 
-  /** 세션이 살아 있는 동안만 — 오디오 세션도 여기서 잡는다(화면이 아니라 세션이 기준) */
+  /**
+   * 세션이 살아 있는 동안만 — 오디오 세션도 여기서 잡는다(화면이 아니라 세션이 기준).
+   *
+   * 의존성은 **세션의 정체(어떤 프리셋이냐)** 이지 상태 전체가 아니다.
+   * 전체를 걸면 일시정지·재개·점프 때마다 "이 구간을 처음 본다"로 초기화돼서
+   * 재개하는 순간 현재 구간의 시작음이 다시 울린다.
+   */
+  const sessionId = stored?.presetId ?? null;
   useEffect(() => {
-    if (!stored || !plan) {
+    if (!sessionId || !planRef.current) {
       clearTimer();
       setSnap(EMPTY);
       return;
@@ -264,11 +271,18 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     void startSession(settingsRef.current.volume);
     lastIdx.current = -1;
     lastTick.current = '';
-    doneFired.current = elapsedNow() >= plan.total;
+    doneFired.current = elapsedNow() >= planRef.current.total;
     tick();
     void reschedule();
     return clearTimer;
-  }, [stored, plan, tick, reschedule, elapsedNow]);
+  }, [sessionId, tick, reschedule, elapsedNow]);
+
+  /** 프리셋 내용이 바뀌면(실행 중 편집) 구간만 다시 계산해 그린다 — 안내음은 다시 울리지 않는다 */
+  useEffect(() => {
+    if (!sessionId) return;
+    tick();
+    void reschedule();
+  }, [plan, sessionId, tick, reschedule]);
 
   /** 세션이 끝나면 오디오 세션을 놓아준다 */
   useEffect(() => {

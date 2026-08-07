@@ -1,8 +1,8 @@
 /** 5.6 실행 화면 — 이 앱의 심장 */
 import { useRouter } from 'expo-router';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { Alert, Animated, PanResponder, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FloodTile } from '../src/components/Surface';
@@ -19,6 +19,8 @@ import { C, GUTTER, PHASE_COLOR, TABULAR } from '../src/theme';
 
 export default function Run() {
   const router = useRouter();
+  /** 끌어내린 거리 — 손을 놓으면 닫히거나 제자리로 돌아온다 */
+  const dragY = useRef(new Animated.Value(0)).current;
   const insets = useSafeAreaInsets();
   const { settings } = useStore();
   const run = useSession();
@@ -59,6 +61,41 @@ export default function Run() {
         ? (run.seg.blk ?? -1) + 1
         : -1;
 
+  const dismiss = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace('/');
+  };
+
+  /**
+   * 위쪽 손잡이를 잡고 끌어내리면 화면이 따라 내려가고, 충분히 내려가면 닫힌다.
+   * 닫혀도 타이머는 세션에 남아 하단 미니 바로 이어진다.
+   */
+  const dismissPan = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_e, g) => g.dy > 6 && Math.abs(g.dy) > Math.abs(g.dx),
+        onPanResponderMove: (_e, g) => dragY.setValue(Math.max(0, g.dy)),
+        onPanResponderRelease: (_e, g) => {
+          if (g.dy > 120 || g.vy > 0.8) {
+            Animated.timing(dragY, {
+              toValue: 900,
+              duration: 220,
+              useNativeDriver: true,
+            }).start(() => {
+              dragY.setValue(0);
+              dismiss();
+            });
+          } else {
+            Animated.spring(dragY, { toValue: 0, useNativeDriver: true, bounciness: 4 }).start();
+          }
+        },
+        onPanResponderTerminate: () => {
+          Animated.spring(dragY, { toValue: 0, useNativeDriver: true }).start();
+        },
+      }),
+    [dragY] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
   const confirmExit = () => {
     Alert.alert(t('run.exitTitle'), t('run.exitBody'), [
       { text: t('run.exitContinue'), style: 'cancel' },
@@ -78,22 +115,31 @@ export default function Run() {
   const barPct = run.total > 0 ? Math.min(100, (run.elapsed / run.total) * 100) : 0;
 
   return (
-    <View style={{ flex: 1, backgroundColor: color }}>
+    <Animated.View
+      style={[
+        { flex: 1, backgroundColor: color },
+        { transform: [{ translateY: dragY }] },
+      ]}
+    >
       <PhaseFlood color={color} />
 
       <View style={{ flex: 1, paddingTop: insets.top + 6, paddingBottom: Math.max(insets.bottom, 12) }}>
+        {/* 위에서 아래로 끌어내리면 닫힌다 — 타이머는 계속 돌고 하단 미니 바로 이어진다 */}
+        <View style={styles.handleArea} {...dismissPan.panHandlers}>
+          <View style={styles.handle} />
+        </View>
+
         <View style={styles.header}>
-          {/* 나가도 타이머는 계속 돈다 — 하단 미니 바로 이어진다 */}
           <PressBox
-            onPress={() => router.back()}
+            onPress={confirmExit}
             radius={16}
             scaleTo={0.9}
             dim={0.2}
-            accessibilityLabel={t('run.a11yBack')}
+            accessibilityLabel={t('run.a11yExit')}
           >
             <FloodTile radius={16} style={styles.tile}>
               <View style={styles.center}>
-                <Text style={styles.backGlyph}>‹</Text>
+                <Text style={styles.tileGlyph}>✕</Text>
               </View>
             </FloodTile>
           </PressBox>
@@ -102,36 +148,19 @@ export default function Run() {
             {preset.name}
           </Text>
 
-          <View style={styles.headerActions}>
-            <PressBox
-              onPress={() => router.push({ pathname: '/edit', params: { id: preset.id } })}
-              radius={16}
-              scaleTo={0.9}
-              dim={0.2}
-              accessibilityLabel={t('run.a11yEdit')}
-            >
-              <FloodTile radius={16} style={styles.tile}>
-                <View style={[styles.center, { opacity: 0.9 }]}>
-                  <PencilIcon />
-                </View>
-              </FloodTile>
-            </PressBox>
-
-            {/* 운동 자체를 끝내는 것 — 화면을 벗어나는 것과 다른 동작이다 */}
-            <PressBox
-              onPress={confirmExit}
-              radius={16}
-              scaleTo={0.9}
-              dim={0.2}
-              accessibilityLabel={t('run.a11yExit')}
-            >
-              <FloodTile radius={16} style={styles.tile}>
-                <View style={styles.center}>
-                  <Text style={styles.tileGlyph}>✕</Text>
-                </View>
-              </FloodTile>
-            </PressBox>
-          </View>
+          <PressBox
+            onPress={() => router.push({ pathname: '/edit', params: { id: preset.id } })}
+            radius={16}
+            scaleTo={0.9}
+            dim={0.2}
+            accessibilityLabel={t('run.a11yEdit')}
+          >
+            <FloodTile radius={16} style={styles.tile}>
+              <View style={[styles.center, { opacity: 0.9 }]}>
+                <PencilIcon />
+              </View>
+            </FloodTile>
+          </PressBox>
         </View>
 
         {/* 종목 이름 줄 — 버튼이 아니라 표시. 배경·테두리를 주지 않는다 */}
@@ -208,7 +237,7 @@ export default function Run() {
           </View>
         </View>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -256,11 +285,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: GUTTER,
   },
   tile: { width: 48, height: 48 },
-  headerActions: { flexDirection: 'row', gap: 8 },
-  backGlyph: { fontSize: 30, fontWeight: '600', color: '#FFFFFF', opacity: 0.9, marginTop: -4 },
+  handleArea: { height: 22, alignItems: 'center', justifyContent: 'center' },
+  handle: { width: 44, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.45)' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   tileGlyph: { fontSize: 20, color: '#FFFFFF', opacity: 0.9 },
-  routineName: { fontSize: 15, fontWeight: '600', color: '#FFFFFF', opacity: 0.85, flex: 1, textAlign: 'center' },
+  routineName: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 19,
+    fontWeight: '700',
+    letterSpacing: -0.3,
+    color: '#FFFFFF',
+    opacity: 0.95,
+  },
   blockRow: {
     paddingTop: 18,
     paddingHorizontal: GUTTER,
