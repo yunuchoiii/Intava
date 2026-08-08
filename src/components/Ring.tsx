@@ -30,17 +30,8 @@ const CENTER = RING_SIZE / 2;
 /** 링을 잡을 수 있는 반지름 범위 — 가운데 숫자 영역은 제외한다 */
 const GRAB_MIN = 86;
 const GRAB_MAX = 168;
-/**
- * 이만큼(약 3도) 돌기 전까지는 링이 손가락을 양보한다.
- *
- * 밴드를 스치며 아래로 빠르게 쓸어 화면을 내리려는 손이 있다. 링이 닿는 순간부터
- * 끝까지 붙잡으면 그 손짓이 시간 되감기가 되어버린다 — 내리려다 운동 시간이
- * 거꾸로 가는 것은 링을 지키는 값어치보다 나쁘다.
- *
- * 링 위·아래에서 곧게 내리는 것은 중심을 향한 움직임이라 각도가 늘지 않아 양보하고,
- * 좌·우에서 내리는 것은 그 자체로 회전이라 첫 움직임부터 각도가 붙어 지켜진다.
- */
-const ROTATE_MIN = 0.05;
+/** 이만큼은 움직여야 손짓의 방향을 판단한다 */
+const DECIDE_PX = 6;
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -130,8 +121,6 @@ export function Ring({
 
   const lastAngle = useRef(0);
   const accum = useRef(0);
-  /** 방향과 무관하게 돌아간 총량 — 되돌아와도 줄지 않는다 */
-  const spun = useRef(0);
   const startRemain = useRef(0);
   const lastSecond = useRef(0);
 
@@ -161,15 +150,44 @@ export function Ring({
     return r >= GRAB_MIN && r <= GRAB_MAX;
   };
 
+  /**
+   * 링을 **도는** 손짓인지, 링을 **가로지르는** 손짓인지.
+   *
+   * 밴드 위에서 시작했다고 다 시간 조정은 아니다. 화면을 내리려고 링 위쪽을 스치며
+   * 곧게 내리긋는 손도 있는데, 그것까지 붙잡으면 내리려다 운동 시간이 거꾸로 간다.
+   *
+   * 닿은 지점에서 중심을 향하는 방향과 원을 따라 도는 방향으로 움직임을 나눠,
+   * 도는 쪽이 크면 시간 조정이다. 3시에서 아래로 긋는 것은 그 자체로 회전이라
+   * 지켜지고, 12시에서 아래로 긋는 것은 중심을 가로지르는 것이라 양보한다.
+   *
+   * 이 판단은 **첫 움직임에서 한 번** 한다. 붙잡고 나면 끝까지 놓지 않는다 —
+   * 문지르는 도중에 손가락을 빼앗기면 그것대로 못 쓴다.
+   */
+  const isTurning = (e: GestureResponderEvent, mx: number, my: number) => {
+    const { dx, dy } = at(e);
+    const r = Math.hypot(dx, dy) || 1;
+    // 중심 방향 성분과 원을 따라 도는 성분
+    const radial = Math.abs((mx * dx + my * dy) / r);
+    const tangential = Math.abs((mx * -dy + my * dx) / r);
+    return tangential >= radial;
+  };
+
   const pan = useMemo(
     () =>
       PanResponder.create({
-        onStartShouldSetPanResponder: (e) => !!onScrub && onBand(e),
-        onMoveShouldSetPanResponder: (e) => !!onScrub && onBand(e),
+        /**
+         * 닿는 순간에는 잡지 않는다. 어느 쪽 손짓인지 아직 모르기 때문이다 —
+         * 여기서 잡아 버리면 화면을 내리려는 손까지 시간 조정으로 삼킨다.
+         */
+        onStartShouldSetPanResponder: () => false,
+        onMoveShouldSetPanResponder: (e, g) =>
+          !!onScrub &&
+          onBand(e) &&
+          Math.hypot(g.dx, g.dy) > DECIDE_PX &&
+          isTurning(e, g.dx, g.dy),
         onPanResponderGrant: (e) => {
           lastAngle.current = angleOf(e);
           accum.current = 0;
-          spun.current = 0;
           startRemain.current = remainRef.current;
           lastSecond.current = Math.ceil(remainRef.current);
           setScrubbing(true);
@@ -182,7 +200,6 @@ export function Ring({
           else if (d < -Math.PI) d += Math.PI * 2;
           lastAngle.current = a;
           accum.current += d;
-          spun.current += Math.abs(d);
 
           const dur = durRef.current || 1;
           const next = Math.max(
@@ -198,9 +215,8 @@ export function Ring({
           }
           onScrub?.(next);
         },
-        // 실제로 돌리기 시작한 뒤에는 놓지 않는다 — 문지르는 도중에 끌어내려 닫기가
-        // 손가락을 빼앗아 가면 안 된다. 그 전까지는 양보한다(ROTATE_MIN 참고).
-        onPanResponderTerminationRequest: () => spun.current < ROTATE_MIN,
+        // 한 번 잡았으면 끝까지 쥔다. 무엇을 하려는 손짓인지는 잡기 전에 이미 가렸다.
+        onPanResponderTerminationRequest: () => false,
         onPanResponderRelease: () => {
           setScrubbing(false);
           onScrubEnd?.();
