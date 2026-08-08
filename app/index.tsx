@@ -164,9 +164,13 @@ export default function Home() {
 
   return (
     <Screen gradient>
-      <View
-        style={{ flex: 1, paddingTop: insets.top + 6, paddingBottom: insets.bottom + 12 + miniSpace }}
-      >
+      {/*
+        아래쪽은 비워두지 않는다 — 목록은 화면 끝까지 자라고, 홈 인디케이터와
+        미니 바가 차지하는 만큼은 목록 **내용**의 끝에 붙인다(TabPage의 bottomPad).
+        틀을 잘라 두면 스크롤하는 도중 행이 허공에서 잘리고, 그 아래 빈 띠가
+        목록을 가리는 판처럼 보인다.
+      */}
+      <View style={{ flex: 1, paddingTop: insets.top + 6 }}>
         <View style={styles.header}>
           {/* 잠금형이 넓고 낮아져서 118로는 심볼이 28px 아래로 떨어진다 */}
           <Wordmark width={140} />
@@ -218,6 +222,7 @@ export default function Home() {
                 width={width}
                 ready={ready}
                 topPad={toolHeight}
+                bottomPad={insets.bottom + 12 + miniSpace}
                 onRowActions={rowActions}
               />
             ))}
@@ -282,6 +287,7 @@ function TabPage({
   width,
   ready,
   topPad,
+  bottomPad,
   onRowActions,
 }: {
   kind: PresetKind;
@@ -290,12 +296,14 @@ function TabPage({
   ready: boolean;
   /** 위에 떠 있는 정렬 줄이 가리는 높이 */
   topPad: number;
+  /** 화면 아래에서 홈 인디케이터와 미니 바가 가리는 높이 */
+  bottomPad: number;
   onRowActions: (p: Preset) => void;
 }) {
   return (
     <View style={{ width }}>
       {ready && list.length === 0 ? (
-        <EmptyState kind={kind} topPad={topPad} />
+        <EmptyState kind={kind} topPad={topPad} bottomPad={bottomPad} />
       ) : (
         <ScrollView
           style={{ flex: 1 }}
@@ -306,7 +314,7 @@ function TabPage({
              * 이미 숨통이고, 행 자체도 위아래 20씩 안고 있다.
              */
             paddingTop: topPad,
-            paddingBottom: 12,
+            paddingBottom: bottomPad,
           }}
           showsVerticalScrollIndicator={false}
         >
@@ -466,10 +474,18 @@ function PresetRow({ preset, onLongPress }: { preset: Preset; onLongPress: () =>
   );
 }
 
-/** 빈 화면은 정렬 줄 아래 남은 자리의 한가운데에 선다 */
-function EmptyState({ kind, topPad }: { kind: PresetKind; topPad: number }) {
+/** 빈 화면은 정렬 줄과 미니 바 사이, 남은 자리의 한가운데에 선다 */
+function EmptyState({
+  kind,
+  topPad,
+  bottomPad,
+}: {
+  kind: PresetKind;
+  topPad: number;
+  bottomPad: number;
+}) {
   return (
-    <View style={[styles.empty, { paddingTop: topPad }]}>
+    <View style={[styles.empty, { paddingTop: topPad, paddingBottom: bottomPad }]}>
       <Surface radius={32} style={styles.emptyIcon}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <PlayIcon size={30} color="rgba(255,255,255,0.55)" />
