@@ -20,13 +20,13 @@ import { ListIcon, NextIcon, PauseIcon, PencilIcon, PlayIcon, PrevIcon } from '.
 import { OrderSheet } from '../src/components/OrderSheet';
 import { PhaseFlood } from '../src/components/PhaseFlood';
 import { Ring } from '../src/components/Ring';
-import { clock, isSimple, segLabel, subLabel, titleLabel } from '../src/engine/labels';
+import { clock, isSimple, phaseLabel, segLabel, subLabel, titleLabel } from '../src/engine/labels';
 import { useMorph } from '../src/morph';
 import { ensurePermission } from '../src/notify';
 import { useSession } from '../src/session';
 import { useStore } from '../src/store';
 import { t } from '../src/i18n';
-import { C, GUTTER, PHASE_COLOR, TABULAR } from '../src/theme';
+import { ABS, C, GUTTER, PHASE_COLOR, TABULAR } from '../src/theme';
 
 export default function Run() {
   const router = useRouter();
@@ -54,43 +54,43 @@ export default function Run() {
   }, []);
 
   /**
-   * 종목이 차례로 나타나는 자리들 — 라운드가 여러 번이면 같은 종목이 여러 번 온다.
-   * 계획에서 뽑는다. 프리셋의 종목 배열이 아니라 **실제로 돌 차례**여야 하고,
-   * 그건 실행 중에 바뀔 수 있기 때문이다.
+   * 이 운동이 지나가는 자리들 — 웜업 · 준비 · 종목(라운드마다 다시) · 쿨다운.
+   *
+   * 계획에서 뽑는다. 프리셋이 아니라 **실제로 돌 차례**여야 하고, 그건 실행 중에
+   * 바뀔 수 있기 때문이다. 휴식은 자리로 세지 않는다 — 어디에서 어디로 가는
+   * 사이일 뿐이라, 그 동안에는 **도착할** 자리를 지금으로 친다.
    */
-  const occurrences = useMemo(() => {
-    const out: { key: string; name: string; round: number; blk: number }[] = [];
-    for (const s of run.plan?.segs ?? []) {
-      if (s.phase !== 'WORK' || s.round == null || s.blk == null) continue;
-      const last = out[out.length - 1];
-      if (last && last.round === s.round && last.blk === s.blk) continue;
-      out.push({ key: `${s.round}-${s.blk}`, name: s.name ?? '', round: s.round, blk: s.blk });
-    }
-    return out;
+  const { stages, stageOf } = useMemo(() => {
+    const stages: { key: string; name: string }[] = [];
+    const stageOf: number[] = [];
+    let occ = '';
+    (run.plan?.segs ?? []).forEach((s, i) => {
+      switch (s.phase) {
+        case 'WARMUP':
+        case 'PREPARE':
+        case 'COOLDOWN':
+          if (stages[stages.length - 1]?.key !== s.phase) {
+            stages.push({ key: s.phase, name: phaseLabel(s.phase) });
+          }
+          break;
+        case 'WORK': {
+          const key = `${s.round}-${s.blk}`;
+          if (key !== occ) {
+            occ = key;
+            stages.push({ key, name: s.name ?? '' });
+          }
+          break;
+        }
+      }
+      // 종목·라운드 사이 휴식은 아직 만들어지지 않은 다음 자리를 가리킨다
+      const ahead = s.phase === 'BLOCK_REST' || s.phase === 'ROUND_REST';
+      stageOf[i] = ahead ? stages.length : stages.length - 1;
+    });
+    return { stages, stageOf };
   }, [run.plan]);
 
-  /**
-   * 그중 지금 자리. 웜업·준비에서는 -1(아직 아무 종목도 아니다), 쿨다운·완료에서는
-   * 끝을 가리킨다. 휴식 중에는 **도착할** 종목을 지금으로 친다 — 링 아래의
-   * "3번째 종목"이 가리키는 것과 같아야 한다.
-   */
-  const cursor = useMemo(() => {
-    const seg = run.seg;
-    if (!seg) return occurrences.length;
-    const at = occurrences.findIndex((o) => o.round === seg.round && o.blk === seg.blk);
-    switch (seg.phase) {
-      case 'WORK':
-      case 'SET_REST':
-        return at;
-      case 'BLOCK_REST':
-      case 'ROUND_REST':
-        return at + 1;
-      case 'COOLDOWN':
-        return occurrences.length;
-      default:
-        return -1;
-    }
-  }, [run.seg, occurrences]);
+  /** 그중 지금 자리. 다 끝났으면 끝을 가리킨다 */
+  const cursor = run.seg ? (stageOf[run.idx] ?? -1) : stages.length;
 
   /** 순서 시트에 늘어놓을 종목 — 손댈 수 있는 라운드의 차례대로 */
   const orderBlocks = useMemo(
@@ -337,33 +337,30 @@ export default function Run() {
         */}
         {!simple && (
           <View style={styles.blockRow}>
-            <View style={styles.blockNames}>
+            {/* 이름은 화면 한가운데 — 오른쪽 버튼이 자리를 차지하면 가운데가 밀린다 */}
+            <View style={styles.blockNames} pointerEvents="none">
               {[cursor - 1, cursor, cursor + 1].map((i) => {
-                const occ = occurrences[i];
-                if (!occ) return null;
+                const stage = stages[i];
+                if (!stage) return null;
                 return (
                   <Text
-                    key={occ.key}
+                    key={stage.key}
                     numberOfLines={1}
                     style={[styles.blockName, i === cursor ? styles.blockNow : styles.blockOther]}
                   >
-                    {occ.name}
+                    {stage.name}
                   </Text>
                 );
               })}
             </View>
             <PressBox
               onPress={() => setOrdering(true)}
-              radius={14}
-              scaleTo={0.9}
-              dim={0.2}
+              hitSlop={12}
+              scaleTo={0.88}
+              dim={0}
               accessibilityLabel={t('run.orderTitle')}
             >
-              <FloodTile radius={14} style={styles.orderTile}>
-                <View style={[styles.center, { opacity: 0.9 }]}>
-                  <ListIcon size={19} />
-                </View>
-              </FloodTile>
+              <ListIcon size={21} color="rgba(255,255,255,0.85)" />
             </PressBox>
           </View>
         )}
@@ -507,20 +504,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: GUTTER,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    justifyContent: 'flex-end',
+    minHeight: 22,
   },
-  /** 이름 셋은 남는 자리를 나눠 갖고, 목록 버튼은 오른쪽 끝에 고정된다 */
+  /**
+   * 이름 셋은 줄 전체에 걸쳐 가운데 정렬한다 — 흐름에 두면 오른쪽 버튼 폭만큼
+   * 가운데가 왼쪽으로 밀린다. 좌우 34는 버튼 밑으로 글자가 들어가지 않게 하는 여백.
+   */
   blockNames: {
-    flex: 1,
+    ...ABS,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 34,
     gap: 9,
   },
   blockName: { flexShrink: 1, fontSize: 15, color: '#FFFFFF' },
   blockNow: { fontWeight: '700', opacity: 1 },
   blockOther: { fontWeight: '600', opacity: 0.5 },
-  orderTile: { width: 36, height: 36 },
   ringWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 0 },
   controls: { flexDirection: 'row', gap: 26, alignItems: 'center', justifyContent: 'center' },
   control: { width: 96, alignItems: 'center', gap: 6 },
