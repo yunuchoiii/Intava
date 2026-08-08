@@ -526,8 +526,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 34,
   },
-  /** 가운데 이름의 좌우를 같은 몫으로 벌리는 칸. 여백 4.5씩이 이름 사이 9가 된다 */
-  blockSide: { flex: 1, minWidth: 0, paddingHorizontal: 4.5 },
+  /** 가운데 이름의 좌우를 같은 몫으로 벌리는 칸. 여백 10씩이 이름 사이 20이 된다 */
+  blockSide: { flex: 1, minWidth: 0, paddingHorizontal: 10 },
   blockName: { flexShrink: 1, fontSize: 15, color: '#FFFFFF' },
   blockNow: { fontWeight: '700', opacity: 1 },
   blockOther: { fontWeight: '600', opacity: 0.5 },
