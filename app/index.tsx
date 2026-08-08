@@ -1,6 +1,5 @@
 /** 5.1 홈 — 운동 직전에 화면을 오래 붙들지 않게 한다. 실행까지 한 번의 탭. */
 import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -251,55 +250,24 @@ export default function Home() {
 }
 
 /**
- * 정렬 줄 뒤를 흐리게 깔고 아래로 갈수록 풀어준다 — 행이 사라지는 자리에
- * 칼로 자른 듯한 경계가 남지 않게 한다.
+ * 정렬 줄 뒤 — 딱 그 줄만큼 흐리다.
  *
- * 흐림 자체에 마스크를 씌울 방법이 없어서, 같은 흐림을 키만 줄여가며 겹쳐 쌓는다.
- * 위로 갈수록 겹치는 장수가 늘어 자연히 짙어지고, 한 장씩 끝나는 경계는
- * 한 겹 차이뿐이라 눈에 잡히지 않는다. 색은 그 높이에서의 배경색이라
- * 위쪽은 사실상 배경으로 메워지고 꼬리로 가면서 투명해진다.
+ * 한 겹이다. 예전에는 아래로 갈수록 풀리게 하려고 같은 흐림을 키를 줄여가며
+ * 겹쳐 쌓고 색까지 덮었는데, 실기기에서는 부드럽게 풀리는 대신 층층이
+ * 끊긴 띠로 보였다. 흐림에 마스크를 씌울 수 없는 이상 흉내로는 안 된다 —
+ * 경계를 숨기려다 경계를 여러 개 만드느니 하나만 두고 그 자리를 정확히 맞춘다.
  *
- * 위쪽 끝은 세그먼트 밑으로 밀어 넣는다 — 목록 자리에서 시작하면 세그먼트와
- * 이것 사이에 흐리지 않은 띠가 남아 가로줄 하나가 그어진 것처럼 보인다.
- * 세그먼트가 이 위에 그려지고(zIndex), 둥근 모서리가 파먹은 자리까지 흐림이 찬다.
- * 그 구간에서는 덮는 색도 0에서 올라오게 해 옆으로 삐져나온 부분이 티나지 않는다.
+ * 위는 세그먼트 아랫변, 아래는 줄의 끝. 목록은 여기서 4pt 아래부터 시작하므로
+ * 스크롤하지 않은 상태에서는 첫 행에 흐림이 닿지 않는다.
  */
-const FADE_TAIL = 30;
-const FADE_LIFT = 20;
-const BLUR_LAYERS = [1, 0.86, 0.72, 0.58, 0.44];
-/** 화면 그라디언트가 이 높이에서 지나는 색 (#21212A → #191920 사이) */
-const FADE_TINT = '30,30,38';
-
 function ToolRowBackdrop({ height }: { height: number }) {
-  const fade = height + FADE_TAIL;
-  const total = FADE_LIFT + fade;
   return (
-    <View style={[styles.backdrop, { top: -FADE_LIFT, height: total }]} pointerEvents="none">
-      {BLUR_LAYERS.map((f) => (
-        <BlurView
-          key={f}
-          intensity={14}
-          tint="dark"
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: FADE_LIFT + fade * f,
-          }}
-        />
-      ))}
-      <LinearGradient
-        colors={[
-          `rgba(${FADE_TINT},0)`,
-          `rgba(${FADE_TINT},0.8)`,
-          `rgba(${FADE_TINT},0.62)`,
-          `rgba(${FADE_TINT},0)`,
-        ]}
-        locations={[0, FADE_LIFT / total, (FADE_LIFT + height) / total, 1]}
-        style={StyleSheet.absoluteFill}
-      />
-    </View>
+    <BlurView
+      intensity={40}
+      tint="dark"
+      style={[styles.backdrop, { height }]}
+      pointerEvents="none"
+    />
   );
 }
 
@@ -561,8 +529,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   appName: { fontSize: 34, fontWeight: '800', letterSpacing: -1.19, color: C.textPrimary },
-  /** 목록 흐림이 이 밑으로 파고들므로 위로 올려 둔다 — 그래야 흐림의 윗변이 가려진다 */
-  segment: { marginTop: 16, marginHorizontal: GUTTER, height: 58, padding: 5, zIndex: 1 },
+  segment: { marginTop: 16, marginHorizontal: GUTTER, height: 58, padding: 5 },
   segmentInner: { flex: 1, flexDirection: 'row', gap: 5 },
   segmentTab: {
     flex: 1,
@@ -598,7 +565,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  backdrop: { position: 'absolute', left: 0, right: 0, overflow: 'hidden' },
+  backdrop: { position: 'absolute', top: 0, left: 0, right: 0 },
   sortRow: {
     paddingVertical: 12,
     paddingRight: 8,
