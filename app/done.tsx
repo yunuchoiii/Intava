@@ -7,7 +7,7 @@ import { WhiteButton } from '../src/components/Buttons';
 import { PressBox } from '../src/components/PressBox';
 import { PhaseFlood } from '../src/components/PhaseFlood';
 import { clock, isSimple } from '../src/engine/labels';
-import { buildPlan, progressAt, type RoundOrders } from '../src/engine/segments';
+import { NO_LIVED, type Lived, type RoundOrders } from '../src/engine/segments';
 import { useSession } from '../src/session';
 import { useStore } from '../src/store';
 import { t } from '../src/i18n';
@@ -18,13 +18,14 @@ export default function Done() {
   /**
    * 끝까지 간 경우와 도중에 끈 경우가 같은 화면을 쓴다.
    *
-   * 넘어오는 값은 세 가지 — 무엇을(id), 얼마나 했는지(elapsed), 어떤 차례로
-   * 돌았는지(orders). **세션에서 읽지 않는다.** 이 화면은 뜨자마자 세션을 비우기
-   * 때문에(미니 바가 남으면 안 된다) 그 뒤에는 물어볼 데가 없다.
+   * 넘어오는 값 — 무엇을(id), 실제로 지나온 몫(lived), 끝까지 갔는지(full),
+   * 어떤 차례로 돌았는지(orders). **세션에서 읽지 않는다.** 이 화면은 뜨자마자
+   * 세션을 비우기 때문에(미니 바가 남으면 안 된다) 그 뒤에는 물어볼 데가 없다.
    */
-  const { id, elapsed, orders } = useLocalSearchParams<{
+  const { id, lived, full, orders } = useLocalSearchParams<{
     id: string;
-    elapsed?: string;
+    lived?: string;
+    full?: string;
     orders?: string;
   }>();
   const router = useRouter();
@@ -49,12 +50,18 @@ export default function Done() {
     }
   }, [orders]);
 
-  /** 계획이 아니라 실제로 지나온 만큼을 센다 */
-  const stats = useMemo(() => {
-    if (!preset) return null;
-    const plan = buildPlan(preset, rounds);
-    return progressAt(plan, elapsed ? Number(elapsed) : plan.total);
-  }, [preset, rounds, elapsed]);
+  /**
+   * 계획이 아니라 실제로 지나온 만큼 — 세션이 정산해 넘겨준 값이다.
+   * 넘기기(⏭)로 건너뛴 구간은 여기에 들어 있지 않다.
+   */
+  const stats = useMemo<Lived>(() => {
+    if (!lived) return NO_LIVED;
+    try {
+      return { ...NO_LIVED, ...(JSON.parse(lived) as Lived) };
+    } catch {
+      return NO_LIVED;
+    }
+  }, [lived]);
 
   /** 마지막에 돌던 차례가 저장된 루틴과 다른가 */
   const changed = useMemo(() => {
@@ -66,7 +73,7 @@ export default function Done() {
     return last;
   }, [preset, rounds]);
 
-  if (!preset || !stats) {
+  if (!preset) {
     return <View style={{ flex: 1, backgroundColor: PHASE_COLOR.DONE }} />;
   }
 
@@ -107,12 +114,12 @@ export default function Done() {
         <View style={{ flex: 1, justifyContent: 'center' }}>
           {/* 끝까지 갔는지 도중에 껐는지 — 숫자만 다르고 말은 그대로면 거짓말이 된다 */}
           <Text style={styles.title}>
-            {t(stats.full ? 'doneScreen.title' : 'doneScreen.titleStopped')}
+            {t(full ? 'doneScreen.title' : 'doneScreen.titleStopped')}
           </Text>
           <Text style={styles.summary}>{summaryLine(preset, stats.sets)}</Text>
 
           <View style={{ marginTop: 34 }}>
-            <StatRow label={t('doneScreen.totalTime')} value={clock(stats.elapsed)} first />
+            <StatRow label={t('doneScreen.totalTime')} value={clock(stats.total)} first />
             <StatRow label={t('doneScreen.pureWork')} value={clock(stats.work)} />
             <StatRow
               label={isSimple(preset) ? t('doneScreen.completedSets') : t('doneScreen.completedRounds')}

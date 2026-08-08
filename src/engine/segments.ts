@@ -107,31 +107,60 @@ export function totalSets(p: Preset): number {
 }
 
 /**
- * 실제로 해낸 만큼 — 완료 화면의 숫자.
+ * 실제로 지나온 만큼 — 완료 화면의 숫자.
  *
- * 끝까지 간 경우와 도중에 끈 경우가 같은 화면을 쓰므로, 계획이 아니라 흐른 시간을
- * 기준으로 센다. **끝난 구간만** 친다 — 20초짜리 운동을 3초 하다 껐으면 그 세트는
- * 하지 않은 것이다.
+ * 계획이 아니라 **몸으로 통과한 것**만 센다. 넘기기(⏭)는 시계를 통째로 앞으로
+ * 밀기 때문에, 흐른 시간을 그대로 쓰면 1분 만에 넘겨 끝낸 운동도 23분으로 잡힌다.
+ * 그래서 어디까지 세었는지(at)를 들고 다니면서, 시계가 뛴 자리는 건너뛰고
+ * 이어서 흐른 구간만 더한다.
  */
-export function progressAt(plan: Plan, elapsed: number) {
-  const e = Math.max(0, Math.min(plan.total, elapsed));
-  const done = plan.segs.filter((s) => s.phase === 'WORK' && s.start + s.dur <= e + 0.01);
+export type Lived = {
+  /** 여기까지 세었다 — 되돌아가도 내려가지 않는다(같은 세트를 두 번 세지 않게) */
+  at: number;
+  /** 실제로 흐른 시간 (멈춰 있던 동안과 건너뛴 구간은 빠진다) */
+  total: number;
+  /** 그중 운동 구간에서 보낸 시간 */
+  work: number;
+  /** 끝까지 지나온 세트 · 라운드 */
+  sets: number;
+  rounds: number;
+};
 
-  // 라운드는 그 안의 운동 구간이 **전부** 끝나야 완료다 — 하나라도 남았으면 직전까지만
-  let lastRound = 0;
-  let firstOpen = Number.POSITIVE_INFINITY;
-  for (const s of plan.segs) {
-    if (s.phase !== 'WORK' || s.round == null) continue;
-    lastRound = Math.max(lastRound, s.round);
-    if (s.start + s.dur > e + 0.01) firstOpen = Math.min(firstOpen, s.round);
-  }
+export const NO_LIVED: Lived = { at: 0, total: 0, work: 0, sets: 0, rounds: 0 };
+
+/** at부터 to까지 이어서 흘렀다고 보고 셈을 더한다. 뒤로 간 것은 세지 않는다 */
+export function advanceLived(lived: Lived | undefined, plan: Plan, to: number): Lived {
+  const cur = lived ?? NO_LIVED;
+  const end = Math.max(0, Math.min(plan.total, to));
+  if (end <= cur.at) return cur;
+
+  // 라운드의 마지막 운동 구간 — 그것을 지나야 그 라운드를 다 한 것이다
+  const lastOfRound = new Map<number, number>();
+  plan.segs.forEach((s, i) => {
+    if (s.phase === 'WORK' && s.round != null) lastOfRound.set(s.round, i);
+  });
+
+  let work = 0;
+  let sets = 0;
+  let rounds = 0;
+  plan.segs.forEach((s, i) => {
+    if (s.phase !== 'WORK') return;
+    const segEnd = s.start + s.dur;
+    const lo = Math.max(cur.at, s.start);
+    const hi = Math.min(end, segEnd);
+    if (hi > lo) work += hi - lo;
+    if (segEnd > cur.at && segEnd <= end + 0.01) {
+      sets += 1;
+      if (s.round != null && lastOfRound.get(s.round) === i) rounds += 1;
+    }
+  });
 
   return {
-    elapsed: e,
-    work: done.reduce((a, s) => a + s.dur, 0),
-    sets: done.length,
-    rounds: Number.isFinite(firstOpen) ? firstOpen - 1 : lastRound,
-    full: e >= plan.total - 0.01,
+    at: end,
+    total: cur.total + (end - cur.at),
+    work: cur.work + work,
+    sets: cur.sets + sets,
+    rounds: cur.rounds + rounds,
   };
 }
 

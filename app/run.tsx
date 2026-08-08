@@ -118,7 +118,9 @@ export default function Run() {
    */
   const doneParams = () => ({
     id: preset!.id,
-    elapsed: String(Math.round(run.elapsed)),
+    // 계획상의 위치가 아니라 실제로 지나온 몫 — 넘긴 구간은 빠져 있다
+    lived: JSON.stringify(run.settle()),
+    full: run.done ? '1' : '',
     orders: run.orders ? JSON.stringify(run.orders) : '',
   });
 

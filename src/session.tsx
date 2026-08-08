@@ -24,7 +24,15 @@ import React, {
 } from 'react';
 import { AppState } from 'react-native';
 import { endSession, setCueVolume, startSession } from './audio';
-import { buildPlan, segmentAt, type Plan, type RoundOrders } from './engine/segments';
+import {
+  advanceLived,
+  buildPlan,
+  segmentAt,
+  NO_LIVED,
+  type Lived,
+  type Plan,
+  type RoundOrders,
+} from './engine/segments';
 import { countdownFeedback, segmentFeedback } from './feedback';
 import { cancelAll, scheduleUpcoming } from './notify';
 import { useStore } from './store';
@@ -45,6 +53,8 @@ type Stored = {
    * 화면에서 따로 묻는다.
    */
   orders?: RoundOrders;
+  /** 실제로 지나온 몫 — 넘긴 구간은 빠진다 */
+  lived?: Lived;
 };
 
 export type RunSnapshot = {
@@ -85,6 +95,11 @@ export type Session = RunSnapshot & {
    * 앞의 lockedCount개는 그대로여야 한다. 다음 라운드부터도 이 차례를 따른다.
    */
   reorder: (ids: string[]) => void;
+  /**
+   * 지금까지 지나온 몫을 셈에 반영하고 돌려준다 — 완료 화면으로 넘길 숫자다.
+   * 매 초 적어두면 저장이 너무 잦아서, 끝내는 순간에 한 번 정산한다.
+   */
+  settle: () => Lived;
   start: (presetId: string, orders?: RoundOrders) => void;
   toggle: () => void;
   skipNext: () => void;
@@ -352,9 +367,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       const p = planRef.current;
       if (!s || !p) return;
       const clamped = Math.max(0, Math.min(p.total, sec));
+      /*
+        뛰기 전까지 흘러온 몫을 먼저 셈에 넣고, 센 자리를 도착점으로 옮긴다 —
+        건너뛴 구간은 그 사이로 빠져 영영 세지 않는다. 뒤로 갈 때는 자리를
+        되돌리지 않는다. 같은 세트를 두 번 세지 않으려는 것이다.
+      */
+      const lived = advanceLived(s.lived, p, elapsedNow());
       const next: Stored = {
         ...s,
         zeroAt: (s.pausedAt ?? Date.now()) - clamped * 1000,
+        lived: { ...lived, at: Math.max(lived.at, clamped) },
       };
       persist(next);
       if (clamped < p.total) doneFired.current = false;
@@ -367,7 +389,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       tick();
       if (replan) void reschedule();
     },
-    [persist, snapshotAt, tick, reschedule]
+    [persist, snapshotAt, tick, reschedule, elapsedNow]
   );
 
   const value = useMemo<Session>(() => {
@@ -432,6 +454,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         setSyncId((n) => n + 1);
         void reschedule();
       },
+      settle: (): Lived => {
+        const s = storedRef.current;
+        const p = planRef.current;
+        if (!s || !p) return NO_LIVED;
+        const lived = advanceLived(s.lived, p, elapsedNow());
+        persist({ ...s, lived });
+        return lived;
+      },
       toggle: () => {
         const s = storedRef.current;
         if (!s) return;
@@ -476,7 +506,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         doneFired.current = false;
         lastIdx.current = -1;
         const s = storedRef.current;
-        if (s) persist({ ...s, zeroAt: Date.now(), pausedAt: null });
+        // 처음부터 다시 도는 것이니 지나온 셈도 처음으로 되돌린다
+        if (s) persist({ ...s, zeroAt: Date.now(), pausedAt: null, lived: NO_LIVED });
         setSyncId((n) => n + 1);
         tick();
         void reschedule();
