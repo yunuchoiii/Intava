@@ -56,9 +56,10 @@ const ADD_RADIUS = ADD_HEIGHT / 2;
  * 정렬 줄은 목록 위에 떠 있고 행들은 그 뒤로 지나간다.
  *
  * 줄이 실제로 차지하는 높이는 글자 크기 설정에 따라 달라져서 재서 쓴다.
- * 첫 프레임에만 쓰이는 어림값(여백 18 + 줄 41 + 여백 2).
+ * 첫 프레임에만 쓰이는 어림값(여백 18 + 줄 41 + 여백 18).
  */
-const TOOL_ROW_GUESS = 61;
+const TOOL_ROW_PAD = 18;
+const TOOL_ROW_GUESS = TOOL_ROW_PAD * 2 + 41;
 
 export default function Home() {
   const router = useRouter();
@@ -555,14 +556,16 @@ const styles = StyleSheet.create({
    *
    * 목록 위에 떠 있으므로 위아래 간격은 margin이 아니라 padding으로 준다 —
    * 이 줄이 가리는 높이를 그대로 재서 목록의 시작 여백으로 넘겨야 한다.
+   * 위아래를 같은 값으로 둔다. 흐린 판이 이 줄만큼이라, 여백이 한쪽으로 쏠리면
+   * 판 안에서 줄이 위로 붙어 보인다.
    */
   toolRow: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    paddingTop: 18,
-    paddingBottom: 2,
+    paddingTop: TOOL_ROW_PAD,
+    paddingBottom: TOOL_ROW_PAD,
     paddingHorizontal: GUTTER,
     flexDirection: 'row',
     alignItems: 'center',
