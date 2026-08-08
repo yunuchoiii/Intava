@@ -4,7 +4,7 @@ import type { Catalog } from './ko';
 export const ja: Catalog = {
   common: {
     cancel: 'キャンセル',
-    save: '保存',
+    save: '保存する',
     close: '閉じる',
     delete: '削除',
     done: '完了',
@@ -76,6 +76,13 @@ export const ja: Catalog = {
     totalTime: '合計 {{time}}',
     workTime: '運動 {{time}}',
     start: '開始する',
+    discardTitle: '保存せずに戻りますか？',
+    discardBody: '編集した内容は失われます。',
+    discardStay: '編集を続ける',
+    discardLeave: '戻る',
+    startSaveTitle: '保存して開始しますか？',
+    startSaveBody: '編集した内容を保存してから開始します。',
+    startSaveConfirm: '保存して開始',
     onlyOne: '{{item}}のみ',
     warmupPart: 'ウォームアップ{{dur}}',
     preparePart: '準備{{dur}}',

@@ -8,7 +8,7 @@
 export const ko = {
   common: {
     cancel: '취소',
-    save: '저장',
+    save: '저장하기',
     close: '닫기',
     delete: '삭제',
     done: '완료',
@@ -88,6 +88,15 @@ export const ko = {
     workTime: '운동 {{time}}',
     /** 저장하고 바로 실행 — 편집 화면 아래, 저장 버튼 밑 */
     start: '시작하기',
+    /** 저장하지 않고 나가려 할 때 */
+    discardTitle: '저장하지 않고 나가시겠습니까?',
+    discardBody: '편집한 내용이 사라집니다.',
+    discardStay: '계속 편집',
+    discardLeave: '나가기',
+    /** 시작하기는 저장을 겸한다 — 고친 것이 있으면 묻는다 */
+    startSaveTitle: '저장하고 시작할까요?',
+    startSaveBody: '편집한 내용을 저장한 뒤 시작합니다.',
+    startSaveConfirm: '저장하고 시작',
     /** 웜업·준비·쿨다운 요약이 하나뿐일 때 — "준비 10초만" */
     onlyOne: '{{item}}만',
     warmupPart: '웜업 {{dur}}',

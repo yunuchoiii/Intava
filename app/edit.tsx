@@ -7,6 +7,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import {
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -38,6 +39,27 @@ import { kindOf, type Block, type Preset } from '../src/types';
 
 /** 종목 추가와 저장 — 한 화면의 두 버튼이라 모서리를 한 값에 묶어둔다 */
 const ACTION_RADIUS = 16;
+
+/**
+ * 손댄 것이 있는지 가리는 도장.
+ *
+ * 두 프리셋을 통째로 JSON으로 견주면 키 순서와 시각 도장(updatedAt·lastRunAt)에
+ * 걸려 아무것도 안 고쳤는데 고쳤다고 나온다. 저장할 값만 정한 순서로 늘어놓는다.
+ * 이름은 다듬어서 본다 — 뒤에 공백 하나 붙인 것을 편집으로 치지 않는다.
+ */
+function fingerprint(p: Preset): string {
+  return JSON.stringify([
+    p.name.trim(),
+    p.warmupSec,
+    p.prepareSec,
+    p.blockRestSec,
+    p.rounds,
+    p.roundRestSec,
+    p.cooldownSec,
+    p.skipLastRest,
+    p.blocks.map((b) => [b.id, b.name.trim(), b.workSec, b.restSec, b.sets]),
+  ]);
+}
 
 export default function Edit() {
   const { id, kind } = useLocalSearchParams<{ id?: string; kind?: 'routine' | 'timer' }>();
@@ -71,6 +93,8 @@ export default function Edit() {
   );
   const total = totalSec(draft);
   const pure = workSec(draft);
+  /** 저장하지 않은 편집이 남아 있는지 — 나가기와 시작하기가 이걸 보고 묻는다 */
+  const dirty = useMemo(() => fingerprint(draft) !== fingerprint(initial), [draft, initial]);
 
   const patch = (p: Partial<Preset>) => setDraft((d) => ({ ...d, ...p }));
   const toggleRow = (key: string) => {
@@ -117,6 +141,21 @@ export default function Edit() {
   };
 
   /**
+   * 나간다 — 고친 것이 남아 있으면 한 번 묻는다.
+   * 이 화면은 가장자리 스와이프를 꺼 두었으므로(_layout) 나가는 길은 여기 하나다.
+   */
+  const leave = () => {
+    if (!dirty) {
+      router.back();
+      return;
+    }
+    Alert.alert(t('edit.discardTitle'), t('edit.discardBody'), [
+      { text: t('edit.discardStay'), style: 'cancel' },
+      { text: t('edit.discardLeave'), style: 'destructive', onPress: () => router.back() },
+    ]);
+  };
+
+  /**
    * 고치던 것을 그대로 시작한다 — 저장 없이 실행하면 방금 만진 값이 아니라
    * 저장돼 있던 값이 돌기 때문에, 저장을 먼저 하고 그 프리셋을 건다.
    *
@@ -130,6 +169,21 @@ export default function Edit() {
     session.start(p.id);
     router.dismissTo('/');
     router.push('/run');
+  };
+
+  /**
+   * 시작하기는 저장을 겸한다 — 고친 것이 있으면 말없이 덮어쓰지 않고 묻는다.
+   * 저장할 생각까지는 없이 한 번 돌려보려던 것일 수 있다.
+   */
+  const askStart = () => {
+    if (!dirty) {
+      startNow();
+      return;
+    }
+    Alert.alert(t('edit.startSaveTitle'), t('edit.startSaveBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('edit.startSaveConfirm'), onPress: startNow },
+    ]);
   };
 
   const startEndSummary = () => {
@@ -192,7 +246,7 @@ export default function Edit() {
     <Screen>
       <View style={{ flex: 1, paddingTop: insets.top + 6 }}>
         <View style={styles.topBar}>
-          <Pressable onPress={() => router.back()} hitSlop={12}>
+          <Pressable onPress={leave} hitSlop={12}>
             <Text style={styles.cancel}>{t('common.cancel')}</Text>
           </Pressable>
           <Text style={styles.topTitle}>{t(simple ? 'edit.titleTimer' : 'edit.titleRoutine')}</Text>
@@ -374,7 +428,7 @@ export default function Edit() {
           {!running && (
             <WhiteButton
               label={t('edit.start')}
-              onPress={startNow}
+              onPress={askStart}
               disabled={draft.blocks.length === 0}
               height={58}
               radius={ACTION_RADIUS}
