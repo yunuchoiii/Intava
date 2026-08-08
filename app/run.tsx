@@ -337,21 +337,30 @@ export default function Run() {
         */}
         {!simple && (
           <View style={styles.blockRow}>
-            {/* 이름은 화면 한가운데 — 오른쪽 버튼이 자리를 차지하면 가운데가 밀린다 */}
+            {/*
+              지금 하는 것이 화면 한가운데 못 박혀야 한다 — 눈이 거기만 보면 되게.
+              셋을 나란히 놓고 가운데 정렬하면 앞뒤 이름 길이에 따라 지금 것이
+              좌우로 흔들린다. 양옆을 같은 몫(flex 1)으로 벌려 두면 가운데 것의
+              폭이 얼마든 정확히 한가운데 선다. 넘치는 이름은 옆칸에서 잘린다.
+            */}
             <View style={styles.blockNames} pointerEvents="none">
-              {[cursor - 1, cursor, cursor + 1].map((i) => {
-                const stage = stages[i];
-                if (!stage) return null;
-                return (
-                  <Text
-                    key={stage.key}
-                    numberOfLines={1}
-                    style={[styles.blockName, i === cursor ? styles.blockNow : styles.blockOther]}
-                  >
-                    {stage.name}
+              <View style={[styles.blockSide, { alignItems: 'flex-end' }]}>
+                {stages[cursor - 1] && (
+                  <Text numberOfLines={1} style={[styles.blockName, styles.blockOther]}>
+                    {stages[cursor - 1].name}
                   </Text>
-                );
-              })}
+                )}
+              </View>
+              <Text numberOfLines={1} style={[styles.blockName, styles.blockNow]}>
+                {stages[cursor]?.name ?? ''}
+              </Text>
+              <View style={[styles.blockSide, { alignItems: 'flex-start' }]}>
+                {stages[cursor + 1] && (
+                  <Text numberOfLines={1} style={[styles.blockName, styles.blockOther]}>
+                    {stages[cursor + 1].name}
+                  </Text>
+                )}
+              </View>
             </View>
             <PressBox
               onPress={() => setOrdering(true)}
@@ -515,10 +524,10 @@ const styles = StyleSheet.create({
     ...ABS,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     paddingHorizontal: 34,
-    gap: 9,
   },
+  /** 가운데 이름의 좌우를 같은 몫으로 벌리는 칸. 여백 4.5씩이 이름 사이 9가 된다 */
+  blockSide: { flex: 1, minWidth: 0, paddingHorizontal: 4.5 },
   blockName: { flexShrink: 1, fontSize: 15, color: '#FFFFFF' },
   blockNow: { fontWeight: '700', opacity: 1 },
   blockOther: { fontWeight: '600', opacity: 0.5 },
