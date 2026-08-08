@@ -202,9 +202,8 @@ export const ja: Catalog = {
 
   doneScreen: {
     title: 'ワークアウト完了',
-    summaryRoutine: '{{name}} · {{blocks}} {{rounds}} · {{sets}}',
-    summaryTimer: '{{name}} · {{sets}}',
-    withExtra: '{{summary}} · {{extra}}あり',
+    composition: '{{blocks}} {{rounds}}',
+    extraPart: '{{extra}} あり',
     warmup: 'ウォームアップ',
     cooldown: 'クールダウン',
     totalTime: '合計時間',

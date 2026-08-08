@@ -209,9 +209,8 @@ export const en: Catalog = {
 
   doneScreen: {
     title: 'Workout complete',
-    summaryRoutine: '{{name}} · {{blocks}}, {{rounds}} · {{sets}}',
-    summaryTimer: '{{name}} · {{sets}}',
-    withExtra: '{{summary}} · with {{extra}}',
+    composition: '{{blocks}} · {{rounds}}',
+    extraPart: 'with {{extra}}',
     warmup: 'warm-up',
     cooldown: 'cool-down',
     totalTime: 'Total time',

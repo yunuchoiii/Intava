@@ -222,9 +222,9 @@ export const ko = {
 
   doneScreen: {
     title: '운동 완료',
-    summaryRoutine: '{{name}} · {{blocks}} {{rounds}} · {{sets}}',
-    summaryTimer: '{{name}} · {{sets}}',
-    withExtra: '{{summary}} · {{extra}} 포함',
+    /** 이름 아래 한 줄 — 구성만. 세트 수는 아래 표가 말한다 */
+    composition: '{{blocks}} {{rounds}}',
+    extraPart: '{{extra}} 포함',
     warmup: '웜업',
     cooldown: '쿨다운',
     totalTime: '총 시간',

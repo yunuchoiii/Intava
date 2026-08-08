@@ -202,9 +202,8 @@ export const zh: Catalog = {
 
   doneScreen: {
     title: '训练完成',
-    summaryRoutine: '{{name}} · {{blocks}} {{rounds}} · {{sets}}',
-    summaryTimer: '{{name}} · {{sets}}',
-    withExtra: '{{summary}} · 含{{extra}}',
+    composition: '{{blocks}} {{rounds}}',
+    extraPart: '含{{extra}}',
     warmup: '热身',
     cooldown: '放松',
     totalTime: '总时间',

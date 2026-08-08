@@ -116,7 +116,11 @@ export default function Done() {
           <Text style={styles.title}>
             {t(full ? 'doneScreen.title' : 'doneScreen.titleStopped')}
           </Text>
-          <Text style={styles.summary}>{summaryLine(preset, stats.sets)}</Text>
+          {/* 이름이 먼저, 구성은 그 아래 한 단계 작게 — 한 줄로 이으면 두 줄로 접힌다 */}
+          <Text style={styles.name} numberOfLines={2}>
+            {preset.name}
+          </Text>
+          {!!detailLine(preset) && <Text style={styles.detail}>{detailLine(preset)}</Text>}
 
           <View style={{ marginTop: 34 }}>
             <StatRow label={t('doneScreen.totalTime')} value={clock(stats.total)} first />
@@ -153,22 +157,33 @@ export default function Done() {
   );
 }
 
-function summaryLine(p: Preset, sets: number): string {
-  const setsText = t('count.sets', { count: sets });
-  const summary = isSimple(p)
-    ? t('doneScreen.summaryTimer', { name: p.name, sets: setsText })
-    : t('doneScreen.summaryRoutine', {
-        name: p.name,
-        blocks: t('count.blocks', { count: p.blocks.length }),
-        rounds: t('count.rounds', { count: p.rounds }),
-        sets: setsText,
-      });
-
-  const extra = [
-    p.warmupSec > 0 ? t('doneScreen.warmup') : null,
-    p.cooldownSec > 0 ? t('doneScreen.cooldown') : null,
+/**
+ * 이름 아래 한 줄 — 무엇을 한 것인지의 **생김새**만.
+ *
+ * 세트 수는 넣지 않는다. 바로 아래 표에 실제로 해낸 세트가 있는데 여기에도
+ * 숫자가 있으면 둘이 다투고("0세트"인데 "3종목 2라운드"), 줄도 길어져 접힌다.
+ * 타이머(종목 하나)는 적을 구성이 없어 웜업·쿨다운만 남는다.
+ */
+function detailLine(p: Preset): string {
+  const parts = [
+    isSimple(p)
+      ? null
+      : t('doneScreen.composition', {
+          blocks: t('count.blocks', { count: p.blocks.length }),
+          rounds: t('count.rounds', { count: p.rounds }),
+        }),
+    p.warmupSec > 0 || p.cooldownSec > 0
+      ? t('doneScreen.extraPart', {
+          extra: [
+            p.warmupSec > 0 ? t('doneScreen.warmup') : null,
+            p.cooldownSec > 0 ? t('doneScreen.cooldown') : null,
+          ]
+            .filter(Boolean)
+            .join('/'),
+        })
+      : null,
   ].filter(Boolean);
-  return extra.length ? t('doneScreen.withExtra', { summary, extra: extra.join('/') }) : summary;
+  return parts.join(' · ');
 }
 
 function StatRow({ label, value, first }: { label: string; value: string; first?: boolean }) {
@@ -188,12 +203,21 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     textAlign: 'center',
   },
-  summary: {
-    marginTop: 12,
-    fontSize: 18,
+  name: {
+    marginTop: 14,
+    fontSize: 20,
+    fontWeight: '700',
+    letterSpacing: -0.4,
+    color: '#FFFFFF',
+    opacity: 0.95,
+    textAlign: 'center',
+  },
+  detail: {
+    marginTop: 7,
+    fontSize: 15,
     fontWeight: '600',
     color: '#FFFFFF',
-    opacity: 0.82,
+    opacity: 0.62,
     textAlign: 'center',
   },
   stat: {
