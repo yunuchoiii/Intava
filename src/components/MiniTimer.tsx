@@ -22,8 +22,11 @@ const BAR_H = 60;
 /** 바와 그 위에 놓인 것(저장 버튼 등) 사이의 숨통 */
 const BAR_GAP = 14;
 
-/** 타이머가 돌고 있는지 — 화면마다 조건을 따로 쓰면 어긋난다 */
-function useRunning(): boolean {
+/**
+ * 타이머가 돌고 있는지 — 화면마다 조건을 따로 쓰면 어긋난다.
+ * 미니 바가 뜨는 조건이자, 그 자리를 내주는 쪽(편집의 시작 버튼)이 물러나는 조건이다.
+ */
+export function useTimerRunning(): boolean {
   const run = useSession();
   return !!run.preset && !run.done;
 }
@@ -34,7 +37,7 @@ function useRunning(): boolean {
  * 이만큼 자리를 비워야 바에 덮이지 않는다.
  */
 export function useMiniTimerSpace(): number {
-  const running = useRunning();
+  const running = useTimerRunning();
   const pathname = usePathname();
   return running && pathname !== '/run' ? BAR_H + BAR_GAP : 0;
 }
@@ -55,7 +58,7 @@ export function MiniTimer() {
   const { height: screenH } = useWindowDimensions();
   const morph = useMorph();
   const pathname = usePathname();
-  const running = useRunning();
+  const running = useTimerRunning();
   const onRun = pathname === '/run';
 
   /**

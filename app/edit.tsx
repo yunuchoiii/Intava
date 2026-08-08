@@ -21,8 +21,8 @@ import { Chevron, Collapsible } from '../src/components/Collapsible';
 import { ClearButton } from '../src/components/ClearButton';
 import { BlockPickerSheet } from '../src/components/BlockPickerSheet';
 import { BlockSheet } from '../src/components/BlockSheet';
-import { useMiniTimerSpace } from '../src/components/MiniTimer';
-import { SurfaceButton } from '../src/components/Buttons';
+import { useMiniTimerSpace, useTimerRunning } from '../src/components/MiniTimer';
+import { SurfaceButton, WhiteButton } from '../src/components/Buttons';
 import { Surface } from '../src/components/Surface';
 import { PressBox } from '../src/components/PressBox';
 import { InfoTip } from '../src/components/InfoTip';
@@ -31,6 +31,7 @@ import { ValueRow } from '../src/components/ValueRow';
 import { t } from '../src/i18n';
 import { durationLong, durationShort } from '../src/engine/labels';
 import { totalSec, workSec } from '../src/engine/segments';
+import { useSession } from '../src/session';
 import { emptyPreset, uid, useStore } from '../src/store';
 import { C, GUTTER, TABULAR } from '../src/theme';
 import { kindOf, type Block, type Preset } from '../src/types';
@@ -43,6 +44,8 @@ export default function Edit() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const miniSpace = useMiniTimerSpace();
+  const running = useTimerRunning();
+  const session = useSession();
   const { getPreset, savePreset, settings, presets } = useStore();
 
   const initial = useMemo(
@@ -111,6 +114,22 @@ export default function Edit() {
   const save = () => {
     savePreset(normalized());
     router.back();
+  };
+
+  /**
+   * 고치던 것을 그대로 시작한다 — 저장 없이 실행하면 방금 만진 값이 아니라
+   * 저장돼 있던 값이 돌기 때문에, 저장을 먼저 하고 그 프리셋을 건다.
+   *
+   * 편집 화면은 스택에서 걷어내고 홈 위에 실행 화면을 올린다. 실행 화면을 접었을 때
+   * 방금 떠난 편집 화면이 도로 나타나면 안 된다 — 홈에서 ▶를 누른 것과 같아야 한다.
+   * (실행 화면에서 편집으로 나갈 때 run.tsx가 하는 것과 같은 길이다.)
+   */
+  const startNow = () => {
+    const p = normalized();
+    savePreset(p);
+    session.start(p.id);
+    router.dismissTo('/');
+    router.push('/run');
   };
 
   const startEndSummary = () => {
@@ -347,6 +366,21 @@ export default function Edit() {
             height={58}
             radius={ACTION_RADIUS}
           />
+          {/*
+            시작하기는 타이머가 돌고 있지 않을 때만 나온다 — 돌고 있으면 이 자리를
+            미니 바가 가져간다. 두 개가 같이 있으면 어느 쪽이 지금 도는 것인지 흐려지고,
+            여기서 또 시작하면 진행 중인 것을 말없이 엎게 된다.
+          */}
+          {!running && (
+            <WhiteButton
+              label={t('edit.start')}
+              onPress={startNow}
+              disabled={draft.blocks.length === 0}
+              height={58}
+              radius={ACTION_RADIUS}
+              style={{ marginTop: 10 }}
+            />
+          )}
         </View>
       </View>
 

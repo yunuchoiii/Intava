@@ -75,6 +75,7 @@ export const ja: Catalog = {
     sets: 'セット',
     totalTime: '合計 {{time}}',
     workTime: '運動 {{time}}',
+    start: '開始する',
     onlyOne: '{{item}}のみ',
     warmupPart: 'ウォームアップ{{dur}}',
     preparePart: '準備{{dur}}',

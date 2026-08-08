@@ -82,6 +82,7 @@ export const en: Catalog = {
     sets: 'Sets',
     totalTime: 'Total {{time}}',
     workTime: 'Work {{time}}',
+    start: 'Start',
     onlyOne: '{{item}} only',
     warmupPart: '{{dur}} warm-up',
     preparePart: '{{dur}} prepare',

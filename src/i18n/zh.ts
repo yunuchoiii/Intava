@@ -75,6 +75,7 @@ export const zh: Catalog = {
     sets: '组数',
     totalTime: '共 {{time}}',
     workTime: '运动 {{time}}',
+    start: '开始',
     onlyOne: '仅{{item}}',
     warmupPart: '热身{{dur}}',
     preparePart: '准备{{dur}}',

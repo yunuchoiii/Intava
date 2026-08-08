@@ -86,6 +86,8 @@ export const ko = {
     sets: '세트',
     totalTime: '총 {{time}}',
     workTime: '운동 {{time}}',
+    /** 저장하고 바로 실행 — 편집 화면 아래, 저장 버튼 밑 */
+    start: '시작하기',
     /** 웜업·준비·쿨다운 요약이 하나뿐일 때 — "준비 10초만" */
     onlyOne: '{{item}}만',
     warmupPart: '웜업 {{dur}}',
