@@ -1,7 +1,7 @@
 /** 5.6 실행 화면 — 이 앱의 심장 */
 import { useFocusEffect, useRouter } from 'expo-router';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
@@ -16,7 +16,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { FloodTile } from '../src/components/Surface';
 import { PressBox } from '../src/components/PressBox';
-import { NextIcon, PauseIcon, PencilIcon, PlayIcon, PrevIcon } from '../src/components/Icons';
+import { ListIcon, NextIcon, PauseIcon, PencilIcon, PlayIcon, PrevIcon } from '../src/components/Icons';
+import { OrderSheet } from '../src/components/OrderSheet';
 import { PhaseFlood } from '../src/components/PhaseFlood';
 import { Ring } from '../src/components/Ring';
 import { clock, isSimple, segLabel, subLabel, titleLabel } from '../src/engine/labels';
@@ -47,9 +48,58 @@ export default function Run() {
   const { settings } = useStore();
   const run = useSession();
   const preset = run.preset;
+  const [ordering, setOrdering] = useState(false);
   useEffect(() => {
     void ensurePermission();
   }, []);
+
+  /**
+   * 종목이 차례로 나타나는 자리들 — 라운드가 여러 번이면 같은 종목이 여러 번 온다.
+   * 계획에서 뽑는다. 프리셋의 종목 배열이 아니라 **실제로 돌 차례**여야 하고,
+   * 그건 실행 중에 바뀔 수 있기 때문이다.
+   */
+  const occurrences = useMemo(() => {
+    const out: { key: string; name: string; round: number; blk: number }[] = [];
+    for (const s of run.plan?.segs ?? []) {
+      if (s.phase !== 'WORK' || s.round == null || s.blk == null) continue;
+      const last = out[out.length - 1];
+      if (last && last.round === s.round && last.blk === s.blk) continue;
+      out.push({ key: `${s.round}-${s.blk}`, name: s.name ?? '', round: s.round, blk: s.blk });
+    }
+    return out;
+  }, [run.plan]);
+
+  /**
+   * 그중 지금 자리. 웜업·준비에서는 -1(아직 아무 종목도 아니다), 쿨다운·완료에서는
+   * 끝을 가리킨다. 휴식 중에는 **도착할** 종목을 지금으로 친다 — 링 아래의
+   * "3번째 종목"이 가리키는 것과 같아야 한다.
+   */
+  const cursor = useMemo(() => {
+    const seg = run.seg;
+    if (!seg) return occurrences.length;
+    const at = occurrences.findIndex((o) => o.round === seg.round && o.blk === seg.blk);
+    switch (seg.phase) {
+      case 'WORK':
+      case 'SET_REST':
+        return at;
+      case 'BLOCK_REST':
+      case 'ROUND_REST':
+        return at + 1;
+      case 'COOLDOWN':
+        return occurrences.length;
+      default:
+        return -1;
+    }
+  }, [run.seg, occurrences]);
+
+  /** 순서 시트에 늘어놓을 종목 — 손댈 수 있는 라운드의 차례대로 */
+  const orderBlocks = useMemo(
+    () =>
+      run.roundOrder
+        .map((id) => preset?.blocks.find((b) => b.id === id))
+        .filter((b) => !!b),
+    [run.roundOrder, preset]
+  );
 
   useEffect(() => {
     if (!settings.keepScreenOn) return;
@@ -59,10 +109,23 @@ export default function Run() {
     };
   }, [settings.keepScreenOn]);
 
+  /**
+   * 완료 화면으로 넘길 것 — 끝까지 갔든 도중에 껐든 같은 것을 넘긴다.
+   *
+   * 세션이 아니라 **파라미터로** 넘기는 이유: 완료 화면은 뜨자마자 세션을 비운다
+   * (미니 바가 남으면 안 되니까). 그때 바꾼 차례도 같이 사라지면, 나중에 홈으로를
+   * 누를 때 루틴에 저장할 것이 남아 있지 않다.
+   */
+  const doneParams = () => ({
+    id: preset!.id,
+    elapsed: String(Math.round(run.elapsed)),
+    orders: run.orders ? JSON.stringify(run.orders) : '',
+  });
+
   // 전체가 끝나면 완료 화면으로 — 세션은 완료 화면에서 정리한다
   useEffect(() => {
     if (!run.done || !preset) return;
-    router.replace({ pathname: '/done', params: { id: preset.id } });
+    router.replace({ pathname: '/done', params: doneParams() });
   }, [run.done, preset?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const dismiss = useCallback(() => {
@@ -167,15 +230,6 @@ export default function Run() {
   const phase = run.seg?.phase ?? 'DONE';
   const color = PHASE_COLOR[phase];
   const simple = isSimple(preset);
-  // 웜업·준비·라운드 휴식·쿨다운에서는 종목 이름이 전부 흐리다.
-  // 종목 전환 중에는 도착할 종목을 밝힌다 — 아래 줄의 "3번째 종목"과 같은 것을 가리킨다.
-  const currentBlk = !run.seg
-    ? -1
-    : run.seg.phase === 'WORK' || run.seg.phase === 'SET_REST'
-      ? (run.seg.blk ?? -1)
-      : run.seg.phase === 'BLOCK_REST'
-        ? (run.seg.blk ?? -1) + 1
-        : -1;
 
   /**
    * 편집으로 간다 — 실행 화면 **위에** 올리지 않고, 먼저 미니 바로 접은 뒤에 연다.
@@ -203,10 +257,12 @@ export default function Run() {
         text: t('run.exitConfirm'),
         style: 'destructive',
         onPress: () => {
-          // 홈까지 물러난다. replace로 갈아끼우면 홈 위에 홈이 한 겹 더 쌓인다.
-          // 나가고 나서 세션을 비운다 — 순서가 바뀌면 프리셋 없는 실행 화면이 한 번 그려진다
-          router.dismissTo('/');
-          run.stop();
+          /*
+            도중에 끄더라도 완료 화면을 지난다 — 여기까지 얼마나 했는지 보여주고,
+            바꾼 종목 차례를 루틴에 남길지 묻는 자리가 거기다. 세션은 완료 화면이
+            정리한다(예전에는 여기서 stop()을 불렀다).
+          */
+          router.replace({ pathname: '/done', params: doneParams() });
         },
       },
     ]);
@@ -274,17 +330,41 @@ export default function Run() {
           </PressBox>
         </View>
 
-        {/* 종목 이름 줄 — 버튼이 아니라 표시. 배경·테두리를 주지 않는다 */}
+        {/*
+          종목 줄 — 이전 · 지금 · 다음 셋만. 종목이 여덟이면 이름이 두 줄로 접히면서
+          링이 밀려 내려갔고, 그 여덟 개가 다 필요한 순간도 없었다. 전체 차례와
+          순서 바꾸기는 오른쪽 목록 버튼 뒤에 둔다.
+        */}
         {!simple && (
           <View style={styles.blockRow}>
-            {preset.blocks.map((b, i) => (
-              <Text
-                key={b.id}
-                style={[styles.blockName, i === currentBlk ? styles.blockNow : styles.blockOther]}
-              >
-                {b.name}
-              </Text>
-            ))}
+            <View style={styles.blockNames}>
+              {[cursor - 1, cursor, cursor + 1].map((i) => {
+                const occ = occurrences[i];
+                if (!occ) return null;
+                return (
+                  <Text
+                    key={occ.key}
+                    numberOfLines={1}
+                    style={[styles.blockName, i === cursor ? styles.blockNow : styles.blockOther]}
+                  >
+                    {occ.name}
+                  </Text>
+                );
+              })}
+            </View>
+            <PressBox
+              onPress={() => setOrdering(true)}
+              radius={14}
+              scaleTo={0.9}
+              dim={0.2}
+              accessibilityLabel={t('run.orderTitle')}
+            >
+              <FloodTile radius={14} style={styles.orderTile}>
+                <View style={[styles.center, { opacity: 0.9 }]}>
+                  <ListIcon size={19} />
+                </View>
+              </FloodTile>
+            </PressBox>
           </View>
         )}
 
@@ -349,6 +429,14 @@ export default function Run() {
           </View>
         </View>
       </View>
+
+      <OrderSheet
+        visible={ordering}
+        onClose={() => setOrdering(false)}
+        blocks={orderBlocks}
+        lockedCount={run.lockedCount}
+        onReorder={run.reorder}
+      />
       </Animated.View>
     </Animated.View>
   );
@@ -415,16 +503,24 @@ const styles = StyleSheet.create({
     opacity: 0.95,
   },
   blockRow: {
-    paddingTop: 18,
+    paddingTop: 14,
     paddingHorizontal: GUTTER,
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 10,
+  },
+  /** 이름 셋은 남는 자리를 나눠 갖고, 목록 버튼은 오른쪽 끝에 고정된다 */
+  blockNames: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
     gap: 9,
   },
-  blockName: { fontSize: 15, color: '#FFFFFF' },
+  blockName: { flexShrink: 1, fontSize: 15, color: '#FFFFFF' },
   blockNow: { fontWeight: '700', opacity: 1 },
   blockOther: { fontWeight: '600', opacity: 0.5 },
+  orderTile: { width: 36, height: 36 },
   ringWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 0 },
   controls: { flexDirection: 'row', gap: 26, alignItems: 'center', justifyContent: 'center' },
   control: { width: 96, alignItems: 'center', gap: 6 },

@@ -157,6 +157,8 @@ export const ja: Catalog = {
     prevRestart: '最初から',
     elapsed: '{{time}} 経過',
     total: '合計 {{time}}',
+    orderTitle: '種目の順番',
+    orderNote: '終わった種目と今の種目は動かせません。',
   },
 
   phase: {
@@ -211,6 +213,11 @@ export const ja: Catalog = {
     completedSets: '完了セット',
     again: 'もう一度',
     home: 'ホームへ',
+    titleStopped: 'ワークアウト終了',
+    saveOrderTitle: '新しい順番を保存しますか？',
+    saveOrderBody: '今回の種目の順番をこのルーティンに残します。',
+    saveOrderSkip: '保存しない',
+    saveOrderConfirm: '保存',
   },
 
   notify: {

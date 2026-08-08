@@ -25,6 +25,20 @@ export function BackIcon({ size = 26, color = '#FFFFFF' }: IconProps) {
   );
 }
 
+/** 목록 — 실행 화면에서 종목 순서 시트를 여는 자리 */
+export function ListIcon({ size = 22, color = '#FFFFFF' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      {[5, 11.25, 17.5].map((y) => (
+        <React.Fragment key={y}>
+          <Rect x="2" y={y} width="3.4" height="2.6" rx="1.3" fill={color} />
+          <Rect x="8.4" y={y} width="13.6" height="2.6" rx="1.3" fill={color} />
+        </React.Fragment>
+      ))}
+    </Svg>
+  );
+}
+
 export function PrevIcon({ size = 30, color = '#FFFFFF' }: IconProps) {
   return (
     <Svg width={size} height={(size * 24) / 30} viewBox="0 0 20 16">

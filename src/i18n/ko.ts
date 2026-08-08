@@ -173,6 +173,9 @@ export const ko = {
     prevRestart: '다시 처음',
     elapsed: '{{time}} 경과',
     total: '총 {{time}}',
+    /** 실행 중 종목 순서 시트 */
+    orderTitle: '종목 순서',
+    orderNote: '지나간 종목과 지금 하는 종목은 옮길 수 없습니다.',
   },
 
   phase: {
@@ -230,6 +233,12 @@ export const ko = {
     completedSets: '완료 세트',
     again: '다시 하기',
     home: '홈으로',
+    /** 도중에 끈 경우 — 같은 화면을 쓰되 말은 달라야 한다 */
+    titleStopped: '운동 종료',
+    saveOrderTitle: '바뀐 순서를 저장할까요?',
+    saveOrderBody: '이번에 돌린 종목 순서를 이 루틴에 남깁니다.',
+    saveOrderSkip: '저장 안 함',
+    saveOrderConfirm: '저장',
   },
 
   notify: {

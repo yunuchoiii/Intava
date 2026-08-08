@@ -1,13 +1,13 @@
 /** 5.7 완료 — DONE 색 플러드 */
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WhiteButton } from '../src/components/Buttons';
 import { PressBox } from '../src/components/PressBox';
 import { PhaseFlood } from '../src/components/PhaseFlood';
 import { clock, isSimple } from '../src/engine/labels';
-import { totalSec, totalSets, workSec } from '../src/engine/segments';
+import { buildPlan, progressAt, type RoundOrders } from '../src/engine/segments';
 import { useSession } from '../src/session';
 import { useStore } from '../src/store';
 import { t } from '../src/i18n';
@@ -15,10 +15,21 @@ import { GUTTER, PHASE_COLOR, TABULAR } from '../src/theme';
 import type { Preset } from '../src/types';
 
 export default function Done() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  /**
+   * 끝까지 간 경우와 도중에 끈 경우가 같은 화면을 쓴다.
+   *
+   * 넘어오는 값은 세 가지 — 무엇을(id), 얼마나 했는지(elapsed), 어떤 차례로
+   * 돌았는지(orders). **세션에서 읽지 않는다.** 이 화면은 뜨자마자 세션을 비우기
+   * 때문에(미니 바가 남으면 안 된다) 그 뒤에는 물어볼 데가 없다.
+   */
+  const { id, elapsed, orders } = useLocalSearchParams<{
+    id: string;
+    elapsed?: string;
+    orders?: string;
+  }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { getPreset } = useStore();
+  const { getPreset, savePreset } = useStore();
   const session = useSession();
   const preset = getPreset(id);
 
@@ -27,18 +38,60 @@ export default function Done() {
     session.stop();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  /** 실행 중에 바꾼 차례 — 라운드별. 마지막 라운드의 것이 최종 차례다 */
+  const rounds = useMemo<RoundOrders | undefined>(() => {
+    if (!orders) return undefined;
+    try {
+      const parsed = JSON.parse(orders);
+      return Array.isArray(parsed) && parsed.length ? (parsed as RoundOrders) : undefined;
+    } catch {
+      return undefined;
+    }
+  }, [orders]);
+
+  /** 계획이 아니라 실제로 지나온 만큼을 센다 */
   const stats = useMemo(() => {
     if (!preset) return null;
-    return {
-      total: totalSec(preset),
-      pure: workSec(preset),
-      sets: totalSets(preset),
-    };
-  }, [preset]);
+    const plan = buildPlan(preset, rounds);
+    return progressAt(plan, elapsed ? Number(elapsed) : plan.total);
+  }, [preset, rounds, elapsed]);
+
+  /** 마지막에 돌던 차례가 저장된 루틴과 다른가 */
+  const changed = useMemo(() => {
+    if (!preset || !rounds) return null;
+    const last = rounds[rounds.length - 1];
+    if (!last) return null;
+    const natural = preset.blocks.map((b) => b.id);
+    if (last.length !== natural.length || last.every((x, i) => x === natural[i])) return null;
+    return last;
+  }, [preset, rounds]);
 
   if (!preset || !stats) {
     return <View style={{ flex: 1, backgroundColor: PHASE_COLOR.DONE }} />;
   }
+
+  /**
+   * 홈으로 — 바뀐 차례를 루틴에 남길지는 여기서 한 번만 묻는다.
+   * 시트에서 바꾸는 그 순간에는 좋은 차례인지 아직 모른다. 해보고 나서야 안다.
+   */
+  const goHome = () => {
+    if (!changed) {
+      router.dismissTo('/');
+      return;
+    }
+    Alert.alert(t('doneScreen.saveOrderTitle'), t('doneScreen.saveOrderBody'), [
+      { text: t('doneScreen.saveOrderSkip'), onPress: () => router.dismissTo('/') },
+      {
+        text: t('doneScreen.saveOrderConfirm'),
+        onPress: () => {
+          const byId = new Map(preset.blocks.map((b) => [b.id, b]));
+          const next = changed.map((bid) => byId.get(bid)).filter((b) => !!b);
+          savePreset({ ...preset, blocks: next });
+          router.dismissTo('/');
+        },
+      },
+    ]);
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: PHASE_COLOR.DONE }}>
@@ -52,31 +105,35 @@ export default function Done() {
         }}
       >
         <View style={{ flex: 1, justifyContent: 'center' }}>
-          <Text style={styles.title}>{t('doneScreen.title')}</Text>
+          {/* 끝까지 갔는지 도중에 껐는지 — 숫자만 다르고 말은 그대로면 거짓말이 된다 */}
+          <Text style={styles.title}>
+            {t(stats.full ? 'doneScreen.title' : 'doneScreen.titleStopped')}
+          </Text>
           <Text style={styles.summary}>{summaryLine(preset, stats.sets)}</Text>
 
           <View style={{ marginTop: 34 }}>
-            <StatRow label={t('doneScreen.totalTime')} value={clock(stats.total)} first />
-            <StatRow label={t('doneScreen.pureWork')} value={clock(stats.pure)} />
+            <StatRow label={t('doneScreen.totalTime')} value={clock(stats.elapsed)} first />
+            <StatRow label={t('doneScreen.pureWork')} value={clock(stats.work)} />
             <StatRow
               label={isSimple(preset) ? t('doneScreen.completedSets') : t('doneScreen.completedRounds')}
-              value={isSimple(preset) ? `${stats.sets}` : `${preset.rounds}`}
+              value={isSimple(preset) ? `${stats.sets}` : `${stats.rounds}`}
             />
           </View>
         </View>
 
+        {/* 다시 하기는 방금 돌던 차례 그대로 — 여기서 또 저장을 묻지 않는다 */}
         <WhiteButton
           label={t('doneScreen.again')}
           height={72}
           color={PHASE_COLOR.DONE}
           onPress={() => {
-            session.start(preset.id);
+            session.start(preset.id, rounds);
             router.replace('/run');
           }}
         />
         {/* 홈까지 물러난다 — replace면 홈 위에 홈이 한 겹 더 쌓인다 */}
         <PressBox
-          onPress={() => router.dismissTo('/')}
+          onPress={goHome}
           scaleTo={0.96}
           dim={0}
           style={styles.home}

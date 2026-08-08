@@ -24,7 +24,7 @@ import React, {
 } from 'react';
 import { AppState } from 'react-native';
 import { endSession, setCueVolume, startSession } from './audio';
-import { buildPlan, segmentAt, type Plan } from './engine/segments';
+import { buildPlan, segmentAt, type Plan, type RoundOrders } from './engine/segments';
 import { countdownFeedback, segmentFeedback } from './feedback';
 import { cancelAll, scheduleUpcoming } from './notify';
 import { useStore } from './store';
@@ -36,6 +36,15 @@ type Stored = {
   presetId: string;
   zeroAt: number;
   pausedAt: number | null;
+  /**
+   * 실행 중에 바꾼 종목 차례 — 라운드별로 따로 둔다. 없으면 프리셋에 적힌 대로.
+   *
+   * 스토어의 프리셋을 고치지 않는 이유: 계획은 프리셋에서 매번 다시 펴는데,
+   * 종목 배열을 바꾸면 **이미 지나간 자리까지** 다시 펴져서 흐른 시간이 엉뚱한
+   * 구간을 가리키게 된다. 이 차례는 이 실행에만 살고, 루틴에 남길지는 완료
+   * 화면에서 따로 묻는다.
+   */
+  orders?: RoundOrders;
 };
 
 export type RunSnapshot = {
@@ -65,7 +74,18 @@ export type Session = RunSnapshot & {
    * 되살아난 것으로 보면 화면이 두 번 밀린다.
    */
   restoredFromStorage: boolean;
-  start: (presetId: string) => void;
+  /** 이번 실행의 종목 차례 — 라운드별. 손대지 않았으면 비어 있다 */
+  orders: RoundOrders | undefined;
+  /** 지금 라운드의 차례(종목 id) — 순서 시트가 보여주는 목록 */
+  roundOrder: string[];
+  /** 그중 앞에서 몇 개가 이미 지났는지 — 여기까지는 못 옮긴다 */
+  lockedCount: number;
+  /**
+   * 남은 차례를 새로 정한다. ids는 지금 라운드의 **전체** 차례이고,
+   * 앞의 lockedCount개는 그대로여야 한다. 다음 라운드부터도 이 차례를 따른다.
+   */
+  reorder: (ids: string[]) => void;
+  start: (presetId: string, orders?: RoundOrders) => void;
   toggle: () => void;
   skipNext: () => void;
   skipPrev: () => void;
@@ -105,7 +125,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     [presets, stored?.presetId]
   );
   /** 프리셋 내용이 바뀌면 구간을 다시 편다 — 실행 중 편집을 위해 updatedAt까지 본다 */
-  const plan = useMemo(() => (preset ? buildPlan(preset) : null), [preset]);
+  const plan = useMemo(
+    () => (preset ? buildPlan(preset, stored?.orders) : null),
+    [preset, stored?.orders]
+  );
   const planRef = useRef(plan);
   planRef.current = plan;
   const presetRef = useRef(preset);
@@ -348,14 +371,66 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   );
 
   const value = useMemo<Session>(() => {
+    /**
+     * 지금 손댈 수 있는 라운드와, 그 안에서 이미 굳은 앞자리 수.
+     *
+     * 굳는 기준은 "지나갔는가"다. 하고 있는 종목까지가 굳고 그 뒤가 열린다.
+     * 라운드 사이 휴식에서는 이번 라운드가 통째로 끝난 뒤이므로 **다음 라운드**를
+     * 열어준다 — 그 자리에서 다음 판의 차례를 짜는 것이 자연스럽다.
+     */
+    const edit = (() => {
+      const natural = preset?.blocks.map((b) => b.id) ?? [];
+      const orderOf = (round: number) => stored?.orders?.[round - 1] ?? natural;
+      const seg = snap.seg;
+      if (!preset || !seg) return { round: 1, locked: natural.length, order: orderOf(1) };
+      const pos = seg.blk ?? -1;
+      switch (seg.phase) {
+        case 'WARMUP':
+        case 'PREPARE':
+          return { round: 1, locked: 0, order: orderOf(1) };
+        case 'WORK':
+        case 'SET_REST':
+        case 'BLOCK_REST':
+          return { round: seg.round ?? 1, locked: pos + 1, order: orderOf(seg.round ?? 1) };
+        case 'ROUND_REST': {
+          const next = Math.min(preset.rounds, (seg.round ?? 1) + 1);
+          return { round: next, locked: 0, order: orderOf(next) };
+        }
+        default:
+          // 쿨다운 — 종목은 다 끝났다
+          return { round: preset.rounds, locked: natural.length, order: orderOf(preset.rounds) };
+      }
+    })();
+
     const controls = {
-      start: (presetId: string) => {
+      start: (presetId: string, orders?: RoundOrders) => {
         lastIdx.current = -1;
         lastTick.current = '';
         doneFired.current = false;
         markRun(presetId);
-        persist({ presetId, zeroAt: Date.now(), pausedAt: null });
+        // 완료 화면의 "다시 하기"는 방금 쓴 차례를 그대로 물려받는다
+        persist({ presetId, zeroAt: Date.now(), pausedAt: null, orders });
         setSyncId((n) => n + 1);
+      },
+      /**
+       * 남은 차례를 바꾼다 — 시간은 건드리지 않는다.
+       *
+       * 지금 라운드의 앞부분(이미 지난 종목 + 지금 하는 종목)이 그대로면 흐른 시간이
+       * 가리키는 구간도 그대로다. 그 뒤만 다시 펴진다. 알림은 앞으로의 일이라
+       * 전부 다시 예약한다.
+       */
+      reorder: (ids: string[]) => {
+        const s = storedRef.current;
+        const p = presetRef.current;
+        if (!s || !p) return;
+        const natural = p.blocks.map((b) => b.id);
+        const next: RoundOrders = [];
+        for (let r = 1; r <= p.rounds; r++) {
+          next[r - 1] = r < edit.round ? (s.orders?.[r - 1] ?? natural) : ids;
+        }
+        persist({ ...s, orders: next });
+        setSyncId((n) => n + 1);
+        void reschedule();
       },
       toggle: () => {
         const s = storedRef.current;
@@ -456,9 +531,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       prev: snap.idx > 0 ? plan?.segs[snap.idx - 1] : undefined,
       syncId,
       restoredFromStorage,
+      orders: stored?.orders,
+      roundOrder: edit.order,
+      lockedCount: edit.locked,
       ...controls,
     };
-  }, [snap, preset, plan, syncId, restoredFromStorage, persist, seekTo, tick, reschedule, elapsedNow, snapshotAt, markRun]);
+  }, [snap, preset, plan, syncId, restoredFromStorage, stored?.orders, persist, seekTo, tick, reschedule, elapsedNow, snapshotAt, markRun]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

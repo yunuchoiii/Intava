@@ -157,6 +157,8 @@ export const zh: Catalog = {
     prevRestart: '重新开始',
     elapsed: '已过 {{time}}',
     total: '共 {{time}}',
+    orderTitle: '动作顺序',
+    orderNote: '已完成的动作和当前动作无法移动。',
   },
 
   phase: {
@@ -211,6 +213,11 @@ export const zh: Catalog = {
     completedSets: '完成组数',
     again: '再来一次',
     home: '回到首页',
+    titleStopped: '训练结束',
+    saveOrderTitle: '要保存新的顺序吗？',
+    saveOrderBody: '会把这次的动作顺序保留在这个循环里。',
+    saveOrderSkip: '不保存',
+    saveOrderConfirm: '保存',
   },
 
   notify: {

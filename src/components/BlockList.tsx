@@ -37,13 +37,20 @@ const LONG_PRESS_MS = 280;
 
 type Props = {
   blocks: Block[];
-  onPress: (block: Block) => void;
+  /** 없으면 행은 눌리지 않는다 — 실행 중 순서 시트에는 열어볼 편집 화면이 없다 */
+  onPress?: (block: Block) => void;
   onReorder: (next: Block[]) => void;
   /** 끌고 있는 동안 부모 스크롤을 멈추기 위한 신호 */
   onDragActive?: (active: boolean) => void;
+  /**
+   * 앞에서 이만큼은 굳어 있다 — 집어 들 수도, 그 위로 떨어뜨릴 수도 없다.
+   * 실행 중에는 이미 지나간 종목이 여기 해당한다. 지난 배치가 바뀌면 흐른 시간이
+   * 가리키는 자리가 어긋난다.
+   */
+  lockedCount?: number;
 };
 
-export function BlockList({ blocks, onPress, onReorder, onDragActive }: Props) {
+export function BlockList({ blocks, onPress, onReorder, onDragActive, lockedCount = 0 }: Props) {
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   const [dragTo, setDragTo] = useState<number | null>(null);
 
@@ -63,9 +70,11 @@ export function BlockList({ blocks, onPress, onReorder, onDragActive }: Props) {
           index={i}
           block={b}
           count={blocks.length}
+          locked={i < lockedCount}
+          floor={lockedCount}
           dragFrom={dragFrom}
           dragTo={dragTo}
-          onPress={() => onPress(b)}
+          onPress={onPress ? () => onPress(b) : undefined}
           onDragStart={(from) => {
             setDragFrom(from);
             setDragTo(from);
@@ -92,9 +101,13 @@ type RowProps = {
   index: number;
   block: Block;
   count: number;
+  /** 이 행은 굳었다 — 집어 들 수 없고 흐리게 그린다 */
+  locked: boolean;
+  /** 떨어뜨릴 수 있는 첫 자리 — 굳은 자리 위로는 못 올린다 */
+  floor: number;
   dragFrom: number | null;
   dragTo: number | null;
-  onPress: () => void;
+  onPress?: () => void;
   onDragStart: (from: number) => void;
   onDragMove: (to: number) => void;
   onDragEnd: (from: number, to: number) => void;
@@ -176,8 +189,8 @@ function Row(props: RowProps) {
   }, [index, dy]);
 
   const targetIndex = useCallback((gdy: number) => {
-    const { index: i, count: n } = live.current;
-    return Math.max(0, Math.min(n - 1, i + Math.round(gdy / ROW_H)));
+    const { index: i, count: n, floor } = live.current;
+    return Math.max(floor, Math.min(n - 1, i + Math.round(gdy / ROW_H)));
   }, []);
 
   /**
@@ -213,8 +226,8 @@ function Row(props: RowProps) {
         onStartShouldSetPanResponderCapture: () => {
           mode.current = 'idle';
           clearTimer();
-          // 하나뿐이면 옮길 자리도 없다
-          if (live.current.count > 1) {
+          // 하나뿐이거나 굳은 행이면 옮길 자리가 없다
+          if (live.current.count - live.current.floor > 1 && !live.current.locked) {
             timer.current = setTimeout(() => {
               mode.current = 'armed';
               selectionTick();
@@ -289,12 +302,16 @@ function Row(props: RowProps) {
         {isDragged && <View style={styles.dragHighlight} pointerEvents="none" />}
 
         <Pressable
-          style={styles.rowText}
-          onPress={() => live.current.onPress()}
+          style={[styles.rowText, props.locked && styles.lockedRow]}
+          onPress={props.onPress ? () => live.current.onPress?.() : undefined}
           onPressOut={cancelIfArmed}
-          accessibilityRole="button"
-          accessibilityLabel={t('edit.a11yEditBlock', { name: block.name })}
-          accessibilityHint={count > 1 ? t('edit.a11yReorder', { name: block.name }) : undefined}
+          accessibilityRole={props.onPress ? 'button' : 'text'}
+          accessibilityLabel={
+            props.onPress ? t('edit.a11yEditBlock', { name: block.name }) : block.name
+          }
+          accessibilityHint={
+            count > 1 && !props.locked ? t('edit.a11yReorder', { name: block.name }) : undefined
+          }
         >
           <Text style={styles.name}>{block.name}</Text>
           <Text style={[styles.summary, TABULAR]}>
@@ -310,6 +327,8 @@ const styles = StyleSheet.create({
   rowWrap: { position: 'absolute', left: 0, right: 0, height: ROW_H },
   row: { flex: 1, flexDirection: 'row', alignItems: 'center' },
   rowText: { flex: 1, paddingVertical: 8 },
+  /** 굳은 행 — 못 만진다는 것이 손대기 전에 보여야 한다 */
+  lockedRow: { opacity: 0.38 },
   /**
    * 집어 든 행은 목록에서 **떠오른 카드**가 된다.
    *

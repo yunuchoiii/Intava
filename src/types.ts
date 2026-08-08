@@ -77,7 +77,10 @@ export type Segment = {
   start: number;
   dur: number;
   round?: number;
+  /** 이 라운드에서 몇 번째 종목인지. 실행 중 순서를 바꾸면 같은 종목이라도 달라진다 */
   blk?: number;
+  /** 어느 종목인지 — 자리(blk)가 아니라 정체를 가리킬 때 쓴다 */
+  blockId?: string;
   set?: number;
   sets?: number;
   name?: string;

@@ -1,0 +1,77 @@
+/**
+ * 실행 중 종목 순서 — 남은 차례만 바꾼다.
+ *
+ * 지나간 종목과 지금 하고 있는 종목은 위에 흐리게 굳어 있다. 세션은 흐른 시간을
+ * 구간 배열에 대입해 지금 자리를 찾기 때문에, 지나간 배치가 바뀌면 그 자리가
+ * 어긋난다 — 못 옮기는 것이 아니라 옮기면 안 되는 것이다.
+ *
+ * 끄는 몸짓은 편집 화면의 목록과 같은 것을 쓴다(BlockList). 한 화면에서만 되는
+ * 손짓을 따로 만들면 둘 중 하나는 반드시 뒤처진다.
+ */
+import React, { useState } from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BlockList } from './BlockList';
+import { Sheet } from './Sheet';
+import { t } from '../i18n';
+import { C, GUTTER } from '../theme';
+import type { Block } from '../types';
+
+type Props = {
+  visible: boolean;
+  onClose: () => void;
+  /** 이 라운드의 차례대로 늘어놓은 종목 */
+  blocks: Block[];
+  /** 앞에서 이만큼은 굳었다 */
+  lockedCount: number;
+  onReorder: (ids: string[]) => void;
+};
+
+export function OrderSheet({ visible, onClose, blocks, lockedCount, onReorder }: Props) {
+  const insets = useSafeAreaInsets();
+  // 끌고 있는 동안 목록이 같이 스크롤되면 손가락과 행이 서로 밀린다
+  const [dragging, setDragging] = useState(false);
+  if (!visible) return null;
+
+  return (
+    <Sheet visible={visible} onClose={onClose}>
+      <Text style={styles.title}>{t('run.orderTitle')}</Text>
+      <Text style={styles.note}>{t('run.orderNote')}</Text>
+
+      <ScrollView
+        style={{ maxHeight: 400 }}
+        contentContainerStyle={{ paddingHorizontal: GUTTER, paddingBottom: 8 }}
+        scrollEnabled={!dragging}
+        showsVerticalScrollIndicator={false}
+      >
+        <BlockList
+          blocks={blocks}
+          lockedCount={lockedCount}
+          onDragActive={setDragging}
+          onReorder={(next) => onReorder(next.map((b) => b.id))}
+        />
+      </ScrollView>
+
+      <View style={{ height: Math.max(insets.bottom, 16) }} />
+    </Sheet>
+  );
+}
+
+const styles = StyleSheet.create({
+  title: {
+    paddingHorizontal: GUTTER,
+    paddingTop: 6,
+    fontSize: 22,
+    fontWeight: '700',
+    letterSpacing: -0.44,
+    color: C.textPrimary,
+  },
+  note: {
+    paddingHorizontal: GUTTER,
+    paddingTop: 8,
+    paddingBottom: 14,
+    fontSize: 14,
+    lineHeight: 20,
+    color: C.textSecondary,
+  },
+});

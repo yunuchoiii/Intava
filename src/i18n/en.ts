@@ -164,6 +164,8 @@ export const en: Catalog = {
     prevRestart: 'Restart',
     elapsed: '{{time}} elapsed',
     total: 'of {{time}}',
+    orderTitle: 'Exercise order',
+    orderNote: 'Finished exercises and the current one cannot be moved.',
   },
 
   phase: {
@@ -218,6 +220,11 @@ export const en: Catalog = {
     completedSets: 'Sets done',
     again: 'Do it again',
     home: 'Home',
+    titleStopped: 'Workout ended',
+    saveOrderTitle: 'Save the new order?',
+    saveOrderBody: 'The exercise order you used this time will be kept in this routine.',
+    saveOrderSkip: "Don't save",
+    saveOrderConfirm: 'Save',
   },
 
   notify: {
