@@ -1,5 +1,4 @@
 /** 5.1 홈 — 운동 직전에 화면을 오래 붙들지 않게 한다. 실행까지 한 번의 탭. */
-import { BlurView } from 'expo-blur';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -18,7 +17,7 @@ import { Surface } from '../src/components/Surface';
 import { PressBox } from '../src/components/PressBox';
 import { GearIcon, PlayIcon } from '../src/components/Icons';
 import { useMiniTimerSpace } from '../src/components/MiniTimer';
-import { Screen } from '../src/components/Screen';
+import { Screen, ScreenBackground } from '../src/components/Screen';
 import { Wordmark } from '../src/components/Wordmark';
 import { presetSummary, presetTimeLine } from '../src/engine/labels';
 import { totalSec } from '../src/engine/segments';
@@ -66,10 +65,16 @@ export default function Home() {
   const session = useSession();
   const miniSpace = useMiniTimerSpace();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
+  const { width, height: screenHeight } = useWindowDimensions();
   const { presets, ready, settings, setSettings, duplicatePreset, deletePreset } = useStore();
   const [tab, setTab] = useState<PresetKind>('routine');
   const [toolHeight, setToolHeight] = useState(TOOL_ROW_GUESS);
+  /**
+   * 목록 자리가 화면 위끝에서 얼마나 내려와 있는지 — 정렬 줄 뒤에 깔 배경
+   * 복사본을 그만큼 끌어올려야 진짜 배경과 겹친다. onLayout의 y는 바깥 틀의
+   * 위 여백까지 이미 셈한 값이다. 첫 프레임 어림값은 여백 + 머리줄 64 + 탭 74.
+   */
+  const [listTop, setListTop] = useState(insets.top + 6 + 64 + 74);
   const pager = useRef<ScrollView>(null);
   // 손가락으로 끄는 동안에만 탭 표시를 따라가게 한다. 첫 레이아웃 때 iOS가
   // 흘리는 스크롤 이벤트에 탭이 넘어가 버리는 것을 막는다.
@@ -196,7 +201,10 @@ export default function Home() {
           목록과 그 위에 뜬 정렬 줄. 줄은 흐름에서 빼서 얹고, 목록은 줄 높이만큼
           위쪽 여백을 두고 시작한다 — 스크롤하면 행이 줄 뒤로 미끄러져 들어간다.
         */}
-        <View style={{ flex: 1 }}>
+        <View
+          style={{ flex: 1 }}
+          onLayout={(e) => setListTop(Math.round(e.nativeEvent.layout.y))}
+        >
           <ScrollView
             ref={pager}
             horizontal
@@ -228,8 +236,12 @@ export default function Home() {
             ))}
           </ScrollView>
 
-          {/* 흐림은 목록보다 **뒤에** 그려야 스크롤을 따라 다시 계산된다 (expo-blur 주의사항) */}
-          <ToolRowBackdrop height={toolHeight} />
+          {/* 목록보다 뒤에 그린다 — 지나가는 행을 덮어야 하므로 */}
+          <ToolRowBackdrop
+            height={toolHeight}
+            screenTop={listTop}
+            screenHeight={screenHeight}
+          />
 
           {/* 정렬은 왼쪽, 추가는 오른쪽 — 목록을 다루는 두 손잡이가 한 줄에 있다 */}
           <View
@@ -256,28 +268,34 @@ export default function Home() {
 }
 
 /**
- * 정렬 줄 뒤 — 딱 그 줄만큼 흐리다.
+ * 정렬 줄 뒤 — 화면 배경을 그 자리에 그대로 한 겹 더 그린다.
  *
- * 한 겹이다. 예전에는 아래로 갈수록 풀리게 하려고 같은 흐림을 키를 줄여가며
- * 겹쳐 쌓고 색까지 덮었는데, 실기기에서는 부드럽게 풀리는 대신 층층이
- * 끊긴 띠로 보였다. 흐림에 마스크를 씌울 수 없는 이상 흉내로는 안 된다 —
- * 경계를 숨기려다 경계를 여러 개 만드느니 하나만 두고 그 자리를 정확히 맞춘다.
+ * 흐림(BlurView)은 접었다. 흐림 재질은 뒤에 아무것도 없어도 제가 덮은
+ * 사각형만큼 색을 얹는다. 그래서 판의 윗변이 어디에 놓이든 — 세그먼트 밑에
+ * 밀어 넣든, 아랫변에 딱 맞추든 — 좌우로 삐져나온 자리에서 가로선으로 읽혔다.
+ * 세기를 낮추면 가리지를 못하고, 올리면 선이 더 굵어진다. 빠져나갈 데가 없다.
  *
- * 위는 세그먼트 아랫변, 아래는 줄의 끝 — 목록이 시작하는 바로 그 자리다.
- * 첫 행은 안쪽에 위아래 20씩 안고 있어서, 스크롤하지 않은 상태에서
- * 아랫변이 닿는 곳은 그 여백이지 글자가 아니다.
- *
- * 세기는 시뮬레이터에서 눈으로 맞췄다. 40에서는 뒤로 지나간 글자가 아직 읽혀서
- * 유리가 아니라 얼룩으로 보인다. 85면 형태만 남고 글자는 풀린다.
+ * 대신 배경을 복사해 깐다. 화면 그라디언트와 좌상단 글로우를 **화면 전체 크기로**
+ * 그린 다음 이 줄 높이만큼만 잘라 보여주므로, 밑에 깔린 진짜 배경과 픽셀이
+ * 정확히 겹친다. 아무것도 지나가지 않을 때는 있는지도 알 수 없고, 지나가는
+ * 행은 이 겹에 완전히 가려진다.
  */
-function ToolRowBackdrop({ height }: { height: number }) {
+function ToolRowBackdrop({
+  height,
+  screenTop,
+  screenHeight,
+}: {
+  height: number;
+  /** 이 판이 화면 위끝에서 얼마나 내려와 있는지 — 배경 복사본을 그만큼 끌어올린다 */
+  screenTop: number;
+  screenHeight: number;
+}) {
   return (
-    <BlurView
-      intensity={85}
-      tint="dark"
-      style={[styles.backdrop, { height }]}
-      pointerEvents="none"
-    />
+    <View style={[styles.backdrop, { height }]} pointerEvents="none">
+      <View style={{ position: 'absolute', top: -screenTop, left: 0, right: 0, height: screenHeight }}>
+        <ScreenBackground />
+      </View>
+    </View>
   );
 }
 
@@ -592,7 +610,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  backdrop: { position: 'absolute', top: 0, left: 0, right: 0 },
+  /** 배경 복사본이 이 틀 밖으로 자라 있으므로 잘라낸다 */
+  backdrop: { position: 'absolute', top: 0, left: 0, right: 0, overflow: 'hidden' },
   sortRow: {
     paddingVertical: 12,
     paddingRight: 8,
