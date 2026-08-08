@@ -1,4 +1,6 @@
 /** 5.1 홈 — 운동 직전에 화면을 오래 붙들지 않게 한다. 실행까지 한 번의 탭. */
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -51,6 +53,14 @@ const PLAY_SIZE = 60;
 const ADD_HEIGHT = 38;
 const ADD_RADIUS = ADD_HEIGHT / 2;
 
+/**
+ * 정렬 줄은 목록 위에 떠 있고 행들은 그 뒤로 지나간다.
+ *
+ * 줄이 실제로 차지하는 높이는 글자 크기 설정에 따라 달라져서 재서 쓴다.
+ * 첫 프레임에만 쓰이는 어림값(여백 18 + 줄 41 + 여백 2).
+ */
+const TOOL_ROW_GUESS = 61;
+
 export default function Home() {
   const router = useRouter();
   const session = useSession();
@@ -59,6 +69,7 @@ export default function Home() {
   const { width } = useWindowDimensions();
   const { presets, ready, settings, setSettings, duplicatePreset, deletePreset } = useStore();
   const [tab, setTab] = useState<PresetKind>('routine');
+  const [toolHeight, setToolHeight] = useState(TOOL_ROW_GUESS);
   const pager = useRef<ScrollView>(null);
   // 손가락으로 끄는 동안에만 탭 표시를 따라가게 한다. 첫 레이아웃 때 iOS가
   // 흘리는 스크롤 이벤트에 탭이 넘어가 버리는 것을 막는다.
@@ -177,52 +188,100 @@ export default function Home() {
           timerCount={grouped.timer.length}
         />
 
-        {/* 정렬은 왼쪽, 추가는 오른쪽 — 목록을 다루는 두 손잡이가 한 줄에 있다 */}
-        <View style={styles.toolRow}>
-          <Pressable
-            onPress={cycleSort}
-            style={({ pressed }) => [styles.sortRow, pressed && styles.sortRowPressed]}
-            hitSlop={{ top: 4, bottom: 4, left: GUTTER, right: 8 }}
-            accessibilityRole="button"
-            accessibilityLabel={t(SORT_LABEL[settings.sort])}
+        {/*
+          목록과 그 위에 뜬 정렬 줄. 줄은 흐름에서 빼서 얹고, 목록은 줄 높이만큼
+          위쪽 여백을 두고 시작한다 — 스크롤하면 행이 줄 뒤로 미끄러져 들어간다.
+        */}
+        <View style={{ flex: 1 }}>
+          <ScrollView
+            ref={pager}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            scrollEventThrottle={16}
+            contentOffset={{ x: 0, y: 0 }}
+            onScrollBeginDrag={() => {
+              swiping.current = true;
+            }}
+            onScroll={onPagerScroll}
+            onMomentumScrollEnd={(e) => {
+              onPagerScroll(e);
+              swiping.current = false;
+            }}
+            style={{ flex: 1 }}
           >
-            <Text style={styles.sortText}>{t(SORT_LABEL[settings.sort])}</Text>
-            <Text style={styles.sortChevron}>⇅</Text>
-          </Pressable>
+            {TABS.map((k) => (
+              <TabPage
+                key={k}
+                kind={k}
+                list={grouped[k]}
+                width={width}
+                ready={ready}
+                topPad={toolHeight}
+                onRowActions={rowActions}
+              />
+            ))}
+          </ScrollView>
 
-          <AddButton kind={tab} primary={empty} />
+          {/* 흐림은 목록보다 **뒤에** 그려야 스크롤을 따라 다시 계산된다 (expo-blur 주의사항) */}
+          <ToolRowBackdrop height={toolHeight} />
+
+          {/* 정렬은 왼쪽, 추가는 오른쪽 — 목록을 다루는 두 손잡이가 한 줄에 있다 */}
+          <View
+            style={styles.toolRow}
+            onLayout={(e) => setToolHeight(Math.round(e.nativeEvent.layout.height))}
+          >
+            <Pressable
+              onPress={cycleSort}
+              style={({ pressed }) => [styles.sortRow, pressed && styles.sortRowPressed]}
+              hitSlop={{ top: 4, bottom: 4, left: GUTTER, right: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel={t(SORT_LABEL[settings.sort])}
+            >
+              <Text style={styles.sortText}>{t(SORT_LABEL[settings.sort])}</Text>
+              <Text style={styles.sortChevron}>⇅</Text>
+            </Pressable>
+
+            <AddButton kind={tab} primary={empty} />
+          </View>
         </View>
-
-        <ScrollView
-          ref={pager}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          scrollEventThrottle={16}
-          contentOffset={{ x: 0, y: 0 }}
-          onScrollBeginDrag={() => {
-            swiping.current = true;
-          }}
-          onScroll={onPagerScroll}
-          onMomentumScrollEnd={(e) => {
-            onPagerScroll(e);
-            swiping.current = false;
-          }}
-          style={{ flex: 1 }}
-        >
-          {TABS.map((k) => (
-            <TabPage
-              key={k}
-              kind={k}
-              list={grouped[k]}
-              width={width}
-              ready={ready}
-              onRowActions={rowActions}
-            />
-          ))}
-        </ScrollView>
       </View>
     </Screen>
+  );
+}
+
+/**
+ * 정렬 줄 뒤를 흐리게 깔고 아래로 갈수록 풀어준다 — 행이 사라지는 자리에
+ * 칼로 자른 듯한 경계가 남지 않게 한다.
+ *
+ * 흐림 자체에 마스크를 씌울 방법이 없어서, 같은 흐림을 키만 줄여가며 겹쳐 쌓는다.
+ * 위로 갈수록 겹치는 장수가 늘어 자연히 짙어지고, 한 장씩 끝나는 경계는
+ * 한 겹 차이뿐이라 눈에 잡히지 않는다. 색은 그 높이에서의 배경색이라
+ * 위쪽은 사실상 배경으로 메워지고 꼬리로 가면서 투명해진다.
+ */
+const FADE_TAIL = 30;
+const BLUR_LAYERS = [1, 0.86, 0.72, 0.58, 0.44];
+/** 화면 그라디언트가 이 높이에서 지나는 색 (#21212A → #191920 사이) */
+const FADE_TINT = '30,30,38';
+
+function ToolRowBackdrop({ height }: { height: number }) {
+  const total = height + FADE_TAIL;
+  return (
+    <View style={[styles.backdrop, { height: total }]} pointerEvents="none">
+      {BLUR_LAYERS.map((f) => (
+        <BlurView
+          key={f}
+          intensity={14}
+          tint="dark"
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, height: total * f }}
+        />
+      ))}
+      <LinearGradient
+        colors={[`rgba(${FADE_TINT},0.8)`, `rgba(${FADE_TINT},0.62)`, `rgba(${FADE_TINT},0)`]}
+        locations={[0, height / total, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+    </View>
   );
 }
 
@@ -231,22 +290,29 @@ function TabPage({
   list,
   width,
   ready,
+  topPad,
   onRowActions,
 }: {
   kind: PresetKind;
   list: Preset[];
   width: number;
   ready: boolean;
+  /** 위에 떠 있는 정렬 줄이 가리는 높이 */
+  topPad: number;
   onRowActions: (p: Preset) => void;
 }) {
   return (
-    <View style={{ width, paddingTop: 4 }}>
+    <View style={{ width }}>
       {ready && list.length === 0 ? (
-        <EmptyState kind={kind} />
+        <EmptyState kind={kind} topPad={topPad} />
       ) : (
         <ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={{ paddingHorizontal: ROW_INSET, paddingBottom: 12 }}
+          contentContainerStyle={{
+            paddingHorizontal: ROW_INSET,
+            paddingTop: topPad + 4,
+            paddingBottom: 12,
+          }}
           showsVerticalScrollIndicator={false}
         >
           {list.map((p, i) => (
@@ -405,9 +471,10 @@ function PresetRow({ preset, onLongPress }: { preset: Preset; onLongPress: () =>
   );
 }
 
-function EmptyState({ kind }: { kind: PresetKind }) {
+/** 빈 화면은 정렬 줄 아래 남은 자리의 한가운데에 선다 */
+function EmptyState({ kind, topPad }: { kind: PresetKind; topPad: number }) {
   return (
-    <View style={styles.empty}>
+    <View style={[styles.empty, { paddingTop: topPad }]}>
       <Surface radius={32} style={styles.emptyIcon}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <PlayIcon size={30} color="rgba(255,255,255,0.55)" />
@@ -495,16 +562,24 @@ const styles = StyleSheet.create({
   /**
    * 정렬(왼쪽)과 추가(오른쪽)가 나란한 줄.
    * 세그먼트 쪽으로는 넉넉히 띄우고 목록 쪽으로는 붙인다 — 이 줄은 목록을 다루는
-   * 손잡이라 목록에 딸려 보여야 한다. 아래 간격은 TabPage의 paddingTop이 맡는다.
+   * 손잡이라 목록에 딸려 보여야 한다.
+   *
+   * 목록 위에 떠 있으므로 위아래 간격은 margin이 아니라 padding으로 준다 —
+   * 이 줄이 가리는 높이를 그대로 재서 목록의 시작 여백으로 넘겨야 한다.
    */
   toolRow: {
-    marginTop: 18,
-    marginBottom: 2,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingTop: 18,
+    paddingBottom: 2,
     paddingHorizontal: GUTTER,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  backdrop: { position: 'absolute', top: 0, left: 0, right: 0, overflow: 'hidden' },
   sortRow: {
     paddingVertical: 12,
     paddingRight: 8,
