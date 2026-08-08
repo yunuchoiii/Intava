@@ -259,11 +259,14 @@ export default function Home() {
  *
  * 위는 세그먼트 아랫변, 아래는 줄의 끝. 목록은 여기서 4pt 아래부터 시작하므로
  * 스크롤하지 않은 상태에서는 첫 행에 흐림이 닿지 않는다.
+ *
+ * 세기는 시뮬레이터에서 눈으로 맞췄다. 40에서는 뒤로 지나간 글자가 아직 읽혀서
+ * 유리가 아니라 얼룩으로 보인다. 85면 형태만 남고 글자는 풀린다.
  */
 function ToolRowBackdrop({ height }: { height: number }) {
   return (
     <BlurView
-      intensity={40}
+      intensity={85}
       tint="dark"
       style={[styles.backdrop, { height }]}
       pointerEvents="none"
