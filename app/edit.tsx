@@ -23,9 +23,10 @@ import { ClearButton } from '../src/components/ClearButton';
 import { BlockPickerSheet } from '../src/components/BlockPickerSheet';
 import { BlockSheet } from '../src/components/BlockSheet';
 import { useMiniTimerSpace, useTimerRunning } from '../src/components/MiniTimer';
-import { SurfaceButton, WhiteButton } from '../src/components/Buttons';
+import { SurfaceButton } from '../src/components/Buttons';
 import { Surface } from '../src/components/Surface';
 import { PressBox } from '../src/components/PressBox';
+import { BackIcon, PlayIcon } from '../src/components/Icons';
 import { InfoTip } from '../src/components/InfoTip';
 import { Screen } from '../src/components/Screen';
 import { ValueRow } from '../src/components/ValueRow';
@@ -246,12 +247,36 @@ export default function Edit() {
     <Screen>
       <View style={{ flex: 1, paddingTop: insets.top + 6 }}>
         <View style={styles.topBar}>
-          <Pressable onPress={leave} hitSlop={12}>
-            <Text style={styles.cancel}>{t('common.cancel')}</Text>
-          </Pressable>
+          <PressBox
+            onPress={leave}
+            hitSlop={12}
+            scaleTo={0.88}
+            dim={0}
+            accessibilityLabel={t('common.cancel')}
+          >
+            <BackIcon size={26} color={C.textSecondary} />
+          </PressBox>
           <Text style={styles.topTitle}>{t(simple ? 'edit.titleTimer' : 'edit.titleRoutine')}</Text>
-          {/* 저장은 하단 고정 버튼 하나로 모았다. 제목을 가운데 두기 위한 자리 */}
-          <View style={{ width: 40 }} />
+          {/*
+            시작 — 하단에 버튼으로 두면 저장하기와 나란히 서서 어느 쪽이 이 화면의
+            일인지 흐려진다. 저장은 아래, 실행은 위. 타이머가 돌고 있으면 나오지
+            않는다 — 그 자리는 미니 바가 가져간다. 제목을 가운데 두려면 그때도
+            폭은 남겨야 한다.
+          */}
+          {running ? (
+            <View style={{ width: 26 }} />
+          ) : (
+            <PressBox
+              onPress={askStart}
+              disabled={draft.blocks.length === 0}
+              hitSlop={12}
+              scaleTo={0.88}
+              dim={0}
+              accessibilityLabel={t('edit.start')}
+            >
+              <PlayIcon size={22} />
+            </PressBox>
+          )}
         </View>
 
         <ScrollView
@@ -420,21 +445,6 @@ export default function Edit() {
             height={58}
             radius={ACTION_RADIUS}
           />
-          {/*
-            시작하기는 타이머가 돌고 있지 않을 때만 나온다 — 돌고 있으면 이 자리를
-            미니 바가 가져간다. 두 개가 같이 있으면 어느 쪽이 지금 도는 것인지 흐려지고,
-            여기서 또 시작하면 진행 중인 것을 말없이 엎게 된다.
-          */}
-          {!running && (
-            <WhiteButton
-              label={t('edit.start')}
-              onPress={askStart}
-              disabled={draft.blocks.length === 0}
-              height={58}
-              radius={ACTION_RADIUS}
-              style={{ marginTop: 10 }}
-            />
-          )}
         </View>
       </View>
 
@@ -510,7 +520,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  cancel: { fontSize: 17, fontWeight: '600', color: C.textSecondary },
   topTitle: { fontSize: 20, fontWeight: '700', letterSpacing: -0.3, color: C.textPrimary },
   nameRow: {
     paddingTop: 10,

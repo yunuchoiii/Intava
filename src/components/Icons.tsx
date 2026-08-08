@@ -4,6 +4,27 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 type IconProps = { size?: number; color?: string };
 
+/**
+ * ‹ — 뒤로. 편집·설정 화면 왼쪽 위, 나가는 문.
+ *
+ * 획으로 그린다. 글리프(‹)를 쓰면 폰트마다 굵기와 세로 위치가 달라져
+ * 오른쪽 아이콘과 무게가 맞지 않는다.
+ */
+export function BackIcon({ size = 26, color = '#FFFFFF' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 26 26">
+      <Path
+        d="M16.5 4.5 L8 13 l8.5 8.5"
+        stroke={color}
+        strokeWidth={2.2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </Svg>
+  );
+}
+
 export function PrevIcon({ size = 30, color = '#FFFFFF' }: IconProps) {
   return (
     <Svg width={size} height={(size * 24) / 30} viewBox="0 0 20 16">

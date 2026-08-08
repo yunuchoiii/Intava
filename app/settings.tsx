@@ -15,6 +15,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMiniTimerSpace } from '../src/components/MiniTimer';
+import { PressBox } from '../src/components/PressBox';
+import { BackIcon } from '../src/components/Icons';
 import { Screen } from '../src/components/Screen';
 import Constants from 'expo-constants';
 import { preview } from '../src/audio';
@@ -67,14 +69,17 @@ export default function SettingsScreen() {
     <Screen>
       <View style={{ flex: 1, paddingTop: insets.top + 6 }}>
         <View style={styles.topBar}>
-          {/* 좌우를 같은 폭으로 두어야 제목이 가운데 온다. 폭을 고정하면
-              "Close"처럼 긴 라벨이 줄바꿈된다 */}
+          {/* 좌우를 같은 폭으로 두어야 제목이 가운데 온다 */}
           <View style={styles.topSide}>
-            <Pressable onPress={() => router.back()} hitSlop={12}>
-              <Text style={styles.cancel} numberOfLines={1}>
-                {t('common.close')}
-              </Text>
-            </Pressable>
+            <PressBox
+              onPress={() => router.back()}
+              hitSlop={12}
+              scaleTo={0.88}
+              dim={0}
+              accessibilityLabel={t('common.close')}
+            >
+              <BackIcon size={26} color={C.textSecondary} />
+            </PressBox>
           </View>
           <Text style={styles.topTitle}>{t('settings.title')}</Text>
           <View style={styles.topSide} />
@@ -306,7 +311,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   topSide: { flex: 1 },
-  cancel: { fontSize: 17, fontWeight: '600', color: C.textSecondary },
   topTitle: { fontSize: 20, fontWeight: '700', letterSpacing: -0.3, color: C.textPrimary },
   section: {
     marginTop: 26,
