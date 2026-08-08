@@ -4,6 +4,7 @@
  */
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { tapTick } from '../feedback';
 import { C, TABULAR } from '../theme';
 import { Chevron, Collapsible } from './Collapsible';
 import { InfoTip } from './InfoTip';
@@ -55,7 +56,10 @@ export function ValueRow(props: Props) {
     /* 툴팁은 이 행의 자식이라, 행 자체를 올려두지 않으면 다음 행들이 그 위에 그려진다 */
     <View style={[divider && styles.divided, tipOpen && styles.raised]}>
       <Pressable
-        onPress={onToggle}
+        onPress={() => {
+          tapTick();
+          onToggle();
+        }}
         style={styles.row}
         accessibilityRole="button"
         accessibilityLabel={`${title} ${display}`}

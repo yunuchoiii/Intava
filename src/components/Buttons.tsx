@@ -13,6 +13,11 @@ type Props = {
   style?: StyleProp<ViewStyle>;
   /** 흰 버튼 위 글자색 — 실행 화면에서는 페이즈 색을 쓴다 */
   color?: string;
+  /**
+   * 이 두 버튼은 늘 확정 동작이다 — 저장하기 · 다시 하기 · 시트의 저장.
+   * 그래서 손끝의 대답도 기본이 한 단계 무겁다.
+   */
+  haptic?: 'tap' | 'commit' | 'none';
 };
 
 /** 표면 톤 버튼 — 흰 버튼(주요 실행)보다 한 단계 조용한 확정 동작에 쓴다 */
@@ -23,11 +28,13 @@ export function SurfaceButton({
   height = 68,
   radius = RADIUS.button,
   style,
+  haptic = 'commit',
 }: Props) {
   return (
     <PressBox
       onPress={onPress}
       disabled={disabled}
+      haptic={haptic}
       radius={radius}
       scaleTo={0.975}
       dim={0.22}
@@ -52,11 +59,13 @@ export function WhiteButton({
   radius = RADIUS.button,
   style,
   color = C.onWhite,
+  haptic = 'commit',
 }: Props) {
   return (
     <PressBox
       onPress={onPress}
       disabled={disabled}
+      haptic={haptic}
       radius={radius}
       scaleTo={0.975}
       dim={0.14}

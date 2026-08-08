@@ -23,6 +23,7 @@ import { preview } from '../src/audio';
 import { exportBackup, pickBackup } from '../src/backup';
 import { useStore } from '../src/store';
 import { t } from '../src/i18n';
+import { tapTick } from '../src/feedback';
 import { C, GUTTER, TABULAR } from '../src/theme';
 
 /** 설치된 앱의 버전 — 문제를 알릴 때 사용자가 그대로 읽어줄 수 있어야 한다 */
@@ -137,7 +138,13 @@ export default function SettingsScreen() {
 
           <Text style={styles.section}>{t('settings.app')}</Text>
           {/* 언어는 iOS의 앱별 언어 설정에서 바꾼다 — 앱 안에 또 만들면 두 곳이 어긋난다 */}
-          <Pressable style={styles.linkRow} onPress={() => Linking.openSettings()}>
+          <Pressable
+            style={styles.linkRow}
+            onPress={() => {
+              tapTick();
+              void Linking.openSettings();
+            }}
+          >
             <View style={{ flex: 1, paddingRight: 16 }}>
               <Text style={styles.rowTitle}>{t('settings.language')}</Text>
               <Text style={styles.note}>{t('settings.languageNote')}</Text>
@@ -196,7 +203,10 @@ function ToggleRow({
       </View>
       <Switch
         value={value}
-        onValueChange={onChange}
+        onValueChange={(v) => {
+          tapTick();
+          onChange(v);
+        }}
         trackColor={{ true: '#3F8F72', false: 'rgba(255,255,255,0.16)' }}
         thumbColor="#FFFFFF"
       />
@@ -222,7 +232,10 @@ function ActionRow({
         last && { borderBottomWidth: 0 },
         pressed && { opacity: 0.55 },
       ]}
-      onPress={onPress}
+      onPress={() => {
+        tapTick();
+        onPress();
+      }}
       accessibilityRole="button"
       accessibilityLabel={title}
     >

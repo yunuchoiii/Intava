@@ -68,3 +68,22 @@ export function selectionTick(s?: Settings): void {
   if (s && !s.vibration) return;
   void Haptics.selectionAsync();
 }
+
+/**
+ * 손끝의 대답 — 버튼을 누른 그 순간.
+ *
+ * 설정의 "진동"을 보지 않는다. 그 스위치는 **구간이 바뀔 때** 울릴지를 정하는
+ * 것이다(운동 중에 화면을 안 보니까). 버튼을 눌렀을 때의 감각은 그것과 다른
+ * 층이고, 눌렀는데 아무 대답이 없는 버튼은 고장 난 것처럼 느껴진다.
+ * iOS 설정에서 시스템 햅틱을 끄면 어차피 전부 잠잠해진다.
+ *
+ * 두 단계뿐이다. 대부분은 tap — 화면을 넘기거나 값을 펼치는 것들.
+ * commit은 **무언가가 실제로 벌어지는** 자리다: 시작 · 일시정지 · 저장.
+ */
+export function tapTick(): void {
+  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+}
+
+export function commitTick(): void {
+  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+}

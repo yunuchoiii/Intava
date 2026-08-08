@@ -25,7 +25,7 @@
  */
 import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Animated, PanResponder, Pressable, StyleSheet, Text, View } from 'react-native';
-import { selectionTick } from '../feedback';
+import { selectionTick, tapTick } from '../feedback';
 import { blockSummary } from '../engine/labels';
 import { t } from '../i18n';
 import { ABS, C, E2, TABULAR } from '../theme';
@@ -303,7 +303,14 @@ function Row(props: RowProps) {
 
         <Pressable
           style={[styles.rowText, props.locked && styles.lockedRow]}
-          onPress={props.onPress ? () => live.current.onPress?.() : undefined}
+          onPress={
+            props.onPress
+              ? () => {
+                  tapTick();
+                  live.current.onPress?.();
+                }
+              : undefined
+          }
           onPressOut={cancelIfArmed}
           accessibilityRole={props.onPress ? 'button' : 'text'}
           accessibilityLabel={

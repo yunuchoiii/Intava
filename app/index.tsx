@@ -478,6 +478,7 @@ function PresetRow({ preset, onLongPress }: { preset: Preset; onLongPress: () =>
       */}
       <PressBox
         onPress={start}
+        haptic="commit"
         radius={PLAY_SIZE / 2}
         scaleTo={0.92}
         dim={1}

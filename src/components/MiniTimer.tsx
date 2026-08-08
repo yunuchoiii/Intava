@@ -164,6 +164,7 @@ export function MiniTimer() {
           </Text>
           <PressBox
             onPress={run.toggle}
+            haptic="commit"
             radius={18}
             scaleTo={0.9}
             dim={0.18}

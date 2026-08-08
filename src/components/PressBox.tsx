@@ -6,6 +6,7 @@
  * 튕기며 돌아온다 — 손가락을 뗀 쪽이 기분 좋게 읽힌다.
  */
 import React, { useMemo, useRef } from 'react';
+import { commitTick, tapTick } from '../feedback';
 import {
   Animated,
   Pressable,
@@ -36,6 +37,12 @@ type Props = {
   radius?: number;
   hitSlop?: number;
   accessibilityLabel?: string;
+  /**
+   * 손끝의 대답. 기본은 가볍게 — 무언가가 실제로 벌어지는 버튼(시작·일시정지·
+   * 저장)만 'commit'으로 한 단계 무겁게 준다. 'none'은 그 자체로는 아무 일도
+   * 일어나지 않는 껍데기용.
+   */
+  haptic?: 'tap' | 'commit' | 'none';
   children: React.ReactNode;
 };
 
@@ -51,9 +58,20 @@ export function PressBox({
   radius = 0,
   hitSlop,
   accessibilityLabel,
+  haptic = 'tap',
   children,
 }: Props) {
   const anim = useRef(new Animated.Value(0)).current;
+
+  /**
+   * 누른 순간이 아니라 **눌린 것이 확정된 순간**에 울린다.
+   * 목록 안의 버튼은 손가락이 닿았다가 그대로 스크롤로 흘러가는 일이 잦은데,
+   * 닿을 때 울리면 스크롤할 때마다 손끝이 따끔거린다.
+   */
+  const fire = () => {
+    if (haptic === 'commit') commitTick();
+    else if (haptic === 'tap') tapTick();
+  };
 
   const { scale, shade } = useMemo(
     () => ({
@@ -73,7 +91,14 @@ export function PressBox({
 
   return (
     <Pressable
-      onPress={disabled ? undefined : onPress}
+      onPress={
+        disabled || !onPress
+          ? undefined
+          : () => {
+              fire();
+              onPress();
+            }
+      }
       onLongPress={disabled ? undefined : onLongPress}
       onPressIn={() => !disabled && to(1)}
       onPressOut={() => to(0)}

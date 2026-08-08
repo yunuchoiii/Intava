@@ -31,6 +31,7 @@ import { InfoTip } from '../src/components/InfoTip';
 import { Screen } from '../src/components/Screen';
 import { ValueRow } from '../src/components/ValueRow';
 import { t } from '../src/i18n';
+import { tapTick } from '../src/feedback';
 import { durationLong, durationShort } from '../src/engine/labels';
 import { totalSec, workSec } from '../src/engine/segments';
 import { useSession } from '../src/session';
@@ -279,7 +280,10 @@ export default function Edit() {
         </View>
         <Switch
           value={draft.skipLastRest}
-          onValueChange={(skipLastRest) => patch({ skipLastRest })}
+          onValueChange={(skipLastRest) => {
+            tapTick();
+            patch({ skipLastRest });
+          }}
           trackColor={{ true: '#3F8F72', false: 'rgba(255,255,255,0.16)' }}
           thumbColor="#FFFFFF"
         />
@@ -312,6 +316,7 @@ export default function Edit() {
           */}
           <PressBox
             onPress={askStart}
+            haptic="commit"
             disabled={draft.blocks.length === 0}
             hitSlop={12}
             scaleTo={0.88}
@@ -388,6 +393,7 @@ export default function Edit() {
               <Pressable
                 style={[styles.linkRow, tip === 'startEnd' && styles.raised]}
                 onPress={() => {
+                  tapTick();
                   setStartEndOpen((v) => !v);
                   setOpen(null);
                 }}

@@ -10,12 +10,16 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import { t } from '../i18n';
+import { tapTick } from '../feedback';
 import { C } from '../theme';
 
 export function ClearButton({ onPress }: { onPress: () => void }) {
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        tapTick();
+        onPress();
+      }}
       hitSlop={12}
       accessibilityRole="button"
       accessibilityLabel={t('common.clear')}

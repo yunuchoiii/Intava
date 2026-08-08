@@ -402,6 +402,7 @@ export default function Run() {
 
             <PressBox
               onPress={run.toggle}
+              haptic="commit"
               radius={48}
               scaleTo={0.93}
               dim={0.12}
