@@ -157,26 +157,70 @@ export default function Edit() {
   };
 
   /**
-   * 고치던 것을 그대로 시작한다 — 저장 없이 실행하면 방금 만진 값이 아니라
-   * 저장돼 있던 값이 돌기 때문에, 저장을 먼저 하고 그 프리셋을 건다.
-   *
    * 편집 화면은 스택에서 걷어내고 홈 위에 실행 화면을 올린다. 실행 화면을 접었을 때
    * 방금 떠난 편집 화면이 도로 나타나면 안 된다 — 홈에서 ▶를 누른 것과 같아야 한다.
    * (실행 화면에서 편집으로 나갈 때 run.tsx가 하는 것과 같은 길이다.)
    */
-  const startNow = () => {
-    const p = normalized();
-    savePreset(p);
-    session.start(p.id);
+  const goRun = () => {
     router.dismissTo('/');
     router.push('/run');
   };
 
   /**
-   * 시작하기는 저장을 겸한다 — 고친 것이 있으면 말없이 덮어쓰지 않고 묻는다.
-   * 저장할 생각까지는 없이 한 번 돌려보려던 것일 수 있다.
+   * 고치던 것을 그대로 시작한다 — 저장 없이 실행하면 방금 만진 값이 아니라
+   * 저장돼 있던 값이 돌기 때문에, 저장을 먼저 하고 그 프리셋을 건다.
+   */
+  const startNow = () => {
+    const p = normalized();
+    savePreset(p);
+    session.start(p.id);
+    goRun();
+  };
+
+  /** 도는 것을 보러 간다 — 고치던 것을 두고 떠나는 셈이라 남아 있으면 묻는다 */
+  const openRunning = () => {
+    if (!dirty) {
+      goRun();
+      return;
+    }
+    Alert.alert(t('edit.discardTitle'), t('edit.discardBody'), [
+      { text: t('edit.discardStay'), style: 'cancel' },
+      { text: t('edit.discardLeave'), style: 'destructive', onPress: goRun },
+    ]);
+  };
+
+  /**
+   * ▶ — 홈의 행 ▶와 같은 규칙이다. 이미 도는 타이머가 있으면 그 자리에서
+   * 갈아엎지 않는다.
+   *
+   * 지금 편집 중인 바로 그것이 돌고 있으면 화면만 연다. 다시 시작하면 진행이
+   * 날아가고, 무엇보다 도는 프리셋을 저장으로 덮으면 계획이 발밑에서 바뀐다 —
+   * 그래서 이 갈래에서는 저장하지 않는다.
+   *
+   * 다른 것이 돌고 있으면 무엇을 끝내고 무엇을 시작하는지 이름을 대고 묻는다.
+   * 그때는 이 물음이 저장 여부까지 대신한다 — 되돌릴 수 없는 쪽이 더 큰 물음이라,
+   * 창을 두 번 겹쳐 띄우지 않는다.
    */
   const askStart = () => {
+    const onAir = running ? session.preset : null;
+
+    if (onAir) {
+      if (onAir.id === draft.id) {
+        openRunning();
+        return;
+      }
+      Alert.alert(
+        t('run.switchTitle'),
+        t('run.switchBody', { running: onAir.name, next: normalized().name }),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('run.switchConfirm'), style: 'destructive', onPress: startNow },
+        ]
+      );
+      return;
+    }
+
+    /** 저장을 겸하는 버튼이라, 고친 것이 있으면 말없이 덮어쓰지 않는다 */
     if (!dirty) {
       startNow();
       return;
@@ -259,24 +303,24 @@ export default function Edit() {
           <Text style={styles.topTitle}>{t(simple ? 'edit.titleTimer' : 'edit.titleRoutine')}</Text>
           {/*
             시작 — 하단에 버튼으로 두면 저장하기와 나란히 서서 어느 쪽이 이 화면의
-            일인지 흐려진다. 저장은 아래, 실행은 위. 타이머가 돌고 있으면 나오지
-            않는다 — 그 자리는 미니 바가 가져간다. 제목을 가운데 두려면 그때도
-            폭은 남겨야 한다.
+            일인지 흐려진다. 저장은 아래, 실행은 위.
+
+            타이머가 돌고 있어도 그대로 둔다. 도는 것이 지금 고치는 그것이면 이
+            버튼이 그 화면으로 가는 길이 되고, 다른 것이면 무엇을 끝낼지 묻는다
+            (askStart). 미니 바가 있다고 해서 여기를 비우면, 지금 보고 있는 이
+            루틴을 어떻게 하겠다는 손잡이가 화면에서 사라진다.
           */}
-          {running ? (
-            <View style={{ width: 26 }} />
-          ) : (
-            <PressBox
-              onPress={askStart}
-              disabled={draft.blocks.length === 0}
-              hitSlop={12}
-              scaleTo={0.88}
-              dim={0}
-              accessibilityLabel={t('edit.start')}
-            >
-              <PlayIcon size={22} />
-            </PressBox>
-          )}
+          <PressBox
+            onPress={askStart}
+            disabled={draft.blocks.length === 0}
+            hitSlop={12}
+            scaleTo={0.88}
+            dim={0}
+            accessibilityLabel={t('edit.start')}
+          >
+            {/* ▶는 속이 찬 삼각형이라 같은 치수면 획으로 그린 ‹보다 훨씬 크게 읽힌다 */}
+            <PlayIcon size={18} />
+          </PressBox>
         </View>
 
         <ScrollView
