@@ -222,7 +222,7 @@ export const en: Catalog = {
     home: 'Home',
     titleStopped: 'Workout ended',
     saveOrderTitle: 'Save the new order?',
-    saveOrderBody: 'The exercise order you used this time will be kept in this routine.',
+    saveOrderBody: 'The exercise order you changed this time will be saved to this routine.',
     saveOrderSkip: "Don't save",
     saveOrderConfirm: 'Save',
   },

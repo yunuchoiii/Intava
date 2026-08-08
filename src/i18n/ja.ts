@@ -215,7 +215,7 @@ export const ja: Catalog = {
     home: 'ホームへ',
     titleStopped: 'ワークアウト終了',
     saveOrderTitle: '新しい順番を保存しますか？',
-    saveOrderBody: '今回の種目の順番をこのルーティンに残します。',
+    saveOrderBody: '今回変更した種目の順番をこのルーティンに保存します。',
     saveOrderSkip: '保存しない',
     saveOrderConfirm: '保存',
   },

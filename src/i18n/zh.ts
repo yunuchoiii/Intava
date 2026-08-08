@@ -215,7 +215,7 @@ export const zh: Catalog = {
     home: '回到首页',
     titleStopped: '训练结束',
     saveOrderTitle: '要保存新的顺序吗？',
-    saveOrderBody: '会把这次的动作顺序保留在这个循环里。',
+    saveOrderBody: '会把这次更改的动作顺序保存到这个循环。',
     saveOrderSkip: '不保存',
     saveOrderConfirm: '保存',
   },
