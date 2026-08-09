@@ -19,7 +19,6 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { tapTick } from '../feedback';
 import { ABS, C, E3 } from '../theme';
 
 type Props = {
@@ -66,10 +65,7 @@ export function InfoTip({ text, open, onToggle }: Props) {
     <View style={{ marginLeft: 7 }}>
       <Pressable
         ref={iconRef}
-        onPress={() => {
-          tapTick();
-          onToggle();
-        }}
+        onPress={onToggle}
         hitSlop={12}
         accessibilityRole="button"
         accessibilityLabel={text}

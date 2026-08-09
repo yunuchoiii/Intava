@@ -38,9 +38,12 @@ type Props = {
   hitSlop?: number;
   accessibilityLabel?: string;
   /**
-   * 손끝의 대답. 기본은 가볍게 — 무언가가 실제로 벌어지는 버튼(시작·일시정지·
-   * 저장)만 'commit'으로 한 단계 무겁게 준다. 'none'은 그 자체로는 아무 일도
-   * 일어나지 않는 껍데기용.
+   * 손끝의 대답. **기본은 없음.**
+   *
+   * 한때 모든 버튼에 넣어봤는데 손끝이 계속 시끄러웠다. 목록을 훑고 값을
+   * 펼치는 것까지 울리면 정작 중요한 순간의 울림이 묻힌다. 남기는 기준은
+   * 둘 — **화면을 안 보고 누르는 것**(운동 중의 컨트롤)과 **되돌리기 어려운
+   * 것**(시작·저장). tap은 자주 누르는 것, commit은 무겁게 알려야 하는 것.
    */
   haptic?: 'tap' | 'commit' | 'none';
   children: React.ReactNode;
@@ -58,7 +61,7 @@ export function PressBox({
   radius = 0,
   hitSlop,
   accessibilityLabel,
-  haptic = 'tap',
+  haptic = 'none',
   children,
 }: Props) {
   const anim = useRef(new Animated.Value(0)).current;

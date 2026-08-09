@@ -472,6 +472,7 @@ function ControlButton({
   return (
     <PressBox
       onPress={onPress}
+      haptic="tap"
       hitSlop={8}
       scaleTo={0.88}
       dim={0}

@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { durationShort } from '../engine/labels';
-import { tapTick } from '../feedback';
 import { t } from '../i18n';
 import { C, GUTTER, RADIUS } from '../theme';
 import type { Block } from '../types';
@@ -118,13 +117,7 @@ export function BlockSheet({ block, canDelete, isNew, onClose, onSave, onDelete 
 
       {/* 새로 만드는 종목은 타이머로도 남길 수 있다 — 다음 루틴에서 그대로 가져다 쓴다 */}
       {isNew && (
-        <Pressable
-          style={styles.saveAsTimer}
-          onPress={() => {
-            tapTick();
-            setAlsoTimer((v) => !v);
-          }}
-        >
+        <Pressable style={styles.saveAsTimer} onPress={() => setAlsoTimer((v) => !v)}>
           <View style={[styles.checkbox, alsoTimer && styles.checkboxOn]}>
             {alsoTimer && <Text style={styles.check}>✓</Text>}
           </View>
