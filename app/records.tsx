@@ -41,6 +41,8 @@ const CELL_H = 54;
  */
 const TINT_BASE = 0.14;
 const TINT_SPAN = 0.42;
+/** 날짜 줄과 그 아래 내용 사이 — 머리와 몸이 붙으면 카드가 제목의 일부로 읽힌다 */
+const DAY_GAP = 16;
 
 export default function Records() {
   const router = useRouter();
@@ -199,12 +201,15 @@ export default function Records() {
                 (view.y === today.y && (view.m > today.m || (view.m === today.m && day > today.d)));
               const tint = mins ? TINT_BASE + (mins / Math.max(1, stats.peak)) * TINT_SPAN : 0;
 
+              /*
+                고른 날이라고 글자색을 바꾸지 않는다. 고름은 테두리로만 말하고,
+                셀 안쪽은 언제나 그날이 어떤 날인지(주말·미래·볼륨)를 그린다.
+              */
               let numColor: string = C.textSecondary;
               if (dow === 0) numColor = C.sunday;
               else if (dow === 6) numColor = C.saturday;
               if (future) numColor = 'rgba(154,166,184,0.32)';
               if (mins) numColor = C.textPrimary;
-              if (isSel) numColor = '#FFFFFF';
 
               return (
                 <Pressable
@@ -218,20 +223,12 @@ export default function Records() {
                   <View
                     style={[
                       styles.cellBox,
-                      !!mins && !isSel && { backgroundColor: `rgba(31,179,161,${tint.toFixed(3)})` },
-                      isToday && !isSel && styles.cellToday,
+                      // 볼륨은 고르든 말든 그대로 보인다 — 고름이 정보를 덮으면 안 된다
+                      !!mins && { backgroundColor: `rgba(31,179,161,${tint.toFixed(3)})` },
+                      isToday && styles.cellToday,
                       isSel && styles.cellSelected,
                     ]}
                   >
-                    {/* 고른 날은 단색이 아니라 결이 있는 면이다 — 셀 하나뿐이라 값이 싸다 */}
-                    {isSel && (
-                      <LinearGradient
-                        colors={['#1AA294', '#0E6F64']}
-                        start={{ x: 0.15, y: 0 }}
-                        end={{ x: 0.85, y: 1 }}
-                        style={StyleSheet.absoluteFill}
-                      />
-                    )}
                     <Text
                       style={[
                         styles.cellDay,
@@ -245,13 +242,7 @@ export default function Records() {
                       style={[
                         styles.cellMins,
                         TABULAR,
-                        {
-                          color: isSel
-                            ? 'rgba(255,255,255,0.9)'
-                            : mins
-                              ? C.volumeText
-                              : 'rgba(154,166,184,0.5)',
-                        },
+                        { color: mins ? C.volumeText : 'rgba(154,166,184,0.5)' },
                       ]}
                     >
                       {mins ? t('records.minutes', { m: mins }) : isToday ? t('records.today') : ''}
@@ -290,7 +281,7 @@ export default function Records() {
               </Text>
             </View>
           ) : (
-            <View style={{ gap: 12 }}>
+            <View style={styles.sessionList}>
               {sessions.map((r) => (
                 <SessionCard key={r.id} record={r} onLongPress={() => askDelete(r)} />
               ))}
@@ -482,7 +473,11 @@ const styles = StyleSheet.create({
   statValue: { fontSize: 21, fontWeight: '700', letterSpacing: -0.52, color: C.textPrimary },
   statLabel: { marginTop: 6, fontSize: 11.5, color: C.textTertiary },
 
-  weekRow: { marginTop: 18, flexDirection: 'row' },
+  /*
+    요약과 달력은 다른 이야기다 — 위는 한 달을 한 줄로 줄인 것이고, 아래는
+    날마다의 것이다. 요일 줄이 요약 카드에 붙어 있으면 카드의 아랫단처럼 읽힌다.
+  */
+  weekRow: { marginTop: 30, flexDirection: 'row' },
   weekday: {
     flex: 1,
     textAlign: 'center',
@@ -505,7 +500,14 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   cellToday: { borderColor: 'rgba(255,255,255,0.22)' },
-  cellSelected: { overflow: 'hidden', borderColor: 'rgba(95,216,198,0.5)' },
+  /**
+   * 고른 날 — 배경 없이 테두리 하나로만 말한다.
+   *
+   * 면을 칠하면 그 자리의 볼륨 농도가 지워져, 고르는 순간 그날이 얼마나 한
+   * 날이었는지를 잃는다. 테두리는 아무것도 덮지 않는다. 두께는 다른 셀과 같은
+   * 1이다 — 굵히면 그 칸만 안쪽이 좁아져 숫자가 흔들린다.
+   */
+  cellSelected: { borderColor: C.volumeText },
   cellDay: { fontSize: 14.5, lineHeight: 17 },
   cellMins: { fontSize: 10.5, fontWeight: '600', lineHeight: 13 },
 
@@ -515,8 +517,10 @@ const styles = StyleSheet.create({
   dayLabel: { fontSize: 17, fontWeight: '700', letterSpacing: -0.34, color: C.textPrimary },
   daySummary: { fontSize: 13, color: C.textTertiary },
 
+  /** 날짜 줄과 그날의 내용 사이 — 카드든 빈 상태든 같은 자리에서 시작한다 */
+  sessionList: { marginTop: DAY_GAP, gap: 12 },
   empty: {
-    marginTop: 14,
+    marginTop: DAY_GAP,
     paddingVertical: 34,
     paddingHorizontal: 20,
     borderRadius: 20,
