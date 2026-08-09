@@ -439,8 +439,8 @@ export default function Run() {
                       !now && filled >= 1 && styles.tickDone,
                     ]}
                   >
-                    {now && filled > 0 && (
-                      <View style={[styles.tickFill, { width: `${filled * 100}%` }]} />
+                    {now && filled < 1 && (
+                      <View style={[styles.tickRest, { width: `${(1 - filled) * 100}%` }]} />
                     )}
                   </View>
                 );
@@ -634,19 +634,34 @@ const styles = StyleSheet.create({
   },
   track: { flexDirection: 'row', alignItems: 'center', gap: 3, height: 10 },
   /** 눈금 하나 — 폭은 그 자리가 걸리는 시간에 비례한다 */
-  tick: { height: 6, borderRadius: 3, backgroundColor: 'rgba(0,0,0,0.20)', overflow: 'hidden' },
-  /** 지금 지나는 자리만 두껍고 빛난다 — 숫자를 읽기 전에 어디쯤인지 보인다 */
+  tick: { height: 6, borderRadius: 3, backgroundColor: 'rgba(0,0,0,0.20)' },
+  /**
+   * 지금 지나는 자리만 두껍고 빛난다 — 숫자를 읽기 전에 어디쯤인지 보인다.
+   *
+   * 바탕을 흰색으로 두고 아직 남은 만큼을 오른쪽에서 덮는다. 거꾸로(어두운 바탕에
+   * 흰 것을 채우는 식으로) 하면 빛이 나오지 않는다 — iOS는 넘침을 자르는 겹의
+   * 그림자를 함께 잘라내고, 그림자는 어차피 흰 모양에서 나와야 흰빛이 된다.
+   */
   tickNow: {
     height: 10,
     borderRadius: 5,
+    backgroundColor: '#FFFFFF',
     shadowColor: '#FFFFFF',
     shadowOpacity: 0.55,
-    shadowRadius: 6,
+    shadowRadius: 8,
     shadowOffset: { width: 0, height: 0 },
   },
   /** 지나온 자리 */
   tickDone: { backgroundColor: 'rgba(255,255,255,0.85)' },
-  tickFill: { height: '100%', borderRadius: 5, backgroundColor: '#FFFFFF' },
+  /** 지금 자리에서 아직 남은 만큼 — 흰 바탕을 오른쪽부터 덮는다 */
+  tickRest: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    right: 0,
+    borderRadius: 5,
+    backgroundColor: 'rgba(0,0,0,0.28)',
+  },
   barLabels: { marginTop: 9, flexDirection: 'row', justifyContent: 'space-between' },
   barLabel: { fontSize: 13, fontWeight: '600', color: '#FFFFFF', opacity: 0.75 },
 });
