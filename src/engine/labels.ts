@@ -144,9 +144,13 @@ export function titleLabel(seg: Segment | null, paused: boolean): string {
  * 이름을 붙이는 것은 운동과 그 사이 휴식뿐이다. 웜업·준비·쿨다운에는 종목이
  * 없고, 종목 전환·라운드 휴식에 실린 이름은 방금 끝낸 종목이라 지금을 가리키지
  * 않는다. 타이머는 종목 이름이 곧 타이머 이름이라 붙이지 않는다.
+ *
+ * **멈춰 있어도 "일시정지"로 갈아치우지 않는다.** 멈춘 것은 한가운데 커다란 ▶와
+ * 멈춰 선 숫자가 이미 말한다. 그 한마디를 얹자고 지금 무엇을 하던 중이었는지를
+ * 가리면, 다시 시작할 때 화면을 다시 읽어야 한다. (미니 바는 다르다 — 거기는
+ * 글자 한 줄이 전부라 titleLabel이 "일시정지"를 그대로 든다.)
  */
-export function ringTitle(seg: Segment | null, paused: boolean, preset: Preset): string {
-  if (paused) return t('phase.paused');
+export function ringTitle(seg: Segment | null, _paused: boolean, preset: Preset): string {
   if (!seg) return t('phase.DONE');
   const phase = phaseLabel(seg.phase);
   const named = seg.phase === 'WORK' || seg.phase === 'SET_REST';
