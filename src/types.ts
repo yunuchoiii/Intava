@@ -27,6 +27,7 @@ export type Preset = {
   roundRestSec: number;
   cooldownSec: number;
   createdAt: number;
+
   updatedAt: number;
   lastRunAt?: number;
 };
@@ -84,3 +85,42 @@ export type Segment = {
   sets?: number;
   name?: string;
 };
+
+/**
+ * 운동 기록 — 실행이 끝나면 완주든 중단이든 한 건 남는다.
+ *
+ * **고칠 수 없다.** 지우는 것만 된다. 지나간 일을 나중에 손보면 기록이 아니라
+ * 메모가 된다. 루틴을 고치거나 지워도 기록은 그대로여야 하므로, 이름·구성처럼
+ * 보여줄 것은 그때 그 문장을 **베껴 둔다**(참조하지 않는다).
+ */
+export type WorkoutRecord = {
+  id: string;
+  presetId: string;
+  /** 실행 시점의 이름 — 루틴 이름이 나중에 바뀌어도 기록은 그날 그 이름이다 */
+  presetName: string;
+  startedAt: number;
+  endedAt: number;
+  /** 실제로 몸을 움직인 시간 — 멈춰 있던 동안과 건너뛴 구간은 빠진다 */
+  totalSec: number;
+  /** 그중 운동 구간 */
+  workSec: number;
+  completedSets: number;
+  /** 끝까지 갔으면 참, ✕로 나갔으면 거짓 */
+  completed: boolean;
+  /** "3종목 2라운드" — 실행 시점의 말을 베껴 둔 것 */
+  shape: string;
+  /** 실제로 지나온 종목만 */
+  blocks: RecordBlock[];
+  /** 구간 스트립을 그릴 만큼만 — 지나온 구간의 종류와 길이 */
+  segs: RecordSeg[];
+};
+
+export type RecordBlock = {
+  name: string;
+  /** "40초 운동 · 20초 휴식 · 4세트" */
+  spec: string;
+  /** 이 종목에서 실제로 보낸 시간 (휴식 포함) */
+  durSec: number;
+};
+
+export type RecordSeg = { phase: Phase; durSec: number };

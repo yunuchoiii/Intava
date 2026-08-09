@@ -12,12 +12,13 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { DEFAULT_SETTINGS, type Preset, type Settings } from './types';
+import { DEFAULT_SETTINGS, type Preset, type Settings, type WorkoutRecord } from './types';
 import { currentLanguage, t } from './i18n';
 
 const SCHEMA_VERSION = 1;
 const KEY_PRESETS = 'intava:presets';
 const KEY_SETTINGS = 'intava:settings';
+const KEY_RECORDS = 'intava:records';
 
 type Envelope<T> = { version: number; data: T };
 
@@ -125,6 +126,10 @@ type StoreValue = {
   setSettings: (patch: Partial<Settings>) => void;
   /** 백업 불러오기 — 같은 id는 덮어쓰고, 없는 것은 앞에 더한다 */
   mergePresets: (incoming: Preset[]) => void;
+  /** 운동 기록 — 최근 것이 앞에 온다 */
+  records: WorkoutRecord[];
+  addRecord: (r: WorkoutRecord) => void;
+  deleteRecord: (id: string) => void;
 };
 
 const StoreContext = createContext<StoreValue | null>(null);
@@ -133,13 +138,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [presets, setPresets] = useState<Preset[]>([]);
   const [settings, setSettingsState] = useState<Settings>(DEFAULT_SETTINGS);
+  const [records, setRecords] = useState<WorkoutRecord[]>([]);
 
   useEffect(() => {
     let alive = true;
     (async () => {
       const stored = await load<Preset[] | null>(KEY_PRESETS, null);
       const s = await load<Settings>(KEY_SETTINGS, DEFAULT_SETTINGS);
+      const rec = await load<WorkoutRecord[]>(KEY_RECORDS, []);
       if (!alive) return;
+      setRecords(Array.isArray(rec) ? rec : []);
       if (stored === null) {
         const seeded = seedPresets();
         setPresets(seeded);
@@ -171,6 +179,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     void save(KEY_PRESETS, next);
   }, []);
 
+  /**
+   * 기록도 프리셋과 같은 이유로 직전 값을 기준으로 바꾼다 — 한 틱에 두 번
+   * 불릴 일은 드물지만, 규칙을 한 곳에서만 다르게 두면 언젠가 걸린다.
+   */
+  const latestRecords = useRef(records);
+  latestRecords.current = records;
+
+  const persistRecords = useCallback((update: (prev: WorkoutRecord[]) => WorkoutRecord[]) => {
+    const next = update(latestRecords.current);
+    latestRecords.current = next;
+    setRecords(next);
+    void save(KEY_RECORDS, next);
+  }, []);
+
   const value = useMemo<StoreValue>(
     () => ({
       ready,
@@ -186,6 +208,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         );
       },
       deletePreset: (id: string) => persist((prev) => prev.filter((p) => p.id !== id)),
+      records,
+      /** 최근 것이 앞 — 화면은 날짜로 다시 묶지만, 저장 자체는 시간순 역순이 자연스럽다 */
+      addRecord: (r: WorkoutRecord) => persistRecords((prev) => [r, ...prev]),
+      deleteRecord: (id: string) => persistRecords((prev) => prev.filter((x) => x.id !== id)),
       /** 복제 — 종목까지 새 id를 준다. 원본과 id를 공유하면 한쪽을 고칠 때 같이 바뀐다 */
       duplicatePreset: (id: string) =>
         persist((prev) => {
@@ -226,7 +252,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           return [...added, ...prev.map((p) => byId.get(p.id) ?? p)];
         }),
     }),
-    [ready, presets, settings, persist]
+    [ready, presets, settings, persist, records, persistRecords]
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

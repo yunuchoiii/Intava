@@ -4,7 +4,7 @@
  * `LiveFlat.dc.html`의 build() 를 그대로 옮긴 것이다. 이 배열이 실행 화면,
  * 알림 예약, 완료 화면 통계, 편집 화면 합계의 유일한 출처다.
  */
-import type { Preset, Segment } from '../types';
+import type { Phase, Preset, Segment } from '../types';
 
 export type Plan = {
   segs: Segment[];
@@ -168,4 +168,46 @@ export function segmentAt(plan: Plan, elapsed: number): { seg: Segment; idx: num
     if (elapsed < s.start + s.dur) return { seg: s, idx: i };
   }
   return null;
+}
+
+/**
+ * 지나온 만큼을 기록용으로 간추린다 — `until`(초)까지만 센다.
+ *
+ * 계획 전체가 아니라 **실제로 지나온 데까지**다. 도중에 끄면 거기서 끊기고,
+ * ⏭로 건너뛴 구간은 `Lived.at`이 이미 그만큼 앞서 있으므로 지나온 것으로 친다.
+ *
+ * 종목은 자리(blk)가 아니라 **정체(blockId)로** 묶는다. 라운드가 여러 번 돌면
+ * 같은 종목이 여러 자리에 나타나는데, 기록에서는 "스쿼트에 몇 분"이 알고 싶은
+ * 것이지 "세 번째 자리에 몇 분"이 아니다. 순서를 바꿔가며 돌아도 한 줄로 모인다.
+ *
+ * 걸쳐 있는 구간은 지나온 만큼만 센다 — 40초짜리 운동을 12초에서 껐으면 12초다.
+ */
+export function summarizeLived(
+  plan: Plan,
+  until: number
+): { blocks: { blockId: string; name: string; durSec: number }[]; segs: { phase: Phase; durSec: number }[] } {
+  const end = Math.max(0, Math.min(plan.total, until));
+  const order: string[] = [];
+  const byBlock = new Map<string, { blockId: string; name: string; durSec: number }>();
+  const segs: { phase: Phase; durSec: number }[] = [];
+
+  for (const s of plan.segs) {
+    if (s.start >= end) break;
+    const lived = Math.min(s.dur, end - s.start);
+    if (lived <= 0) continue;
+    segs.push({ phase: s.phase, durSec: lived });
+
+    // 종목에 딸린 구간만 종목 몫으로 센다 — 웜업·쿨다운·라운드 휴식은 어느 종목의 것도 아니다
+    const owned = s.phase === 'WORK' || s.phase === 'SET_REST' || s.phase === 'BLOCK_REST';
+    if (!owned || !s.blockId) continue;
+    const cur = byBlock.get(s.blockId);
+    if (cur) {
+      cur.durSec += lived;
+    } else {
+      order.push(s.blockId);
+      byBlock.set(s.blockId, { blockId: s.blockId, name: s.name ?? '', durSec: lived });
+    }
+  }
+
+  return { blocks: order.map((id) => byBlock.get(id)!), segs };
 }
