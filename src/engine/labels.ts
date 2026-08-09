@@ -218,3 +218,18 @@ export function notificationText(
 function nextName(seg: Segment): string {
   return phaseLabel(seg.phase);
 }
+
+/**
+ * 구성 한 줄 — "3종목 2라운드". 기록에 베껴 두는 문장이라 짧아야 한다.
+ * 타이머(종목 1·라운드 1)는 종목이라는 말 자체를 쓰지 않으므로 세트 수로 대신한다.
+ */
+export function shapeLabel(p: Preset): string {
+  if (isSimple(p)) {
+    const b = p.blocks[0];
+    return b ? t('count.sets', { count: b.sets }) : '';
+  }
+  return t('doneScreen.composition', {
+    blocks: t('count.blocks', { count: p.blocks.length }),
+    rounds: t('count.rounds', { count: p.rounds }),
+  });
+}

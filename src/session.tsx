@@ -28,14 +28,16 @@ import {
   advanceLived,
   buildPlan,
   segmentAt,
+  summarizeLived,
   NO_LIVED,
   type Lived,
   type Plan,
   type RoundOrders,
 } from './engine/segments';
+import { blockSummary, shapeLabel } from './engine/labels';
 import { countdownFeedback, segmentFeedback } from './feedback';
 import { cancelAll, scheduleUpcoming } from './notify';
-import { useStore } from './store';
+import { uid, useStore } from './store';
 import type { Preset, Segment } from './types';
 
 const KEY = 'intava:session';
@@ -43,6 +45,13 @@ const KEY = 'intava:session';
 type Stored = {
   presetId: string;
   zeroAt: number;
+  /**
+   * 진짜로 시작한 벽시계 시각 — 기록의 "오전 7:18 시작"이 이것이다.
+   *
+   * zeroAt은 쓸 수 없다. 그것은 elapsed 0에 해당하는 시각이라 멈출 때마다
+   * 뒤로 밀린다 — 10분 쉬었다 재개하면 시작이 10분 늦은 것으로 적힌다.
+   */
+  startedAt?: number;
   pausedAt: number | null;
   /**
    * 실행 중에 바꾼 종목 차례 — 라운드별로 따로 둔다. 없으면 프리셋에 적힌 대로.
@@ -125,7 +134,7 @@ const EMPTY: RunSnapshot = {
 const SessionContext = createContext<Session | null>(null);
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
-  const { presets, settings, markRun } = useStore();
+  const { presets, settings, markRun, addRecord } = useStore();
   const [stored, setStored] = useState<Stored | null>(null);
   const [snap, setSnap] = useState<RunSnapshot>(EMPTY);
   const [syncId, setSyncId] = useState(0);
@@ -247,6 +256,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const lastIdx = useRef(-1);
   const lastTick = useRef('');
   const doneFired = useRef(false);
+  /** 이 실행을 이미 기록했는가 — 한 실행에 한 건만 남긴다 */
+  const recorded = useRef(false);
   /** 드래그하느라 우리가 멈춘 것인지 — 사용자가 멈춰둔 것과 구분해야 한다 */
   const autoPaused = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -429,9 +440,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         lastIdx.current = -1;
         lastTick.current = '';
         doneFired.current = false;
+        recorded.current = false;
         markRun(presetId);
         // 완료 화면의 "다시 하기"는 방금 쓴 차례를 그대로 물려받는다
-        persist({ presetId, zeroAt: Date.now(), pausedAt: null, orders });
+        const now = Date.now();
+        persist({ presetId, zeroAt: now, startedAt: now, pausedAt: null, orders });
         setSyncId((n) => n + 1);
       },
       /**
@@ -454,12 +467,48 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         setSyncId((n) => n + 1);
         void reschedule();
       },
+      /**
+       * 정산하고 **기록을 한 건 남긴다** — 완료 화면으로 떠나는 길목이다.
+       *
+       * 여기서 남기는 이유: 이 순간이 완주와 중단이 모두 지나는 유일한 자리이고,
+       * 아직 세션이 살아 있어 계획·시작 시각·지나온 몫을 다 알고 있다. 완료
+       * 화면은 뜨자마자 세션을 비우므로 그 뒤에는 물어볼 데가 없다.
+       *
+       * **한 실행에 한 건이다.** 같은 세션에서 두 번 불려도 두 번 적지 않는다.
+       */
       settle: (): Lived => {
         const s = storedRef.current;
         const p = planRef.current;
+        const preset = presetRef.current;
         if (!s || !p) return NO_LIVED;
         const lived = advanceLived(s.lived, p, elapsedNow());
         persist({ ...s, lived });
+
+        if (preset && !recorded.current) {
+          recorded.current = true;
+          const { blocks, segs } = summarizeLived(p, lived.at);
+          const specOf = new Map(
+            preset.blocks.map((b) => [b.id, blockSummary(b.workSec, b.restSec, b.sets)])
+          );
+          addRecord({
+            id: uid(),
+            presetId: preset.id,
+            presetName: preset.name,
+            startedAt: s.startedAt ?? s.zeroAt,
+            endedAt: Date.now(),
+            totalSec: Math.round(lived.total),
+            workSec: Math.round(lived.work),
+            completedSets: lived.sets,
+            completed: lived.at >= p.total - 0.01,
+            shape: shapeLabel(preset),
+            blocks: blocks.map((b) => ({
+              name: b.name,
+              spec: specOf.get(b.blockId) ?? '',
+              durSec: Math.round(b.durSec),
+            })),
+            segs: segs.map((x) => ({ phase: x.phase, durSec: x.durSec })),
+          });
+        }
         return lived;
       },
       toggle: () => {
@@ -567,7 +616,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       lockedCount: edit.locked,
       ...controls,
     };
-  }, [snap, preset, plan, syncId, restoredFromStorage, stored?.orders, persist, seekTo, tick, reschedule, elapsedNow, snapshotAt, markRun]);
+  }, [snap, preset, plan, syncId, restoredFromStorage, stored?.orders, persist, seekTo, tick, reschedule, elapsedNow, snapshotAt, markRun, addRecord]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }
