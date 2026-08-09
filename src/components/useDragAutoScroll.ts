@@ -83,7 +83,9 @@ export function useDragAutoScroll() {
         scrollEventThrottle: 16,
         onLayout: () => measure(),
         onScroll: (e: { nativeEvent: { contentOffset: { y: number } } }) => {
-          offset.current = e.nativeEvent.contentOffset.y;
+          // 우리가 흐르게 하는 동안에는 우리 값이 진실이다. 스크롤 알림은 한 박자
+          // 늦게 오므로 그대로 받으면 방금 올린 자리를 옛 값으로 되돌려 행이 떤다.
+          if (frame.current == null) offset.current = e.nativeEvent.contentOffset.y;
         },
         onContentSizeChange: (_w: number, h: number) => {
           contentH.current = h;

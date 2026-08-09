@@ -160,6 +160,23 @@ function Row(props: RowProps) {
   const isDragged = dragFrom === index;
 
   /** 드래그 중인 행이 비켜간 자리만큼 다른 행을 밀어둔다 */
+  /**
+   * 값을 제자리로 되돌린다 — **멈춰 세운 다음에** 되돌린다.
+   *
+   * 네이티브 드라이버로 도는 애니메이션은 setValue만으로 멈추지 않는다. JS 쪽
+   * 값만 0이 되고 네이티브는 원래 목표를 향해 계속 가서, 비켜서 있던 행이
+   * 한 칸 밀린 채로 굳는다 — 드롭한 뒤 배경도 없이 옆 행과 겹쳐 보이던 것이
+   * 그것이다. 밀린 채로 남았으니 그 다음 순서도 어긋난 자리에서 셈해진다.
+   *
+   * 예전에는 잘 드러나지 않았다. 드롭은 dy 스프링이 끝난 **뒤에** 확정되는데
+   * 그 사이에 비켜서던 스프링도 대개 끝나 있었기 때문이다. 목록이 스스로
+   * 흐르기 시작하면서 마지막 순간까지 도착 칸이 바뀌게 되자 드러났다.
+   */
+  const reset = useCallback((v: Animated.Value) => {
+    v.stopAnimation();
+    v.setValue(0);
+  }, []);
+
   const shift = useMemo(() => {
     if (dragFrom === null || dragTo === null || isDragged) return 0;
     if (dragFrom < index && dragTo >= index) return -ROW_H;
@@ -173,7 +190,7 @@ function Row(props: RowProps) {
   useLayoutEffect(() => {
     // 드래그가 끝나면 배열이 이미 새 순서다. 이동값을 즉시 0으로 되돌린다.
     if (dragFrom === null) {
-      slide.setValue(0);
+      reset(slide);
       return;
     }
     Animated.spring(slide, {
@@ -182,7 +199,7 @@ function Row(props: RowProps) {
       speed: 18,
       bounciness: 6,
     }).start();
-  }, [shift, dragFrom, slide]);
+  }, [shift, dragFrom, slide, reset]);
 
   /**
    * 순서가 확정되어 이 행의 자리(top)가 바뀌는 바로 그 커밋에서 이동값을 턴다.
@@ -199,9 +216,10 @@ function Row(props: RowProps) {
     }).start();
   }, [isDragged, lift]);
 
+  // 자리가 바뀌었으면 손으로 옮긴 몫은 이미 새 자리에 녹아 있다 — 확실히 세우고 턴다
   useLayoutEffect(() => {
-    dy.setValue(0);
-  }, [index, dy]);
+    reset(dy);
+  }, [index, dy, reset]);
 
   const targetIndex = useCallback((gdy: number) => {
     const { index: i, count: n, floor } = live.current;
@@ -303,13 +321,13 @@ function Row(props: RowProps) {
           clearTimer();
           live.current.autoScroll?.end();
           if (mode.current === 'dragging') {
-            dy.setValue(0);
+            reset(dy);
             live.current.onDragEnd(live.current.index, live.current.index);
           }
           mode.current = 'idle';
         },
       }),
-    [dy, apply, clearTimer, drop]
+    [dy, apply, clearTimer, drop, reset]
   );
 
   /**
