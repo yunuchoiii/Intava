@@ -171,3 +171,39 @@ export function PauseIcon({ size = 26, color = '#FFFFFF' }: IconProps) {
     </Svg>
   );
 }
+
+/**
+ * 달력 — 위 띠와 고리 둘, 그리고 날짜 점 넷.
+ * 톱니(설정) 옆에 서므로 같은 24 격자에서 같은 무게로 그린다.
+ */
+export function CalendarIcon({ size = 22, color = '#FFFFFF' }: IconProps) {
+  const dots = [
+    [7.6, 13.6],
+    [12, 13.6],
+    [16.4, 13.6],
+    [7.6, 17.4],
+    [12, 17.4],
+  ];
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Rect
+        x={3.2}
+        y={4.8}
+        width={17.6}
+        height={16}
+        rx={4}
+        stroke={color}
+        strokeWidth={1.8}
+        fill="none"
+      />
+      {/* 위 띠 — 날짜 칸과 머리를 가른다 */}
+      <Rect x={3.2} y={9.4} width={17.6} height={1.7} fill={color} />
+      {/* 고리 */}
+      <Rect x={7.4} y={2.4} width={1.9} height={4.4} rx={0.95} fill={color} />
+      <Rect x={14.7} y={2.4} width={1.9} height={4.4} rx={0.95} fill={color} />
+      {dots.map(([x, y]) => (
+        <Rect key={`${x}-${y}`} x={x - 1} y={y - 1} width={2} height={2} rx={1} fill={color} />
+      ))}
+    </Svg>
+  );
+}

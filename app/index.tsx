@@ -15,7 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Surface } from '../src/components/Surface';
 import { PressBox } from '../src/components/PressBox';
-import { GearIcon, PlayIcon } from '../src/components/Icons';
+import { CalendarIcon, GearIcon, PlayIcon } from '../src/components/Icons';
 import { useMiniTimerSpace } from '../src/components/MiniTimer';
 import { Screen, ScreenBackground } from '../src/components/Screen';
 import { Wordmark } from '../src/components/Wordmark';
@@ -190,15 +190,30 @@ export default function Home() {
         <View style={styles.header}>
           {/* 잠금형이 넓고 낮아져서 118로는 심볼이 28px 아래로 떨어진다 */}
           <Wordmark width={140} />
-          <PressBox
-            onPress={() => router.push('/settings')}
-            hitSlop={12}
-            scaleTo={0.88}
-            dim={0}
-            accessibilityLabel={t('home.settings')}
-          >
-            <GearIcon size={28} color={C.textSecondary} />
-          </PressBox>
+          {/*
+            머리줄 오른쪽 두 자리 — 기록과 설정. 둘 다 목록을 떠나 다른 데로 가는
+            길이라 한데 모은다. 기록이 안쪽인 것은 더 자주 열기 때문이다.
+          */}
+          <View style={styles.headerActions}>
+            <PressBox
+              onPress={() => router.push('/records')}
+              hitSlop={12}
+              scaleTo={0.88}
+              dim={0}
+              accessibilityLabel={t('records.a11yOpen')}
+            >
+              <CalendarIcon size={26} color={C.textSecondary} />
+            </PressBox>
+            <PressBox
+              onPress={() => router.push('/settings')}
+              hitSlop={12}
+              scaleTo={0.88}
+              dim={0}
+              accessibilityLabel={t('home.settings')}
+            >
+              <GearIcon size={28} color={C.textSecondary} />
+            </PressBox>
+          </View>
         </View>
 
         <Segmented
@@ -576,6 +591,7 @@ function AddButton({ kind, primary }: { kind: PresetKind; primary: boolean }) {
 }
 
 const styles = StyleSheet.create({
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 18 },
   header: {
     height: 64,
     paddingHorizontal: GUTTER,

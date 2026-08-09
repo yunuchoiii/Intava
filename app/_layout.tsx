@@ -120,6 +120,8 @@ export default function RootLayout() {
               name="settings"
               options={{ animation: 'slide_from_bottom', gestureEnabled: false }}
             />
+            {/* 기록은 홈에서 옆으로 미끄러져 들어온다 — 목록 옆의 또 다른 목록이다 */}
+            <Stack.Screen name="records" />
           </Stack>
 
           <MiniTimer />

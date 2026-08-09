@@ -26,6 +26,14 @@ export const C = {
 
   danger: '#FF8A93',
   dangerBg: 'rgba(211,47,62,0.16)',
+
+  // 기록 화면 — 볼륨(캘린더 농도)과 그 위의 글자, 운동 몫, 중단 배지, 주말
+  volume: '#1FB3A1',
+  volumeText: '#5FD8C6',
+  recWork: '#F08A93',
+  recWarn: '#E8A15C',
+  sunday: '#E0656F',
+  saturday: '#7E9BE0',
 } as const;
 
 export const PHASE_COLOR: Record<Phase, string> = {
