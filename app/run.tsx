@@ -33,6 +33,15 @@ import { C, GUTTER, PHASE_COLOR, TABULAR } from '../src/theme';
  */
 const MAIN_BUTTON = 100;
 
+/**
+ * 진행 막대를 둘러싼 네 개의 글자는 같은 크기다 — 막대 위의 "3 / 9 구간"·"순서
+ * 바꾸기", 아래의 경과·총 시간. 넷 다 막대를 읽는 곁말이라 하나가 크면 그것만
+ * 제목처럼 도드라진다. 위계는 크기가 아니라 불투명도로 준다.
+ */
+const BAR_LABEL = 14;
+/** 막대와 그 위아래 줄 사이 — 한 값으로만 준다. 막대가 두 줄 한가운데 선다 */
+const BAR_GAP = 11;
+
 export default function Run() {
   const router = useRouter();
   /** 미니 바와 공유하는 값 — 0은 가득 찬 상태, 1은 접힌 상태 */
@@ -54,6 +63,19 @@ export default function Run() {
   const run = useSession();
   const preset = run.preset;
   const [ordering, setOrdering] = useState(false);
+  /**
+   * 시트가 떠 있는가 — 아래 화면의 끌어내리기가 이걸 보고 비켜선다.
+   *
+   * **RN의 손짓 협상은 네이티브 뷰 계층이 아니라 React 트리를 따라 올라간다.**
+   * 시트는 Modal이라 화면상으로는 완전히 분리된 겹인데, JSX에서는 이 화면
+   * 안쪽에 있어서 시트 안에서 내리긋는 손짓이 그대로 이 화면의 PanResponder까지
+   * 버블한다 — 목록을 훑어 내리려다 타이머가 접혀 닫히던 것이 그것이다.
+   *
+   * useMemo 밖의 ref로 읽는다. 상태를 의존성에 넣으면 시트를 여닫을 때마다
+   * PanResponder가 새로 만들어져 쥐고 있던 손짓이 끊긴다.
+   */
+  const sheetUp = useRef(false);
+  sheetUp.current = ordering;
   useEffect(() => {
     void ensurePermission();
   }, []);
@@ -193,6 +215,8 @@ export default function Run() {
           return false;
         },
         onMoveShouldSetPanResponder: (_e, g) =>
+          // 시트가 떠 있으면 이 화면은 손짓을 받지 않는다 — 트리에서 뺀 것에 더해 한 겹 더
+          !sheetUp.current &&
           g.dy > 8 &&
           // 세로가 확실히 우세할 때만. 링 바깥을 스치듯 가로로 긋다가 닫히지 않게 한다
           Math.abs(g.dy) > Math.abs(g.dx) * 1.5 &&
@@ -304,6 +328,7 @@ export default function Run() {
       겹이 둘인 이유: 자리·크기·투명도는 네이티브 드라이버로 돌고, 모서리 반경은
       JS 쪽에서 돌아야 한다. 한 겹에 섞으면 RN이 거부한다.
     */
+    <>
     <Animated.View
       style={[styles.fill, { opacity: fade, transform: [{ translateY }, { scale }] }]}
       {...dismissPan.panHandlers}
@@ -404,7 +429,7 @@ export default function Run() {
             "3 / 9 구간"은 이 막대 바로 위에 둔다. 머리줄 밑에 있을 때는 제목의
             부제처럼 읽혔는데, 그 말이 가리키는 것은 여기 이 막대다.
           */}
-          <View style={{ gap: 11 }}>
+          <View style={{ gap: BAR_GAP }}>
             <View style={styles.stageRow}>
               <Text style={[styles.stageCount, TABULAR]}>
                 {t('run.stageOf', {
@@ -461,6 +486,20 @@ export default function Run() {
         </View>
       </View>
 
+      </Animated.View>
+      </Animated.View>
+
+      {/*
+        시트는 끌어내리기를 받는 겹 **바깥**에 둔다.
+
+        RN에서 손짓의 주인을 정하는 협상은 네이티브 뷰 계층이 아니라 **React
+        트리**를 따라 올라간다. 시트는 Modal이라 화면에서는 완전히 떨어진 겹인데,
+        JSX에서 저 안에 있으면 시트 안의 손짓이 조상인 이 화면까지 닿는다 —
+        목록을 훑어 내리다 타이머가 접히던 것이 그것이다.
+
+        형제로 두면 올라갈 길 자체가 없다. 시트는 Modal이라 어디에 적든 화면
+        맨 위에 뜨므로 보이는 것은 달라지지 않는다.
+      */}
       <OrderSheet
         visible={ordering}
         onClose={() => setOrdering(false)}
@@ -468,8 +507,7 @@ export default function Run() {
         lockedCount={run.lockedCount}
         onReorder={run.reorder}
       />
-      </Animated.View>
-    </Animated.View>
+    </>
   );
 }
 
@@ -596,8 +634,8 @@ const styles = StyleSheet.create({
    */
   /** 막대 바로 위 — 왼쪽은 지금 몇 번째인지, 오른쪽은 순서를 바꾸는 길 */
   stageRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  stageCount: { fontSize: 14, fontWeight: '600', color: '#FFFFFF', opacity: 0.88 },
-  stageLink: { fontSize: 14, fontWeight: '600', color: '#FFFFFF', opacity: 0.78 },
+  stageCount: { fontSize: BAR_LABEL, fontWeight: '600', color: '#FFFFFF', opacity: 0.88 },
+  stageLink: { fontSize: BAR_LABEL, fontWeight: '600', color: '#FFFFFF', opacity: 0.78 },
   ringWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 0 },
   controls: {
     flexDirection: 'row',
@@ -662,6 +700,10 @@ const styles = StyleSheet.create({
   },
   /** 지나온 자리 */
   tickDone: { backgroundColor: 'rgba(255,255,255,0.85)' },
-  barLabels: { marginTop: 9, flexDirection: 'row', justifyContent: 'space-between' },
-  barLabel: { fontSize: 13, fontWeight: '600', color: '#FFFFFF', opacity: 0.75 },
+  /*
+    막대 아래 줄. 위아래 여백은 감싸는 상자의 gap 하나로만 준다 — 여기에 마진을
+    더하면 막대가 두 줄 사이 한가운데 서지 않는다. 글자 크기도 위쪽 줄과 같은 BAR_LABEL.
+  */
+  barLabels: { flexDirection: 'row', justifyContent: 'space-between' },
+  barLabel: { fontSize: BAR_LABEL, fontWeight: '600', color: '#FFFFFF', opacity: 0.75 },
 });
