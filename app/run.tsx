@@ -26,7 +26,7 @@ import { ensurePermission } from '../src/notify';
 import { useSession } from '../src/session';
 import { useStore } from '../src/store';
 import { t } from '../src/i18n';
-import { ABS, C, GUTTER, PHASE_COLOR, TABULAR } from '../src/theme';
+import { ABS, C, GUTTER, PHASE_COLOR, RADIUS, TABULAR } from '../src/theme';
 
 export default function Run() {
   const router = useRouter();
@@ -512,13 +512,22 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     opacity: 0.95,
   },
+  /**
+   * 이름 셋과 목록 버튼을 한 줄 상자로 묶는다 — 링과 머리줄 사이에서 떠다니던
+   * 글자들이 하나의 손잡이로 읽힌다. 바탕은 두지 않는다. 페이즈 색이 화면마다
+   * 달라서, 반투명 흰 테두리 한 줄이 어느 색 위에서도 같은 무게로 보인다.
+   */
   blockRow: {
-    paddingTop: 14,
-    paddingHorizontal: GUTTER,
+    marginTop: 14,
+    marginHorizontal: GUTTER,
+    height: 44,
+    borderRadius: RADIUS.tile,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.28)',
+    paddingHorizontal: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    minHeight: 22,
   },
   /**
    * 이름 셋은 줄 전체에 걸쳐 가운데 정렬한다 — 흐름에 두면 오른쪽 버튼 폭만큼
