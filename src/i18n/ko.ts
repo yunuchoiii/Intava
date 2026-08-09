@@ -270,6 +270,15 @@ export const ko = {
     keepScreenOn: '이 앱은 화면이 꺼진 채로 쓰이는 것을 정상으로 봅니다.',
   },
 
+  /** 해낸 일을 한 줄로 알린다 — 묻지 않는 것에만 쓴다 */
+  toast: {
+    saved: '저장했습니다',
+    updated: '수정했습니다',
+    deleted: '삭제했습니다',
+    duplicated: '복제했습니다',
+    orderSaved: '순서를 저장했습니다',
+  },
+
   list: {
     sortRecent: '최근 실행순',
     sortName: '이름순',

@@ -10,6 +10,7 @@ import { clock, isSimple } from '../src/engine/labels';
 import { NO_LIVED, type Lived, type RoundOrders } from '../src/engine/segments';
 import { useSession } from '../src/session';
 import { useStore } from '../src/store';
+import { useToast } from '../src/components/Toast';
 import { t } from '../src/i18n';
 import { GUTTER, PHASE_COLOR, TABULAR } from '../src/theme';
 import type { Preset } from '../src/types';
@@ -31,6 +32,7 @@ export default function Done() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { getPreset, savePreset } = useStore();
+  const toast = useToast();
   const session = useSession();
   const preset = getPreset(id);
 
@@ -94,6 +96,7 @@ export default function Done() {
           const byId = new Map(preset.blocks.map((b) => [b.id, b]));
           const next = changed.map((bid) => byId.get(bid)).filter((b) => !!b);
           savePreset({ ...preset, blocks: next });
+          toast(t('toast.orderSaved'));
           router.dismissTo('/');
         },
       },

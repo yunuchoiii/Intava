@@ -24,6 +24,7 @@ import { totalSec } from '../src/engine/segments';
 import { t } from '../src/i18n';
 import { selectionTick } from '../src/feedback';
 import { useSession } from '../src/session';
+import { useToast } from '../src/components/Toast';
 import { sortPresets, useStore, type SortKey } from '../src/store';
 import { C, E2, GUTTER, LIFT, RADIUS, TABULAR } from '../src/theme';
 import { kindOf, type Preset, type PresetKind } from '../src/types';
@@ -67,6 +68,7 @@ export default function Home() {
   const insets = useSafeAreaInsets();
   const { width, height: screenHeight } = useWindowDimensions();
   const { presets, ready, settings, setSettings, duplicatePreset, deletePreset } = useStore();
+  const toast = useToast();
   const [tab, setTab] = useState<PresetKind>('routine');
   const [toolHeight, setToolHeight] = useState(TOOL_ROW_GUESS);
   /**
@@ -101,7 +103,13 @@ export default function Home() {
     (preset: Preset) => {
       selectionTick();
       Alert.alert(preset.name, undefined, [
-        { text: t('list.duplicate'), onPress: () => duplicatePreset(preset.id) },
+        {
+          text: t('list.duplicate'),
+          onPress: () => {
+            duplicatePreset(preset.id);
+            toast(t('toast.duplicated'));
+          },
+        },
         {
           text: t('common.delete'),
           style: 'destructive',
@@ -114,7 +122,10 @@ export default function Home() {
                 {
                   text: t('common.delete'),
                   style: 'destructive',
-                  onPress: () => deletePreset(preset.id),
+                  onPress: () => {
+                    deletePreset(preset.id);
+                    toast(t('toast.deleted'));
+                  },
                 },
               ]
             ),
@@ -122,7 +133,7 @@ export default function Home() {
         { text: t('common.cancel'), style: 'cancel' },
       ]);
     },
-    [duplicatePreset, deletePreset]
+    [duplicatePreset, deletePreset, toast]
   );
 
   const empty = ready && grouped[tab].length === 0;

@@ -245,6 +245,14 @@ export const zh: Catalog = {
     keepScreenOn: '这个应用默认你会在息屏状态下使用。',
   },
 
+  toast: {
+    saved: '已保存',
+    updated: '已保存修改',
+    deleted: '已删除',
+    duplicated: '已复制',
+    orderSaved: '已保存顺序',
+  },
+
   list: {
     sortRecent: '最近使用',
     sortName: '按名称',

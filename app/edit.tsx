@@ -18,6 +18,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlockList } from '../src/components/BlockList';
 import { useDragAutoScroll } from '../src/components/useDragAutoScroll';
+import { useToast } from '../src/components/Toast';
 import { Chevron, Collapsible } from '../src/components/Collapsible';
 import { ClearButton } from '../src/components/ClearButton';
 import { BlockPickerSheet } from '../src/components/BlockPickerSheet';
@@ -69,6 +70,7 @@ export default function Edit() {
   const running = useTimerRunning();
   const session = useSession();
   const { getPreset, savePreset, settings, presets } = useStore();
+  const toast = useToast();
 
   const initial = useMemo(
     () => getPreset(id) ?? emptyPreset(kind === 'timer' ? 'timer' : 'routine'),
@@ -137,8 +139,12 @@ export default function Edit() {
     blocks: draft.blocks.map((b) => ({ ...b, name: b.name.trim() || t('defaults.block') })),
   });
 
+  /** 이미 있던 것을 고친 것인지, 처음 만든 것인지 — 말이 달라야 한다 */
+  const isNew = getPreset(draft.id) == null;
+
   const save = () => {
     savePreset(normalized());
+    toast(t(isNew ? 'toast.saved' : 'toast.updated'));
     router.back();
   };
 

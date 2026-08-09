@@ -14,6 +14,7 @@ import { MiniTimer } from '../src/components/MiniTimer';
 import { MorphProvider } from '../src/morph';
 import { SessionProvider } from '../src/session';
 import { StoreProvider } from '../src/store';
+import { ToastHost } from '../src/components/Toast';
 
 /**
  * 네이티브 스플래시는 첫 화면이 그려질 때까지 붙잡아 둔다.
@@ -69,6 +70,8 @@ export default function RootLayout() {
           <StoreProvider>
             <SessionProvider>
               <MorphProvider>
+              {/* 토스트는 스택 위에 떠야 하므로 화면들을 통째로 감싼다 */}
+              <ToastHost>
           <StatusBar style="light" />
           <Stack
             screenOptions={{
@@ -133,6 +136,7 @@ export default function RootLayout() {
               </View>
             </Animated.View>
           )}
+              </ToastHost>
               </MorphProvider>
             </SessionProvider>
           </StoreProvider>

@@ -246,6 +246,14 @@ export const ja: Catalog = {
     keepScreenOn: 'このアプリは画面を消したまま使うことを前提にしています。',
   },
 
+  toast: {
+    saved: '保存しました',
+    updated: '変更を保存しました',
+    deleted: '削除しました',
+    duplicated: '複製しました',
+    orderSaved: '順番を保存しました',
+  },
+
   list: {
     sortRecent: '最近使った順',
     sortName: '名前順',

@@ -92,6 +92,27 @@ export default function SettingsScreen() {
           }}
           showsVerticalScrollIndicator={false}
         >
+          {/*
+            앱 이야기가 맨 위다. 버전은 그중에서도 첫 줄 — 무엇이 잘못됐을 때
+            가장 먼저 확인하는 값이라, 스크롤 없이 눈에 들어와야 한다.
+          */}
+          <Text style={styles.section}>{t('settings.app')}</Text>
+          <View style={[styles.linkRow, { justifyContent: 'space-between' }]}>
+            <Text style={styles.rowTitle}>{t('settings.version')}</Text>
+            <Text style={[styles.value, TABULAR]}>{appVersion}</Text>
+          </View>
+          {/* 언어는 iOS의 앱별 언어 설정에서 바꾼다 — 앱 안에 또 만들면 두 곳이 어긋난다 */}
+          <Pressable
+            style={[styles.linkRow, { borderBottomWidth: 0 }]}
+            onPress={() => Linking.openSettings()}
+          >
+            <View style={{ flex: 1, paddingRight: 16 }}>
+              <Text style={styles.rowTitle}>{t('settings.language')}</Text>
+              <Text style={styles.note}>{t('settings.languageNote')}</Text>
+            </View>
+            <Text style={styles.chevron}>›</Text>
+          </Pressable>
+
           <Text style={styles.section}>{t('settings.alerts')}</Text>
 
           <ToggleRow
@@ -134,20 +155,6 @@ export default function SettingsScreen() {
             }}
           />
           <Text style={styles.note}>{t('tips.volume')}</Text>
-
-          <Text style={styles.section}>{t('settings.app')}</Text>
-          {/* 언어는 iOS의 앱별 언어 설정에서 바꾼다 — 앱 안에 또 만들면 두 곳이 어긋난다 */}
-          <Pressable style={styles.linkRow} onPress={() => Linking.openSettings()}>
-            <View style={{ flex: 1, paddingRight: 16 }}>
-              <Text style={styles.rowTitle}>{t('settings.language')}</Text>
-              <Text style={styles.note}>{t('settings.languageNote')}</Text>
-            </View>
-            <Text style={styles.chevron}>›</Text>
-          </Pressable>
-          <View style={[styles.linkRow, { borderBottomWidth: 0, justifyContent: 'space-between' }]}>
-            <Text style={styles.rowTitle}>{t('settings.version')}</Text>
-            <Text style={[styles.value, TABULAR]}>{appVersion}</Text>
-          </View>
 
           <Text style={styles.section}>{t('settings.screen')}</Text>
           <ToggleRow

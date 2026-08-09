@@ -253,6 +253,14 @@ export const en: Catalog = {
     keepScreenOn: 'This app expects to be used with the screen off.',
   },
 
+  toast: {
+    saved: 'Saved',
+    updated: 'Changes saved',
+    deleted: 'Deleted',
+    duplicated: 'Duplicated',
+    orderSaved: 'Order saved',
+  },
+
   list: {
     sortRecent: 'Recently used',
     sortName: 'By name',
