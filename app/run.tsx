@@ -33,36 +33,6 @@ import { C, GUTTER, PHASE_COLOR, TABULAR } from '../src/theme';
  */
 const MAIN_BUTTON = 100;
 
-/**
- * 번지는 빛 — 흰 겹을 밖으로 물려 깔아 만든다.
- *
- * iOS의 그림자(shadowColor·shadowRadius)는 이 자리에서 아무것도 그리지 않았다.
- * 흰 바탕·불투명도·반경을 다 줘도 확대해 보면 캡슐 주위가 그냥 배경색이다.
- * 겹으로 직접 그리면 어느 플랫폼에서도 같은 것이 나온다 — 안드로이드에는 색 있는
- * 그림자가 아예 없으니 이쪽이 양쪽에 맞다. 흰 위에 흰 것은 보이지 않으므로
- * 캡슐을 덮어도 무해하고, 밖으로 삐져나온 만큼만 빛으로 읽힌다.
- *
- * **겹은 촘촘해야 한다.** 두 장은 띠 두 줄, 넉 장(2·5·9·14pt)은 동심원 넷으로
- * 보였다 — 확대하면 테두리가 또렷한 계단이다. 겹이 성기면 누적 불투명도가
- * 0.43 → 0.22 → 0.10 → 0.03처럼 뚝뚝 떨어지기 때문이다. 1pt 간격으로 열여섯
- * 장을 깔면 한 칸의 차이가 0.03 아래로 내려가 계단이 눈에 잡히지 않는다.
- *
- * 알파는 바깥으로 갈수록 가파르게 죽여 **끝을 0으로 데려간다**. 계단이 가장 잘
- * 보이는 곳은 번짐의 바깥 경계라, 거기서 스스로 사라져야 테두리가 안 생긴다.
- */
-const GLOW = Array.from({ length: 16 }, (_, i) => {
-  const d = i + 1;
-  const fade = Math.pow(1 - i / 15, 1.6);
-  return {
-    top: -d,
-    bottom: -d,
-    left: -d,
-    right: -d,
-    borderRadius: 5 + d,
-    backgroundColor: `rgba(255,255,255,${(0.09 * fade).toFixed(4)})`,
-  };
-});
-
 export default function Run() {
   const router = useRouter();
   /** 미니 바와 공유하는 값 — 0은 가득 찬 상태, 1은 접힌 상태 */
@@ -470,16 +440,10 @@ export default function Run() {
                     ]}
                   >
                     {now && filled > 0 && (
-                      <View style={[styles.tickFill, { width: `${filled * 100}%` }]}>
-                        {/*
-                          빛은 겹으로 그린다 — iOS 그림자는 이 자리에서 나오지 않는다.
-                          눈금이 아니라 차오르는 쪽에 달아 둔다. 빛은 늘 흰 부분만
-                          감싸고, 머리 앞쪽으로 조금 새어 나가 어디까지 왔는지를 짚는다.
-                        */}
-                        {GLOW.map((g, k) => (
-                          <View key={k} style={[styles.glow, g]} pointerEvents="none" />
-                        ))}
-                      </View>
+                      <View
+                        style={[styles.tickFill, { width: `${filled * 100}%` }]}
+                        pointerEvents="none"
+                      />
                     )}
                   </View>
                 );
@@ -682,7 +646,7 @@ const styles = StyleSheet.create({
    */
   tickNow: { height: 10, borderRadius: 5, backgroundColor: 'rgba(255,255,255,0.20)' },
   /**
-   * 그 안에서 차오르는 흰 부분. 빛도 여기 달려 있다.
+   * 그 안에서 차오르는 흰 부분.
    *
    * 폭은 지난 시간에 정확히 비례한다. 최소 폭을 주면 10초짜리 자리에서 1초가
    * 3분의 2로 보인다 — 눈금 전체가 15pt인데 캡슐 하나가 10pt다.
@@ -698,7 +662,6 @@ const styles = StyleSheet.create({
   },
   /** 지나온 자리 */
   tickDone: { backgroundColor: 'rgba(255,255,255,0.85)' },
-  glow: { position: 'absolute', borderCurve: 'continuous' },
   barLabels: { marginTop: 9, flexDirection: 'row', justifyContent: 'space-between' },
   barLabel: { fontSize: 13, fontWeight: '600', color: '#FFFFFF', opacity: 0.75 },
 });
