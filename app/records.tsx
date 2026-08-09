@@ -91,6 +91,7 @@ export default function Records() {
   const selFuture =
     view.y > today.y ||
     (view.y === today.y && (view.m > today.m || (view.m === today.m && sel > today.d)));
+  const selToday = atNow && sel === today.d;
 
   const askDelete = (r: WorkoutRecord) => {
     selectionTick();
@@ -290,8 +291,18 @@ export default function Records() {
           {sessions.length === 0 ? (
             <View style={styles.empty}>
               <Text style={styles.emptyTitle}>{t('records.emptyTitle')}</Text>
+              {/*
+                오늘만 말이 다르다. 지난 날에는 이미 지나간 일을 적고, 오지 않은
+                날에는 아직이라고 하지만, 오늘은 **아직 할 수 있는 날**이다.
+              */}
               <Text style={styles.emptyHint}>
-                {t(selFuture ? 'records.emptyFuture' : 'records.emptyRested')}
+                {t(
+                  selFuture
+                    ? 'records.emptyFuture'
+                    : selToday
+                      ? 'records.emptyToday'
+                      : 'records.emptyRested'
+                )}
               </Text>
             </View>
           ) : (
