@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlockList } from '../src/components/BlockList';
+import { useDragAutoScroll } from '../src/components/useDragAutoScroll';
 import { Chevron, Collapsible } from '../src/components/Collapsible';
 import { ClearButton } from '../src/components/ClearButton';
 import { BlockPickerSheet } from '../src/components/BlockPickerSheet';
@@ -84,6 +85,8 @@ export default function Edit() {
   const [nameFocused, setNameFocused] = useState(false);
   // 종목을 끌어 옮기는 동안에는 화면이 같이 스크롤되면 안 된다
   const [reordering, setReordering] = useState(false);
+  /** 종목을 화면 끝까지 끌면 목록이 따라 흐른다 */
+  const auto = useDragAutoScroll();
 
   // 편집 화면의 모양은 저장된 종류를 따른다 — 종목이 1개라고 루틴이 타이머로 바뀌면 안 된다
   const simple = kindOf(draft) === 'timer';
@@ -325,6 +328,7 @@ export default function Edit() {
         </View>
 
         <ScrollView
+          {...auto.props}
           style={{ flex: 1 }}
           contentContainerStyle={{ paddingHorizontal: GUTTER, paddingBottom: 160 }}
           keyboardShouldPersistTaps="handled"
@@ -410,6 +414,7 @@ export default function Edit() {
               <BlockList
                 onDragActive={setReordering}
                 blocks={draft.blocks}
+                autoScroll={auto}
                 onPress={(block) => setSheet({ block, isNew: false })}
                 onReorder={(blocks) => patch({ blocks })}
               />

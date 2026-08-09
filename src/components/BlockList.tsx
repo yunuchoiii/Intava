@@ -29,6 +29,7 @@ import { selectionTick } from '../feedback';
 import { blockSummary } from '../engine/labels';
 import { t } from '../i18n';
 import { ABS, C, E2, TABULAR } from '../theme';
+import type { AutoScroll } from './useDragAutoScroll';
 import type { Block } from '../types';
 
 export const ROW_H = 62;
@@ -48,9 +49,21 @@ type Props = {
    * 가리키는 자리가 어긋난다.
    */
   lockedCount?: number;
+  /**
+   * 감싸는 스크롤뷰를 끌 때 따라 흐르게 하는 손잡이(useDragAutoScroll).
+   * 없으면 보이는 만큼 안에서만 옮길 수 있다.
+   */
+  autoScroll?: AutoScroll;
 };
 
-export function BlockList({ blocks, onPress, onReorder, onDragActive, lockedCount = 0 }: Props) {
+export function BlockList({
+  blocks,
+  onPress,
+  onReorder,
+  onDragActive,
+  lockedCount = 0,
+  autoScroll,
+}: Props) {
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   const [dragTo, setDragTo] = useState<number | null>(null);
 
@@ -72,6 +85,7 @@ export function BlockList({ blocks, onPress, onReorder, onDragActive, lockedCoun
           count={blocks.length}
           locked={i < lockedCount}
           floor={lockedCount}
+          autoScroll={autoScroll}
           dragFrom={dragFrom}
           dragTo={dragTo}
           onPress={onPress ? () => onPress(b) : undefined}
@@ -107,6 +121,7 @@ type RowProps = {
   floor: number;
   dragFrom: number | null;
   dragTo: number | null;
+  autoScroll?: AutoScroll;
   onPress?: () => void;
   onDragStart: (from: number) => void;
   onDragMove: (to: number) => void;
@@ -194,6 +209,21 @@ function Row(props: RowProps) {
   }, []);
 
   /**
+   * 손가락이 마지막으로 알려준 이동량. 목록이 스스로 흐르는 동안에는 제스처
+   * 콜백이 오지 않으므로, 흐른 만큼을 여기에 더해 자리를 다시 잡는다.
+   */
+  const lastGdy = useRef(0);
+
+  /** 행을 이만큼 옮기고, 그 자리에 맞는 도착 칸을 알린다 */
+  const apply = useCallback(
+    (v: number) => {
+      dy.setValue(v);
+      live.current.onDragMove(targetIndex(v));
+    },
+    [dy, targetIndex]
+  );
+
+  /**
    * 이 손짓이 무엇인지 — 아직 모름 / 꾹 눌러 대기 / 끌어 옮기는 중 / 밀어 지우는 중.
    * ref로 두는 이유는 리스폰더 콜백이 한 번만 만들어지기 때문이다(규칙 1).
    */
@@ -231,6 +261,9 @@ function Row(props: RowProps) {
             timer.current = setTimeout(() => {
               mode.current = 'armed';
               selectionTick();
+              lastGdy.current = 0;
+              // 목록이 흐르면 그만큼 행을 따라 옮겨 손가락 밑에 붙여 둔다
+              live.current.autoScroll?.begin((shift) => apply(lastGdy.current + shift));
               live.current.onDragStart(live.current.index);
             }, LONG_PRESS_MS);
           }
@@ -248,22 +281,27 @@ function Row(props: RowProps) {
         },
         // 끌고 있는 동안에는 스크롤뷰에 돌려주지 않는다
         onPanResponderTerminationRequest: () => mode.current !== 'dragging',
-        onPanResponderMove: (_e, g) => {
+        onPanResponderMove: (e, g) => {
           if (mode.current !== 'dragging') return;
-          dy.setValue(g.dy);
-          live.current.onDragMove(targetIndex(g.dy));
+          lastGdy.current = g.dy;
+          // 화면 좌표라야 스크롤뷰의 위·아래 끝과 견줄 수 있다
+          live.current.autoScroll?.track(e.nativeEvent.pageY);
+          apply(g.dy + (live.current.autoScroll?.delta() ?? 0));
         },
         onPanResponderRelease: (_e, g) => {
           clearTimer();
+          const shift = live.current.autoScroll?.delta() ?? 0;
+          live.current.autoScroll?.end();
           if (mode.current !== 'dragging') {
             mode.current = 'idle';
             return;
           }
           mode.current = 'idle';
-          drop(g.dy);
+          drop(g.dy + shift);
         },
         onPanResponderTerminate: () => {
           clearTimer();
+          live.current.autoScroll?.end();
           if (mode.current === 'dragging') {
             dy.setValue(0);
             live.current.onDragEnd(live.current.index, live.current.index);
@@ -271,7 +309,7 @@ function Row(props: RowProps) {
           mode.current = 'idle';
         },
       }),
-    [dy, targetIndex, clearTimer, drop]
+    [dy, apply, clearTimer, drop]
   );
 
   /**
@@ -282,6 +320,7 @@ function Row(props: RowProps) {
     clearTimer();
     if (mode.current !== 'armed') return;
     mode.current = 'idle';
+    live.current.autoScroll?.end();
     live.current.onDragEnd(live.current.index, live.current.index);
   }, [clearTimer]);
 

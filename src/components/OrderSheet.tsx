@@ -13,6 +13,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlockList } from './BlockList';
 import { Sheet } from './Sheet';
+import { useDragAutoScroll } from './useDragAutoScroll';
 import { t } from '../i18n';
 import { C, GUTTER } from '../theme';
 import type { Block } from '../types';
@@ -29,8 +30,10 @@ type Props = {
 
 export function OrderSheet({ visible, onClose, blocks, lockedCount, onReorder }: Props) {
   const insets = useSafeAreaInsets();
-  // 끌고 있는 동안 목록이 같이 스크롤되면 손가락과 행이 서로 밀린다
+  // 끌고 있는 동안 목록이 같이 스크롤되면 손가락과 행이 서로 밀린다.
+  // 손가락을 끝까지 밀었을 때 흐르는 것은 이것과 다르다 — 그건 아래 autoScroll이 한다.
   const [dragging, setDragging] = useState(false);
+  const auto = useDragAutoScroll();
   if (!visible) return null;
 
   return (
@@ -39,6 +42,7 @@ export function OrderSheet({ visible, onClose, blocks, lockedCount, onReorder }:
       <Text style={styles.note}>{t('run.orderNote')}</Text>
 
       <ScrollView
+        {...auto.props}
         style={{ maxHeight: 400 }}
         contentContainerStyle={{ paddingHorizontal: GUTTER, paddingBottom: 8 }}
         scrollEnabled={!dragging}
@@ -48,6 +52,7 @@ export function OrderSheet({ visible, onClose, blocks, lockedCount, onReorder }:
           blocks={blocks}
           lockedCount={lockedCount}
           onDragActive={setDragging}
+          autoScroll={auto}
           onReorder={(next) => onReorder(next.map((b) => b.id))}
         />
       </ScrollView>
