@@ -4,8 +4,17 @@
  *   radial-gradient(120% 70% at 18% -8%, rgba(255,255,255,.20), transparent 58%)
  *   linear-gradient(168deg, LIGHT 0%, BASE 52%, DARK 100%)
  *
- * 배경 전환은 .6s — RN에는 background transition이 없으므로 이전 색 레이어를
- * 그대로 두고 새 색 레이어를 0.6s 동안 페이드 인시킨다.
+ * 배경 전환은 .6s — RN에는 background transition이 없으므로 겹을 둘 두고 하나를
+ * 벗긴다.
+ *
+ * **새 색은 반드시 보이지 않는 겹에 먼저 칠한다.** 위 겹이 늘 아래를 완전히 덮고
+ * 있어서, 아래에 새 색을 칠하는 것은 화면에 아무 일도 일으키지 않는다. 그런 뒤
+ * 위 겹을 서서히 벗기면 새 색이 드러난다.
+ *
+ * 거꾸로 하면(보이는 겹에 새 색을 칠하고 투명도를 0으로 되돌리면) 그 되돌림은
+ * 네이티브 쪽으로 따로 건너가서 React의 커밋보다 한 프레임 늦게 닿을 수 있다.
+ * 그 한 프레임에 새 색이 통째로 그려진다 — ⏭를 눌렀을 때 초록 화면에 빨강이
+ * 번쩍 나타났다 사라지던 것이 그것이다. 화면 전체라 유난히 크게 보였다.
  */
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
@@ -37,25 +46,34 @@ function Layer({ color, id }: { color: string; id: string }) {
 }
 
 export function PhaseFlood({ color }: { color: string }) {
-  const [prev, setPrev] = useState(color);
-  const [curr, setCurr] = useState(color);
+  /** 아래 겹 — 새 색이 들어오는 자리. 위 겹이 덮고 있어 칠해도 보이지 않는다 */
+  const [under, setUnder] = useState(color);
+  /** 위 겹 — 옛 색. 이것이 벗겨지면서 아래가 드러난다 */
+  const [over, setOver] = useState(color);
   const fade = useRef(new Animated.Value(1)).current;
-  const gen = useRef(0);
 
   useEffect(() => {
-    if (color === curr) return;
-    setPrev(curr);
-    setCurr(color);
-    gen.current += 1;
-    fade.setValue(0);
-    Animated.timing(fade, { toValue: 1, duration: 600, useNativeDriver: true }).start();
-  }, [color, curr, fade]);
+    if (color === under) return;
+    setUnder(color);
+    Animated.timing(fade, { toValue: 0, duration: 600, useNativeDriver: true }).start(
+      ({ finished }) => finished && setOver(color)
+    );
+  }, [color, under, fade]);
+
+  /**
+   * 다 건너간 뒤 위 겹을 새 색으로 갈고 다시 덮어 둔다 — 다음 전환에서도 아래가
+   * 가려져 있어야 한다. 이 시점에는 두 겹이 같은 색이라 어느 쪽이 먼저 닿든
+   * 화면에는 아무 변화가 없다.
+   */
+  useEffect(() => {
+    fade.setValue(1);
+  }, [over, fade]);
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      <Layer color={prev} id={`p${gen.current}`} />
+      <Layer color={under} id={`u${under.slice(1)}`} />
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: fade }]}>
-        <Layer color={curr} id={`c${gen.current}`} />
+        <Layer color={over} id={`o${over.slice(1)}`} />
       </Animated.View>
     </View>
   );
