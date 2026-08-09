@@ -13,6 +13,7 @@
       "bundleIdentifier": "com.intava.app",
       "buildNumber": "2",
       "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": [
           "audio"
         ],
