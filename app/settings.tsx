@@ -25,6 +25,13 @@ import { useStore } from '../src/store';
 import { t } from '../src/i18n';
 import { C, GUTTER, TABULAR } from '../src/theme';
 
+/**
+ * 앱 밖의 두 쪽 — 앱 안에 두지 않는 이유는 **고칠 수 있어야 하기 때문**이다.
+ * 방침 문구가 바뀔 때마다 앱을 새로 심사받을 수는 없다.
+ */
+const PRIVACY_URL = 'https://yunuchoiii.github.io/intava-pages/privacy.html';
+const SUPPORT_URL = 'https://yunuchoiii.github.io/intava-pages/support.html';
+
 /** 설치된 앱의 버전 — 문제를 알릴 때 사용자가 그대로 읽어줄 수 있어야 한다 */
 const appVersion = (() => {
   const v = Constants.expoConfig?.version;
@@ -103,14 +110,22 @@ export default function SettingsScreen() {
             <Text style={[styles.value, TABULAR]}>{appVersion}</Text>
           </View>
           {/* 언어는 iOS의 앱별 언어 설정에서 바꾼다 — 앱 안에 또 만들면 두 곳이 어긋난다 */}
-          <Pressable
-            style={[styles.linkRow, { borderBottomWidth: 0 }]}
-            onPress={() => Linking.openSettings()}
-          >
+          <Pressable style={styles.linkRow} onPress={() => Linking.openSettings()}>
             <View style={{ flex: 1, paddingRight: 16 }}>
               <Text style={styles.rowTitle}>{t('settings.language')}</Text>
               <Text style={styles.note}>{t('settings.languageNote')}</Text>
             </View>
+            <Text style={styles.chevron}>›</Text>
+          </Pressable>
+          <Pressable style={styles.linkRow} onPress={() => void Linking.openURL(SUPPORT_URL)}>
+            <Text style={[styles.rowTitle, { flex: 1 }]}>{t('settings.support')}</Text>
+            <Text style={styles.chevron}>›</Text>
+          </Pressable>
+          <Pressable
+            style={[styles.linkRow, { borderBottomWidth: 0 }]}
+            onPress={() => void Linking.openURL(PRIVACY_URL)}
+          >
+            <Text style={[styles.rowTitle, { flex: 1 }]}>{t('settings.privacy')}</Text>
             <Text style={styles.chevron}>›</Text>
           </Pressable>
 

@@ -129,6 +129,8 @@ export const ja: Catalog = {
     pushNote: 'アプリが完全に止まっても区間の切り替えを知らせます。',
     app: 'アプリ',
     version: 'バージョン',
+    privacy: 'プライバシーポリシー',
+    support: 'サポート・お問い合わせ',
     language: '言語',
     languageNote: 'iOSの設定でこのアプリの言語を変えます。',
     volume: '音量',

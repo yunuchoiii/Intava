@@ -145,6 +145,8 @@ export const ko = {
     pushNote: '앱이 완전히 멈춰도 구간 전환을 알려줍니다.',
     app: '앱',
     version: '버전',
+    privacy: '개인정보 처리방침',
+    support: '지원 · 문의',
     language: '언어',
     languageNote: 'iOS 설정에서 이 앱의 언어를 바꿉니다.',
     volume: '볼륨',

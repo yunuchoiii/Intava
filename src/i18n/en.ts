@@ -136,6 +136,8 @@ export const en: Catalog = {
     pushNote: 'Tells you about segment changes even if the app is fully stopped.',
     app: 'App',
     version: 'Version',
+    privacy: 'Privacy Policy',
+    support: 'Support',
     language: 'Language',
     languageNote: 'Change the language for this app in iOS Settings.',
     volume: 'Volume',

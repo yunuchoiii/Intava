@@ -129,6 +129,8 @@ export const zh: Catalog = {
     pushNote: '即使应用被完全停止，也会提示区间切换。',
     app: '应用',
     version: '版本',
+    privacy: '隐私政策',
+    support: '支持与反馈',
     language: '语言',
     languageNote: '在 iOS 设置中更改此应用的语言。',
     volume: '音量',
