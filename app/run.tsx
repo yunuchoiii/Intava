@@ -42,17 +42,26 @@ const MAIN_BUTTON = 100;
  * 그림자가 아예 없으니 이쪽이 양쪽에 맞다. 흰 위에 흰 것은 보이지 않으므로
  * 캡슐을 덮어도 무해하고, 밖으로 삐져나온 만큼만 빛으로 읽힌다.
  *
- * 두 장으로는 띠 두 줄로 보였다. 넉 장으로 늘리고 바깥으로 갈수록 가파르게
- * 옅어지게 해야 번짐으로 읽힌다.
+ * **겹은 촘촘해야 한다.** 두 장은 띠 두 줄, 넉 장(2·5·9·14pt)은 동심원 넷으로
+ * 보였다 — 확대하면 테두리가 또렷한 계단이다. 겹이 성기면 누적 불투명도가
+ * 0.43 → 0.22 → 0.10 → 0.03처럼 뚝뚝 떨어지기 때문이다. 1pt 간격으로 열여섯
+ * 장을 깔면 한 칸의 차이가 0.03 아래로 내려가 계단이 눈에 잡히지 않는다.
+ *
+ * 알파는 바깥으로 갈수록 가파르게 죽여 **끝을 0으로 데려간다**. 계단이 가장 잘
+ * 보이는 곳은 번짐의 바깥 경계라, 거기서 스스로 사라져야 테두리가 안 생긴다.
  */
-const GLOW = [2, 5, 9, 14].map((d, i) => ({
-  top: -d,
-  bottom: -d,
-  left: -d,
-  right: -d,
-  borderRadius: 5 + d,
-  backgroundColor: `rgba(255,255,255,${[0.26, 0.14, 0.07, 0.03][i]})`,
-}));
+const GLOW = Array.from({ length: 16 }, (_, i) => {
+  const d = i + 1;
+  const fade = Math.pow(1 - i / 15, 1.6);
+  return {
+    top: -d,
+    bottom: -d,
+    left: -d,
+    right: -d,
+    borderRadius: 5 + d,
+    backgroundColor: `rgba(255,255,255,${(0.09 * fade).toFixed(4)})`,
+  };
+});
 
 export default function Run() {
   const router = useRouter();
