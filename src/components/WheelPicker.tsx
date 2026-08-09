@@ -38,8 +38,20 @@ function Column({ items, index, onIndex, align, width }: ColumnProps) {
   /** 우리가 건 스크롤이 도는 동안에는 외부 값 변경에 다시 반응하지 않는다 */
   const programmatic = useRef(false);
 
+  /**
+   * 처음 한 번, 지금 값이 가운데 오도록 앉힌다.
+   *
+   * 마운트 직후의 scrollTo는 안드로이드에서 그냥 씹힌다 — 아직 안쪽 내용의
+   * 크기가 정해지지 않아 스크롤할 곳이 없기 때문이다. 그래서 내용 크기가
+   * 처음 잡히는 순간(onContentSizeChange)에도 한 번 더 앉힌다.
+   */
+  const seated = useRef(false);
+  const seat = useCallback((to: number) => {
+    ref.current?.scrollTo({ y: to * ITEM_H, animated: false });
+  }, []);
+
   useEffect(() => {
-    ref.current?.scrollTo({ y: index * ITEM_H, animated: false });
+    seat(index);
     setActive(index);
     // 최초 배치에서만 맞춘다 — 스크롤 중 외부 값 변경으로 튀지 않게
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -105,12 +117,23 @@ function Column({ items, index, onIndex, align, width }: ColumnProps) {
       snapToInterval={ITEM_H}
       decelerationRate="fast"
       scrollEventThrottle={16}
+      /*
+        안드로이드는 이것이 없으면 휠이 아예 돌지 않는다. 이 휠은 편집 화면의
+        세로 스크롤 안에 들어 있는데, 켜주지 않으면 바깥 스크롤이 손가락을
+        통째로 가져가 안쪽에는 한 픽셀도 오지 않는다. iOS는 원래 안쪽이 먼저다.
+      */
+      nestedScrollEnabled
       onScroll={onScroll}
       onScrollBeginDrag={() => {
         dragging.current = true;
       }}
       onMomentumScrollEnd={commit}
       onScrollEndDrag={commit}
+      onContentSizeChange={(_w, h) => {
+        if (seated.current || h <= 0) return;
+        seated.current = true;
+        seat(index);
+      }}
       contentContainerStyle={{ paddingVertical: PAD }}
     >
       {items.map((label, i) => {
