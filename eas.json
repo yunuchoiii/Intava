@@ -1,0 +1,32 @@
+{
+  "cli": {
+    "version": ">= 21.7.0",
+    "appVersionSource": "local"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      }
+    },
+    "production": {
+      "autoIncrement": false
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "ascAppId": "6799622371",
+        "appleTeamId": "9A66V5LDFK"
+      }
+    }
+  }
+}
