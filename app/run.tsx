@@ -474,31 +474,51 @@ export default function Run() {
  * 가운데 버튼 안의 글리프 — 페이즈가 바뀌면 배경과 **같은 속도로** 색이 건너간다.
  *
  * 흰 버튼 위의 색은 화면에서 페이즈 색이 가장 진하게 남는 자리다. 배경은 0.6초에
- * 걸쳐 녹아드는데 이것만 톡 갈아끼우면 그 순간이 튄다. 배경과 같은 방법을 쓴다 —
- * 옛 색을 깔아두고 새 색을 그 위에 띄운다(RN에는 색 전환이 없다).
+ * 걸쳐 녹아드는데 이것만 톡 갈아끼우면 그 순간이 튄다. RN에는 색 전환이 없으니
+ * 같은 글리프를 두 겹으로 겹쳐 놓고 위 겹을 걷어낸다.
  *
- * 모양(▶/⏸)은 건너가지 않는다. 그건 누른 결과라 즉시 바뀌어야 손에 붙는다.
+ * **새 색은 반드시 보이지 않는 겹에 먼저 칠한다.** 위 겹이 늘 아래를 완전히 덮고
+ * 있어서, 아래에 새 색을 칠하는 것은 화면에 아무 일도 일으키지 않는다. 그런 뒤
+ * 위 겹을 서서히 벗기면 새 색이 드러난다.
+ *
+ * 반대로 하면(보이는 겹에 새 색을 칠하고 투명도를 0으로 되돌리면) 그 되돌림이
+ * 한 프레임 늦게 닿는 순간 새 색이 그대로 번쩍인다 — 초록에서 빨강이 한 번
+ * 튀었다가 초록으로 돌아온 뒤 다시 빨강으로 넘어가던 것이 그것이다.
+ *
+ * 두 겹의 불투명도 합이 늘 1이라 건너가는 동안 글리프가 옅어지지도 않는다.
+ * 모양(▶/⏸)은 건너가지 않는다. 누른 결과라 즉시 바뀌어야 손에 붙는다.
  */
 function MainGlyph({ color, paused }: { color: string; paused: boolean }) {
-  const [prev, setPrev] = useState(color);
-  const [curr, setCurr] = useState(color);
+  /** 아래 겹 — 새 색이 들어오는 자리. 위 겹이 덮고 있어 칠해도 보이지 않는다 */
+  const [under, setUnder] = useState(color);
+  /** 위 겹 — 옛 색. 이것이 벗겨지면서 아래가 드러난다 */
+  const [over, setOver] = useState(color);
   const fade = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    if (color === curr) return;
-    setPrev(curr);
-    setCurr(color);
-    fade.setValue(0);
-    Animated.timing(fade, { toValue: 1, duration: 600, useNativeDriver: true }).start();
-  }, [color, curr, fade]);
+    if (color === under) return;
+    setUnder(color);
+    Animated.timing(fade, { toValue: 0, duration: 600, useNativeDriver: true }).start(
+      ({ finished }) => finished && setOver(color)
+    );
+  }, [color, under, fade]);
+
+  /**
+   * 다 건너간 뒤 위 겹을 새 색으로 갈고 다시 덮어 둔다 — 다음 전환에서도 아래가
+   * 가려져 있어야 한다. 이 시점에는 두 겹이 같은 색이라 어느 쪽이 먼저 닿든
+   * 화면에는 아무 변화가 없다. (마운트 때 한 번 더 도는 것은 무해하다)
+   */
+  useEffect(() => {
+    fade.setValue(1);
+  }, [over, fade]);
 
   const Glyph = paused ? PlayIcon : PauseIcon;
   return (
     <View>
-      <Glyph color={prev} />
+      <Glyph color={under} />
       {/* 같은 글리프를 같은 자리에 겹친다 — 크기도 여백도 같아 정확히 포개진다 */}
       <Animated.View style={{ position: 'absolute', top: 0, left: 0, opacity: fade }}>
-        <Glyph color={curr} />
+        <Glyph color={over} />
       </Animated.View>
     </View>
   );
