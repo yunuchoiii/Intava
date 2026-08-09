@@ -9,6 +9,7 @@ No ad SDK, no IAP, no analytics SDK in the codebase — "no ads" is a true claim
 
 ## What the app actually does
 
+- **Completely free**: no IAP, no subscription, no ads — built specifically because too many timer apps paywall basic features. This is the core selling point for this pass.
 - **Routines**: chain multiple exercises into an order + rounds, guided step by step during the workout
 - **Timers**: a simple repeating interval — just work / rest / sets
 - **Warmup, prepare, cooldown**
@@ -25,7 +26,7 @@ Do not claim features that don't exist — no "AI coach", no cloud sync.
 
 ### Name (30 char limit)
 ```
-Intava: Interval Timer
+Intava: Free Interval Timer
 ```
 
 ### Subtitle (30 char limit)
@@ -35,17 +36,19 @@ HIIT, Tabata & Circuit Timer
 
 ### Keywords field (100 char limit, comma-separated, no spaces — don't repeat words already in name/subtitle)
 ```
-workout,routine,rest,set,round,gym,emom,amrap,boxing,cardio,strength,offline,exercise,fitness
+free,workout,routine,rest,set,round,gym,emom,amrap,boxing,cardio,strength,exercise,fitness
 ```
 
 ### Promotional text (170 char limit — editable anytime without review)
 ```
-No need to watch the screen — sound and vibration guide every interval. Build routines or simple timers, track your workouts. No ads, no login required.
+100% free, no catch. No need to watch the screen — sound and vibration guide every interval. Build routines or simple timers, track your workouts. No ads, no paywall.
 ```
 
 ### Description (4000 char limit — first 3 lines matter most, shown before "more")
 ```
-A workout timer you don't have to watch, Intava.
+A completely free workout timer, Intava.
+
+Too many simple interval timer apps paywall basic features behind a subscription, so I built one that doesn't. Nothing in Intava is locked behind a purchase.
 
 Sound and vibration announce every interval, so you can set your phone down and focus on the workout. Notifications keep going even if the app is fully closed.
 
@@ -64,13 +67,14 @@ Even with the app fully closed, every interval change comes through as a push no
 ■ Workout history
 See which days you worked out on a monthly calendar, along with total time, pure work time, and completed sets.
 
-■ No ads, no account
-Nothing to sign up for. Everything stays on your device — no ads either. Switching phones? Export and import move everything in one file.
+■ Completely free · no ads · no account
+No purchase, no subscription, no ads, nothing to sign up for. Everything stays on your device. Switching phones? Export and import move everything in one file.
 
 Built for you if
 - You don't want to keep staring at your phone at the gym or during home workouts
 - You want to build Tabata, HIIT, or circuit routines with your own sets and rounds
 - You want to track your workouts without a complicated app
+- You're tired of timer apps that paywall basic features
 
 Focus on the workout, not the screen — that's Intava.
 ```
@@ -84,17 +88,19 @@ ranking. Slightly denser natural repetition than the App Store copy.
 
 ### Title (30 char limit)
 ```
-Intava - Interval Timer
+Intava - Free Interval Timer
 ```
 
 ### Short description (80 char limit)
 ```
-Interval, Tabata & circuit timer — screen-free with sound & vibration cues.
+100% free interval/Tabata/circuit timer. No ads, no paywall, screen-free cues.
 ```
 
 ### Full description (4000 char limit)
 ```
-Intava is an interval workout timer you don't need to keep watching.
+Intava is a completely free interval workout timer.
+
+Too many simple interval timer apps paywall basic features behind a subscription, so I built one that doesn't — no purchase, no subscription, no ads.
 
 Sound and vibration tell you when the interval changes, so you don't have to stare at your phone during Tabata, HIIT, or circuit training. Notifications keep working in the background even if the app is fully closed.
 
@@ -113,14 +119,14 @@ Even with the app fully closed, every work/rest interval change comes through as
 ■ Workout history
 A monthly calendar shows which days you worked out, with total time, pure work time, and completed sets and rounds.
 
-■ No ads, no account
-No sign-up, no login. Every routine, timer, and workout log stays on your device — nothing is sent to a server. Switching devices or need a backup? Export and import move everything in one file. No ads either.
+■ Completely free · no ads · no account
+No sign-up, no login, no purchase, no subscription. Every routine, timer, and workout log stays on your device — nothing is sent to a server. Switching devices or need a backup? Export and import move everything in one file.
 
 Built for you if
 - You don't want to keep looking at your phone at the gym or during home workouts
 - You want to build your own Tabata, HIIT, or circuit training with custom sets and rounds
 - You want to track bodyweight workout routines and keep a workout history
-- You want a lightweight interval timer with no ads and no login
+- You're tired of timer apps that paywall basic features
 
 Interval timer, Tabata timer, circuit timer, HIIT timer — Intava covers it all.
 ```
