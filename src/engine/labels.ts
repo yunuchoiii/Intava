@@ -89,6 +89,22 @@ export function segLabel(seg: Segment | undefined): string {
   return t('jump.withSet', { name, set: seg.set });
 }
 
+/**
+ * 컨트롤 위 예고 — "다음 · 스쿼트 40초".
+ *
+ * 여기서만 종목 이름을 쓴다. 링은 지금이 운동인지 휴식인지를 말하고(그래서
+ * 이름을 쓰지 않는다), 이름을 늘어놓던 종목 줄은 없앴다. 남은 자리가 여기다 —
+ * 다음에 무엇을 잡아야 하는지는 이름으로 알아야 한다.
+ * 타이머는 종목 이름이 곧 타이머 이름이라 이름을 쓰지 않는다.
+ */
+export function nextLine(seg: Segment | undefined, preset: Preset): string {
+  const what =
+    seg && seg.phase === 'WORK' && seg.name && !isSimple(preset)
+      ? t('run.nextWork', { name: seg.name, dur: durationShort(seg.dur) })
+      : describeSegment(seg);
+  return t('run.next', { what });
+}
+
 /** 링 안쪽 아래 줄 */
 export function subLabel(seg: Segment | null, preset: Preset): string {
   if (!seg) return t('sub.finished');
@@ -120,16 +136,21 @@ export function subLabel(seg: Segment | null, preset: Preset): string {
 }
 
 /**
- * 링 안쪽 위 제목 — 지금 무슨 구간을 몇 초 하는지.
+ * 지금 무슨 구간인지.
  *
  * 이름(종목명·타이머명)은 쓰지 않는다. 이름만 있으면 지금이 운동인지 휴식인지
  * 알 수 없고, 타이머는 종목 이름이 곧 타이머 이름이라 화면 전체가 같은 말로
- * 도배된다. 루틴에서 종목 이름은 링 위쪽 종목 줄이 이미 보여준다.
+ * 도배된다. 이름은 컨트롤 위의 예고(nextLine)가 든다.
+ *
+ * 길이(withDur)는 부르는 쪽이 정한다. 링 안에서는 빼고 쓴다 — 큰 숫자가 바로
+ * 아래에 있어서 "준비 10초 / 0:09"는 같은 것을 두 번 말하는 셈이다. 미니 바는
+ * 남은 시간만 보이므로 전체 길이가 있어야 가늠이 된다.
  */
-export function titleLabel(seg: Segment | null, paused: boolean, _preset?: Preset): string {
+export function titleLabel(seg: Segment | null, paused: boolean, withDur = true): string {
   if (paused) return t('phase.paused');
   if (!seg) return t('phase.DONE');
-  return t('run.titleWithDur', { phase: phaseLabel(seg.phase), dur: durationShort(seg.dur) });
+  const phase = phaseLabel(seg.phase);
+  return withDur ? t('run.titleWithDur', { phase, dur: durationShort(seg.dur) }) : phase;
 }
 
 /** 홈 목록 요약 줄 */

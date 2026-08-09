@@ -13,20 +13,27 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { FloodTile } from '../src/components/Surface';
 import { PressBox } from '../src/components/PressBox';
-import { ListIcon, NextIcon, PauseIcon, PencilIcon, PlayIcon, PrevIcon } from '../src/components/Icons';
+import { NextIcon, PauseIcon, PencilIcon, PlayIcon, PrevIcon } from '../src/components/Icons';
 import { OrderSheet } from '../src/components/OrderSheet';
 import { PhaseFlood } from '../src/components/PhaseFlood';
 import { Ring } from '../src/components/Ring';
-import { clock, isSimple, phaseLabel, segLabel, subLabel, titleLabel } from '../src/engine/labels';
+import {
+  clock,
+  isSimple,
+  nextLine,
+  phaseLabel,
+  segLabel,
+  subLabel,
+  titleLabel,
+} from '../src/engine/labels';
 import { useMorph } from '../src/morph';
 import { ensurePermission } from '../src/notify';
 import { useSession } from '../src/session';
 import { useStore } from '../src/store';
 import { t } from '../src/i18n';
-import { ABS, C, GUTTER, PHASE_COLOR, RADIUS, TABULAR } from '../src/theme';
+import { C, GUTTER, PHASE_COLOR, TABULAR } from '../src/theme';
 
 export default function Run() {
   const router = useRouter();
@@ -61,31 +68,45 @@ export default function Run() {
    * 사이일 뿐이라, 그 동안에는 **도착할** 자리를 지금으로 친다.
    */
   const { stages, stageOf } = useMemo(() => {
-    const stages: { key: string; name: string }[] = [];
+    const segs = run.plan?.segs ?? [];
+    const stages: { key: string; name: string; start: number; end: number }[] = [];
     const stageOf: number[] = [];
     let occ = '';
-    (run.plan?.segs ?? []).forEach((s, i) => {
+    segs.forEach((s, i) => {
       switch (s.phase) {
         case 'WARMUP':
         case 'PREPARE':
         case 'COOLDOWN':
           if (stages[stages.length - 1]?.key !== s.phase) {
-            stages.push({ key: s.phase, name: phaseLabel(s.phase) });
+            stages.push({ key: s.phase, name: phaseLabel(s.phase), start: s.start, end: s.start });
           }
           break;
         case 'WORK': {
           const key = `${s.round}-${s.blk}`;
           if (key !== occ) {
             occ = key;
-            stages.push({ key, name: s.name ?? '' });
+            stages.push({ key, name: s.name ?? '', start: s.start, end: s.start });
           }
           break;
         }
       }
       // 종목·라운드 사이 휴식은 아직 만들어지지 않은 다음 자리를 가리킨다
       const ahead = s.phase === 'BLOCK_REST' || s.phase === 'ROUND_REST';
-      stageOf[i] = ahead ? stages.length : stages.length - 1;
+      stageOf[i] = Math.min(stages.length - 1, ahead ? stages.length : stages.length - 1);
     });
+
+    /**
+     * 자리마다 시간 폭을 매긴다 — 하단 눈금이 이 폭으로 나뉜다.
+     * 어느 초도 빠지지 않아야 눈금이 진행 바 노릇을 한다. 휴식은 도착할 자리에
+     * 얹혀 있으므로, 자리의 폭은 그 자리에 속한 구간들의 처음부터 끝까지다.
+     */
+    segs.forEach((s, i) => {
+      const k = stageOf[i];
+      if (k < 0 || !stages[k]) return;
+      stages[k].start = Math.min(stages[k].start, s.start);
+      stages[k].end = Math.max(stages[k].end, s.start + s.dur);
+    });
+
     return { stages, stageOf };
   }, [run.plan]);
 
@@ -277,7 +298,6 @@ export default function Run() {
    */
   const prevSeg = run.seg && run.elapsed - run.seg.start <= 1.2 ? run.prev : undefined;
   const prevLabel = prevSeg ? segLabel(prevSeg) : t('run.prevRestart');
-  const barPct = run.total > 0 ? Math.min(100, (run.elapsed / run.total) * 100) : 0;
 
   return (
     /*
@@ -337,51 +357,35 @@ export default function Run() {
           링이 밀려 내려갔고, 그 여덟 개가 다 필요한 순간도 없었다. 전체 차례와
           순서 바꾸기는 오른쪽 목록 버튼 뒤에 둔다.
         */}
-        {!simple && (
-          <View style={styles.blockRow}>
-            {/*
-              지금 하는 것이 화면 한가운데 못 박혀야 한다 — 눈이 거기만 보면 되게.
-              셋을 나란히 놓고 가운데 정렬하면 앞뒤 이름 길이에 따라 지금 것이
-              좌우로 흔들린다. 양옆을 같은 몫(flex 1)으로 벌려 두면 가운데 것의
-              폭이 얼마든 정확히 한가운데 선다. 넘치는 이름은 옆칸에서 잘린다.
-            */}
-            <View style={styles.blockNames} pointerEvents="none">
-              <View style={[styles.blockSide, { alignItems: 'flex-end' }]}>
-                {stages[cursor - 1] && (
-                  <Text numberOfLines={1} style={[styles.blockName, styles.blockOther]}>
-                    {stages[cursor - 1].name}
-                  </Text>
-                )}
-              </View>
-              <Text numberOfLines={1} style={[styles.blockName, styles.blockNow]}>
-                {stages[cursor]?.name ?? ''}
-              </Text>
-              <View style={[styles.blockSide, { alignItems: 'flex-start' }]}>
-                {stages[cursor + 1] && (
-                  <Text numberOfLines={1} style={[styles.blockName, styles.blockOther]}>
-                    {stages[cursor + 1].name}
-                  </Text>
-                )}
-              </View>
-            </View>
-            <PressBox
-              onPress={() => setOrdering(true)}
-              hitSlop={12}
-              scaleTo={0.88}
-              dim={0}
-              accessibilityLabel={t('run.orderTitle')}
-            >
-              <ListIcon size={21} color="rgba(255,255,255,0.85)" />
-            </PressBox>
-          </View>
-        )}
+        <View style={styles.stageRow}>
+          <Text style={[styles.stageCount, TABULAR]}>
+            {t('run.stageOf', {
+              i: Math.min(stages.length, Math.max(1, cursor + 1)),
+              n: stages.length,
+            })}
+          </Text>
+          {!simple && (
+            <>
+              <Text style={styles.stageDot}>·</Text>
+              <PressBox
+                onPress={() => setOrdering(true)}
+                hitSlop={12}
+                scaleTo={0.94}
+                dim={0}
+                accessibilityLabel={t('run.orderTitle')}
+              >
+                <Text style={styles.stageLink}>{t('run.reorder')} ›</Text>
+              </PressBox>
+            </>
+          )}
+        </View>
 
         <View style={styles.ringWrap}>
           <Ring
             ratio={run.ratio}
             remainSec={run.remain}
             durSec={run.seg?.dur ?? 0}
-            title={titleLabel(run.seg, run.paused, preset)}
+            title={titleLabel(run.seg, run.paused, false)}
             clock={clock(run.remain)}
             sub={subLabel(run.seg, preset)}
             warn={!run.done && run.remain <= 3 && !run.paused}
@@ -392,6 +396,15 @@ export default function Run() {
             onScrubEnd={run.commitScrub}
           />
         </View>
+
+        {/*
+          다음에 올 것 — 종목 줄이 사라진 자리에서 이름을 대신 들고 있다.
+          컨트롤 묶음 바깥에 둔다. 저 안에 넣으면 끌어내려 닫는 손짓을 받지 않는
+          영역이 이 줄까지 올라온다.
+        */}
+        <Text style={styles.nextLine} numberOfLines={1}>
+          {nextLine(run.next, preset)}
+        </Text>
 
         {/* 여기부터 아래는 버튼의 자리 — 끌어내려 닫기를 받지 않는다 */}
         <View onLayout={measureControls} style={{ paddingHorizontal: GUTTER, gap: 20 }}>
@@ -417,15 +430,24 @@ export default function Run() {
             </ControlButton>
           </View>
 
-          {/* 전체 진행 바 — 노치를 피해 하단에 둔다 */}
+          {/*
+            전체 진행 바 — 구간 눈금. 한 줄로 이어진 막대는 "얼마나 남았나"만
+            말하는데, 자리마다 끊어 두면 **몇 번째를 지나고 있는지**가 같이 읽힌다.
+            눈금의 폭은 그 자리가 걸리는 시간에 비례한다.
+          */}
           <View>
             <View style={styles.track}>
-              <LinearGradient
-                colors={['rgba(255,255,255,0.75)', '#FFFFFF']}
-                start={{ x: 0, y: 0.5 }}
-                end={{ x: 1, y: 0.5 }}
-                style={{ height: 6, width: `${barPct}%`, borderRadius: 3 }}
-              />
+              {stages.map((s) => {
+                const dur = Math.max(0.001, s.end - s.start);
+                const filled = Math.max(0, Math.min(1, (run.elapsed - s.start) / dur));
+                return (
+                  <View key={s.key} style={[styles.tick, { flex: dur }]}>
+                    {filled > 0 && (
+                      <View style={[styles.tickFill, { width: `${filled * 100}%` }]} />
+                    )}
+                  </View>
+                );
+              })}
             </View>
             <View style={styles.barLabels}>
               <Text style={[styles.barLabel, TABULAR]}>
@@ -513,37 +535,33 @@ const styles = StyleSheet.create({
     opacity: 0.95,
   },
   /**
-   * 이름 셋과 목록 버튼을 한 줄 상자로 묶는다 — 링과 머리줄 사이에서 떠다니던
-   * 글자들이 하나의 손잡이로 읽힌다. 바탕은 두지 않는다. 페이즈 색이 화면마다
-   * 달라서, 반투명 흰 테두리 한 줄이 어느 색 위에서도 같은 무게로 보인다.
+   * 머리줄 아래 한 줄 — 몇 번째 자리를 지나는지와 순서를 바꾸는 길.
+   *
+   * 예전에는 이름 셋(이전·지금·다음)을 상자에 담아 두었는데, 지금 하는 것은
+   * 링이 이미 크게 말하고 다음은 컨트롤 위에 적힌다. 같은 말을 세 군데서 하는
+   * 대신 여기서는 **전체 중 어디쯤인지**만 말한다.
    */
-  blockRow: {
-    marginTop: 14,
-    marginHorizontal: GUTTER,
-    height: 44,
-    borderRadius: RADIUS.tile,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.28)',
-    paddingHorizontal: 12,
+  stageRow: {
+    marginTop: 12,
+    paddingHorizontal: GUTTER,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    gap: 8,
   },
-  /**
-   * 이름 셋은 줄 전체에 걸쳐 가운데 정렬한다 — 흐름에 두면 오른쪽 버튼 폭만큼
-   * 가운데가 왼쪽으로 밀린다. 좌우 34는 버튼 밑으로 글자가 들어가지 않게 하는 여백.
-   */
-  blockNames: {
-    ...ABS,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 34,
+  stageCount: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
+  stageDot: { fontSize: 15, color: '#FFFFFF', opacity: 0.45 },
+  stageLink: { fontSize: 15, fontWeight: '600', color: '#FFFFFF', opacity: 0.7 },
+  /** 컨트롤 위 예고 — 링과 버튼 사이의 숨통을 겸한다 */
+  nextLine: {
+    paddingHorizontal: GUTTER,
+    paddingBottom: 18,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    opacity: 0.85,
+    textAlign: 'center',
   },
-  /** 가운데 이름의 좌우를 같은 몫으로 벌리는 칸. 여백 10씩이 이름 사이 20이 된다 */
-  blockSide: { flex: 1, minWidth: 0, paddingHorizontal: 10 },
-  blockName: { flexShrink: 1, fontSize: 15, color: '#FFFFFF' },
-  blockNow: { fontWeight: '700', opacity: 1 },
-  blockOther: { fontWeight: '600', opacity: 0.5 },
   ringWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 0 },
   controls: { flexDirection: 'row', gap: 26, alignItems: 'center', justifyContent: 'center' },
   control: { width: 96, alignItems: 'center', gap: 6 },
@@ -563,12 +581,15 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 14 },
     elevation: 12,
   },
-  track: {
+  track: { flexDirection: 'row', alignItems: 'center', gap: 3, height: 6 },
+  /** 눈금 하나 — 폭은 그 자리가 걸리는 시간에 비례한다 */
+  tick: {
     height: 6,
     borderRadius: 3,
-    backgroundColor: 'rgba(0,0,0,0.20)',
+    backgroundColor: 'rgba(0,0,0,0.22)',
     overflow: 'hidden',
   },
+  tickFill: { height: 6, borderRadius: 3, backgroundColor: '#FFFFFF' },
   barLabels: { marginTop: 9, flexDirection: 'row', justifyContent: 'space-between' },
   barLabel: { fontSize: 13, fontWeight: '600', color: '#FFFFFF', opacity: 0.75 },
 });

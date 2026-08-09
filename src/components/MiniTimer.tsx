@@ -134,7 +134,7 @@ export function MiniTimer() {
 
   const color = PHASE_COLOR[run.seg?.phase ?? 'DONE'];
   const title = run.seg
-    ? titleLabel(run.seg, run.paused, run.preset)
+    ? titleLabel(run.seg, run.paused)
     : phaseLabel('DONE');
 
   return (
