@@ -38,6 +38,10 @@
     "@types/react": "~19.2.2",
     "typescript": "~6.0.3"
   },
+  "comment:overrides": "react-dom은 직접 쓰지 않는다 — expo-router가 웹용으로 끌어오는 것(vaul·radix)이다. 범위가 느슨해 최신 패치(19.2.8)로 올라가면 peer react@^19.2.8을 요구해서, expo가 고정한 react 19.2.3과 부딪힌다. 로컬 node_modules는 이미 깔려 있어 안 걸리지만 npm ci를 새로 도는 EAS에서 터진다. react에 맞춰 못박는다.",
+  "overrides": {
+    "react-dom": "19.2.3"
+  },
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
