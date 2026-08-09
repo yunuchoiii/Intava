@@ -25,13 +25,6 @@ import { useStore } from '../src/store';
 import { t } from '../src/i18n';
 import { C, GUTTER, TABULAR } from '../src/theme';
 
-/**
- * 앱 밖의 두 쪽 — 앱 안에 두지 않는 이유는 **고칠 수 있어야 하기 때문**이다.
- * 방침 문구가 바뀔 때마다 앱을 새로 심사받을 수는 없다.
- */
-const PRIVACY_URL = 'https://yunuchoiii.github.io/intava-pages/privacy.html';
-const SUPPORT_URL = 'https://yunuchoiii.github.io/intava-pages/support.html';
-
 /** 설치된 앱의 버전 — 문제를 알릴 때 사용자가 그대로 읽어줄 수 있어야 한다 */
 const appVersion = (() => {
   const v = Constants.expoConfig?.version;
@@ -117,13 +110,20 @@ export default function SettingsScreen() {
             </View>
             <Text style={styles.chevron}>›</Text>
           </Pressable>
-          <Pressable style={styles.linkRow} onPress={() => void Linking.openURL(SUPPORT_URL)}>
+          {/*
+            문서는 앱 안에서 읽는다 — 이 앱은 네트워크를 하나도 쓰지 않는데,
+            그 사실을 적어 둔 문서를 읽으려고 인터넷이 필요하면 앞뒤가 맞지 않는다.
+          */}
+          <Pressable
+            style={styles.linkRow}
+            onPress={() => router.push({ pathname: '/legal', params: { doc: 'support' } })}
+          >
             <Text style={[styles.rowTitle, { flex: 1 }]}>{t('settings.support')}</Text>
             <Text style={styles.chevron}>›</Text>
           </Pressable>
           <Pressable
             style={[styles.linkRow, { borderBottomWidth: 0 }]}
-            onPress={() => void Linking.openURL(PRIVACY_URL)}
+            onPress={() => router.push({ pathname: '/legal', params: { doc: 'privacy' } })}
           >
             <Text style={[styles.rowTitle, { flex: 1 }]}>{t('settings.privacy')}</Text>
             <Text style={styles.chevron}>›</Text>

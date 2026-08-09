@@ -122,6 +122,8 @@ export default function RootLayout() {
             />
             {/* 기록은 홈에서 옆으로 미끄러져 들어온다 — 목록 옆의 또 다른 목록이다 */}
             <Stack.Screen name="records" />
+            {/* 방침·지원 — 설정에서 옆으로 들어온다 */}
+            <Stack.Screen name="legal" />
           </Stack>
 
           <MiniTimer />
