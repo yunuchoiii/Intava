@@ -227,7 +227,13 @@ export default function Records() {
                       !!mins && { backgroundColor: `rgba(31,179,161,${tint.toFixed(3)})` },
                       // 오늘 표시는 **기록이 없을 때만**. 면이 이미 말하는 자리에 테두리를 더하면 두 번 말하는 것이다
                       isToday && !mins && styles.cellToday,
-                      isSel && styles.cellSelected,
+                      /*
+                        고른 날의 테두리는 그 칸이 어떤 칸이냐에 따라 색이 다르다.
+                        기록이 있으면 민트 — 이미 틸 면 위에 서 있으니 그 결을
+                        잇는다. 없으면 평일 숫자와 같은 밝은 회색 — 빈 칸에서
+                        민트는 없는 값을 있다고 말하는 셈이 된다.
+                      */
+                      isSel && { borderColor: mins ? C.volumeText : C.textSecondary },
                     ]}
                   >
                     <Text
@@ -512,17 +518,6 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   cellToday: { borderColor: 'rgba(255,255,255,0.22)' },
-  /**
-   * 고른 날 — 배경 없이 테두리 하나로만 말한다.
-   *
-   * 면을 칠하면 그 자리의 볼륨 농도가 지워져, 고르는 순간 그날이 얼마나 한
-   * 날이었는지를 잃는다. 테두리는 아무것도 덮지 않는다.
-   *
-   * **흰색이다.** 틸은 이 화면에서 이미 볼륨의 색이라, 같은 색으로 고름까지
-   * 말하면 "고른 날"과 "많이 한 날"이 한 색으로 섞인다. 고름은 값이 아니라
-   * 지금 보고 있는 자리라서, 어느 색과도 겹치지 않는 흰색이 맞다.
-   */
-  cellSelected: { borderColor: '#FFFFFF' },
   cellDay: { fontSize: 14.5, lineHeight: 17 },
   cellMins: { fontSize: 10.5, fontWeight: '600', lineHeight: 13 },
 
