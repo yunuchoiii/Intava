@@ -132,26 +132,32 @@ export default function Done() {
           </View>
         </View>
 
-        {/* 다시 하기는 방금 돌던 차례 그대로 — 여기서 또 저장을 묻지 않는다 */}
-        <WhiteButton
-          label={t('doneScreen.again')}
-          height={72}
-          color={PHASE_COLOR.DONE}
+        {/*
+          자리는 그대로 두고 무게만 바꿨다. 운동을 마친 사람이 여기서 열에 아홉은
+          홈으로 간다 — 흰 버튼은 그쪽이 맞다. 다시 하기는 방금 돌던 차례 그대로
+          시작하며(여기서 또 저장을 묻지 않는다) 글자만 남긴다.
+        */}
+        <PressBox
           onPress={() => {
             session.start(preset.id, rounds);
             router.replace('/run');
           }}
-        />
-        {/* 홈까지 물러난다 — replace면 홈 위에 홈이 한 겹 더 쌓인다 */}
-        <PressBox
-          onPress={goHome}
+          haptic="commit"
           scaleTo={0.96}
           dim={0}
-          style={styles.home}
-          accessibilityLabel={t('doneScreen.home')}
+          style={styles.textButton}
+          accessibilityLabel={t('doneScreen.again')}
         >
-          <Text style={styles.homeLabel}>{t('doneScreen.home')}</Text>
+          <Text style={styles.textButtonLabel}>{t('doneScreen.again')}</Text>
         </PressBox>
+        {/* 홈까지 물러난다 — replace면 홈 위에 홈이 한 겹 더 쌓인다 */}
+        <WhiteButton
+          label={t('doneScreen.home')}
+          height={72}
+          color={PHASE_COLOR.DONE}
+          haptic="none"
+          onPress={goHome}
+        />
       </View>
     </View>
   );
@@ -230,6 +236,7 @@ const styles = StyleSheet.create({
   },
   statLabel: { fontSize: 18, color: '#FFFFFF', opacity: 0.85 },
   statValue: { fontSize: 30, fontWeight: '700', color: '#FFFFFF' },
-  home: { height: 60, alignItems: 'center', justifyContent: 'center' },
-  homeLabel: { fontSize: 18, fontWeight: '600', color: '#FFFFFF' },
+  /** 바탕 없는 글자 버튼 — 흰 버튼 옆에서 한 걸음 물러선다 */
+  textButton: { height: 60, alignItems: 'center', justifyContent: 'center' },
+  textButtonLabel: { fontSize: 18, fontWeight: '600', color: '#FFFFFF' },
 });
