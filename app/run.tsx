@@ -27,6 +27,12 @@ import { useStore } from '../src/store';
 import { t } from '../src/i18n';
 import { C, GUTTER, PHASE_COLOR, TABULAR } from '../src/theme';
 
+/**
+ * 가운데 재생/일시정지 버튼의 지름. 양옆 이전·다음의 아이콘 칸도 같은 키로 둔다 —
+ * 그래야 세 글리프의 중심이 한 줄에 선다. 라벨은 그 아래로 떨어진다.
+ */
+const MAIN_BUTTON = 100;
+
 export default function Run() {
   const router = useRouter();
   /** 미니 바와 공유하는 값 — 0은 가득 찬 상태, 1은 접힌 상태 */
@@ -492,7 +498,7 @@ function ControlButton({
       style={styles.control}
       accessibilityLabel={label}
     >
-      <View style={{ height: 60, alignItems: 'center', justifyContent: 'center' }}>{children}</View>
+      <View style={styles.controlIcon}>{children}</View>
       {/* 언어에 따라 라벨 길이가 크게 달라진다. 줄바꿈 대신 살짝 줄여 한 줄을 지킨다 */}
       <Text style={styles.controlLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
         {label}
@@ -544,13 +550,13 @@ const styles = StyleSheet.create({
   },
   /** 땀난 손으로 누르는 것이 이 둘이다 — 배경은 그대로 두고 글리프와 라벨만 키웠다 */
   control: { width: 92, alignItems: 'center', gap: 8 },
+  /** 아이콘 칸 — 가운데 버튼과 같은 키라 세 글리프가 한 줄에 선다 */
+  controlIcon: { height: MAIN_BUTTON, alignItems: 'center', justifyContent: 'center' },
   controlLabel: { fontSize: 14, fontWeight: '600', color: '#FFFFFF', opacity: 0.88 },
   mainButton: {
-    width: 100,
-    height: 100,
-    // 양옆 칸은 아이콘 밑에 라벨이 한 줄 더 있다. 그만큼 내려 앉혀 눈높이를 맞춘다
-    marginBottom: 22,
-    borderRadius: 50,
+    width: MAIN_BUTTON,
+    height: MAIN_BUTTON,
+    borderRadius: MAIN_BUTTON / 2,
     backgroundColor: '#F4F5F7',
     alignItems: 'center',
     justifyContent: 'center',
