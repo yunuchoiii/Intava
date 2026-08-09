@@ -439,9 +439,9 @@ export default function Run() {
                       !now && filled >= 1 && styles.tickDone,
                     ]}
                   >
-                    {now && filled < 1 && (
-                      <View style={[styles.tickRest, { width: `${(1 - filled) * 100}%` }]} />
-                    )}
+                    {/* 빛은 두 겹으로 그린다 — iOS 그림자는 이 자리에서 나오지 않는다 */}
+                    {now && <View style={styles.glowFar} pointerEvents="none" />}
+                    {now && <View style={styles.glowNear} pointerEvents="none" />}
                   </View>
                 );
               })}
@@ -636,31 +636,38 @@ const styles = StyleSheet.create({
   /** 눈금 하나 — 폭은 그 자리가 걸리는 시간에 비례한다 */
   tick: { height: 6, borderRadius: 3, backgroundColor: 'rgba(0,0,0,0.20)' },
   /**
-   * 지금 지나는 자리만 두껍고 빛난다 — 숫자를 읽기 전에 어디쯤인지 보인다.
-   *
-   * 바탕을 흰색으로 두고 아직 남은 만큼을 오른쪽에서 덮는다. 거꾸로(어두운 바탕에
-   * 흰 것을 채우는 식으로) 하면 빛이 나오지 않는다 — iOS는 넘침을 자르는 겹의
-   * 그림자를 함께 잘라내고, 그림자는 어차피 흰 모양에서 나와야 흰빛이 된다.
+   * 지금 지나는 자리 — 통째로 희고 두껍고, 빛이 번진다. 이 자리 안에서 얼마나
+   * 갔는지는 그리지 않는다. 그건 링이 하는 일이고, 이 막대의 일은 **몇 번째냐**다.
    */
-  tickNow: {
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#FFFFFF',
-    shadowOpacity: 0.55,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 0 },
-  },
+  tickNow: { height: 10, borderRadius: 5, backgroundColor: '#FFFFFF' },
   /** 지나온 자리 */
   tickDone: { backgroundColor: 'rgba(255,255,255,0.85)' },
-  /** 지금 자리에서 아직 남은 만큼 — 흰 바탕을 오른쪽부터 덮는다 */
-  tickRest: {
+  /**
+   * 번지는 빛 — 흰 겹을 두 장 밖으로 물려 깐다.
+   *
+   * iOS의 그림자(shadowColor·shadowRadius)는 이 자리에서 아무것도 그리지 않았다.
+   * 흰 바탕·불투명도·반경을 다 줘도 확대해 보면 캡슐 주위가 그냥 배경색이다.
+   * 겹으로 직접 그리면 어느 플랫폼에서도 같은 것이 나온다 — 안드로이드에는
+   * 색 있는 그림자가 아예 없으니 이쪽이 맞다. 흰 위에 흰 것은 보이지 않으므로
+   * 캡슐을 덮어도 무해하고, 밖으로 삐져나온 만큼만 빛으로 읽힌다.
+   */
+  glowNear: {
     position: 'absolute',
-    top: 0,
-    bottom: 0,
-    right: 0,
-    borderRadius: 5,
-    backgroundColor: 'rgba(0,0,0,0.28)',
+    top: -3,
+    bottom: -3,
+    left: -3,
+    right: -3,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+  },
+  glowFar: {
+    position: 'absolute',
+    top: -7,
+    bottom: -7,
+    left: -7,
+    right: -7,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.10)',
   },
   barLabels: { marginTop: 9, flexDirection: 'row', justifyContent: 'space-between' },
   barLabel: { fontSize: 13, fontWeight: '600', color: '#FFFFFF', opacity: 0.75 },
