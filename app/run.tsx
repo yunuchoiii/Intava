@@ -33,6 +33,27 @@ import { C, GUTTER, PHASE_COLOR, TABULAR } from '../src/theme';
  */
 const MAIN_BUTTON = 100;
 
+/**
+ * 번지는 빛 — 흰 겹을 밖으로 물려 깔아 만든다.
+ *
+ * iOS의 그림자(shadowColor·shadowRadius)는 이 자리에서 아무것도 그리지 않았다.
+ * 흰 바탕·불투명도·반경을 다 줘도 확대해 보면 캡슐 주위가 그냥 배경색이다.
+ * 겹으로 직접 그리면 어느 플랫폼에서도 같은 것이 나온다 — 안드로이드에는 색 있는
+ * 그림자가 아예 없으니 이쪽이 양쪽에 맞다. 흰 위에 흰 것은 보이지 않으므로
+ * 캡슐을 덮어도 무해하고, 밖으로 삐져나온 만큼만 빛으로 읽힌다.
+ *
+ * 두 장으로는 띠 두 줄로 보였다. 넉 장으로 늘리고 바깥으로 갈수록 가파르게
+ * 옅어지게 해야 번짐으로 읽힌다.
+ */
+const GLOW = [2, 5, 9, 14].map((d, i) => ({
+  top: -d,
+  bottom: -d,
+  left: -d,
+  right: -d,
+  borderRadius: 5 + d,
+  backgroundColor: `rgba(255,255,255,${[0.26, 0.14, 0.07, 0.03][i]})`,
+}));
+
 export default function Run() {
   const router = useRouter();
   /** 미니 바와 공유하는 값 — 0은 가득 찬 상태, 1은 접힌 상태 */
@@ -439,9 +460,11 @@ export default function Run() {
                       !now && filled >= 1 && styles.tickDone,
                     ]}
                   >
-                    {/* 빛은 두 겹으로 그린다 — iOS 그림자는 이 자리에서 나오지 않는다 */}
-                    {now && <View style={styles.glowFar} pointerEvents="none" />}
-                    {now && <View style={styles.glowNear} pointerEvents="none" />}
+                    {/* 빛은 겹으로 그린다 — iOS 그림자는 이 자리에서 나오지 않는다 */}
+                    {now &&
+                      GLOW.map((g, k) => (
+                        <View key={k} style={[styles.glow, g]} pointerEvents="none" />
+                      ))}
                   </View>
                 );
               })}
@@ -642,33 +665,7 @@ const styles = StyleSheet.create({
   tickNow: { height: 10, borderRadius: 5, backgroundColor: '#FFFFFF' },
   /** 지나온 자리 */
   tickDone: { backgroundColor: 'rgba(255,255,255,0.85)' },
-  /**
-   * 번지는 빛 — 흰 겹을 두 장 밖으로 물려 깐다.
-   *
-   * iOS의 그림자(shadowColor·shadowRadius)는 이 자리에서 아무것도 그리지 않았다.
-   * 흰 바탕·불투명도·반경을 다 줘도 확대해 보면 캡슐 주위가 그냥 배경색이다.
-   * 겹으로 직접 그리면 어느 플랫폼에서도 같은 것이 나온다 — 안드로이드에는
-   * 색 있는 그림자가 아예 없으니 이쪽이 맞다. 흰 위에 흰 것은 보이지 않으므로
-   * 캡슐을 덮어도 무해하고, 밖으로 삐져나온 만큼만 빛으로 읽힌다.
-   */
-  glowNear: {
-    position: 'absolute',
-    top: -3,
-    bottom: -3,
-    left: -3,
-    right: -3,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.22)',
-  },
-  glowFar: {
-    position: 'absolute',
-    top: -7,
-    bottom: -7,
-    left: -7,
-    right: -7,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.10)',
-  },
+  glow: { position: 'absolute', borderCurve: 'continuous' },
   barLabels: { marginTop: 9, flexDirection: 'row', justifyContent: 'space-between' },
   barLabel: { fontSize: 13, fontWeight: '600', color: '#FFFFFF', opacity: 0.75 },
 });
