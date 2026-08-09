@@ -460,11 +460,18 @@ export default function Run() {
                       !now && filled >= 1 && styles.tickDone,
                     ]}
                   >
-                    {/* 빛은 겹으로 그린다 — iOS 그림자는 이 자리에서 나오지 않는다 */}
-                    {now &&
-                      GLOW.map((g, k) => (
-                        <View key={k} style={[styles.glow, g]} pointerEvents="none" />
-                      ))}
+                    {now && (
+                      <View style={[styles.tickFill, { width: `${filled * 100}%` }]}>
+                        {/*
+                          빛은 겹으로 그린다 — iOS 그림자는 이 자리에서 나오지 않는다.
+                          눈금이 아니라 차오르는 쪽에 달아 둔다. 빛은 늘 흰 부분만
+                          감싸고, 머리 앞쪽으로 조금 새어 나가 어디까지 왔는지를 짚는다.
+                        */}
+                        {GLOW.map((g, k) => (
+                          <View key={k} style={[styles.glow, g]} pointerEvents="none" />
+                        ))}
+                      </View>
+                    )}
                   </View>
                 );
               })}
@@ -658,11 +665,24 @@ const styles = StyleSheet.create({
   track: { flexDirection: 'row', alignItems: 'center', gap: 3, height: 10 },
   /** 눈금 하나 — 폭은 그 자리가 걸리는 시간에 비례한다 */
   tick: { height: 6, borderRadius: 3, backgroundColor: 'rgba(0,0,0,0.20)' },
+  /** 지금 지나는 자리 — 두꺼워져서 눈에 띈다. 흰 것은 차오른 만큼만이다 */
+  tickNow: { height: 10, borderRadius: 5 },
   /**
-   * 지금 지나는 자리 — 통째로 희고 두껍고, 빛이 번진다. 이 자리 안에서 얼마나
-   * 갔는지는 그리지 않는다. 그건 링이 하는 일이고, 이 막대의 일은 **몇 번째냐**다.
+   * 그 안에서 차오르는 흰 부분. 빛도 여기 달려 있다.
+   *
+   * 폭이 0일 때 빛만 남아 점처럼 보이지 않도록 최소 폭을 캡슐 하나로 잡는다 —
+   * 자리에 막 들어선 순간에도 머리는 캡슐 모양이어야 한다.
    */
-  tickNow: { height: 10, borderRadius: 5, backgroundColor: '#FFFFFF' },
+  tickFill: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    minWidth: 10,
+    borderRadius: 5,
+    borderCurve: 'continuous',
+    backgroundColor: '#FFFFFF',
+  },
   /** 지나온 자리 */
   tickDone: { backgroundColor: 'rgba(255,255,255,0.85)' },
   glow: { position: 'absolute', borderCurve: 'continuous' },
