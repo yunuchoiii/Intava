@@ -67,9 +67,20 @@ export function BlockList({
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   const [dragTo, setDragTo] = useState<number | null>(null);
 
+  /**
+   * 내려앉는 중 — 손은 뗐지만 순서는 아직 확정되지 않았다.
+   *
+   * 드롭은 행이 도착 칸으로 내려앉는 스프링이 **끝난 뒤에** 확정된다. 그 사이에
+   * 다른 행을 집으면 새 드래그가 시작된 뒤에 옛 드롭이 확정되면서 서로를 지운다
+   * — 집은 행이 엉뚱한 데 떨어지거나 순서가 통째로 어긋난다. 내려앉는 동안에는
+   * 새로 집지 않는다. 300ms 남짓이라 손에 걸리지 않는다.
+   */
+  const settling = useRef(false);
+
   // 안전망 — 목록이 바뀌면(순서 변경·추가·삭제) 드래그 상태를 반드시 턴다.
   // 제스처가 어떤 경로로 끝나든 집어 든 표시가 남아 있으면 안 된다.
   useLayoutEffect(() => {
+    settling.current = false;
     setDragFrom(null);
     setDragTo(null);
     onDragActive?.(false);
@@ -88,6 +99,10 @@ export function BlockList({
           autoScroll={autoScroll}
           dragFrom={dragFrom}
           dragTo={dragTo}
+          busy={() => settling.current}
+          onSettleStart={() => {
+            settling.current = true;
+          }}
           onPress={onPress ? () => onPress(b) : undefined}
           onDragStart={(from) => {
             setDragFrom(from);
@@ -96,6 +111,7 @@ export function BlockList({
           }}
           onDragMove={setDragTo}
           onDragEnd={(from, to) => {
+            settling.current = false;
             setDragFrom(null);
             setDragTo(null);
             onDragActive?.(false);
@@ -122,6 +138,10 @@ type RowProps = {
   dragFrom: number | null;
   dragTo: number | null;
   autoScroll?: AutoScroll;
+  /** 다른 행이 아직 내려앉는 중인가 — 그렇다면 새로 집지 않는다 */
+  busy: () => boolean;
+  /** 내려앉기 시작 — 확정될 때까지 목록을 잠근다 */
+  onSettleStart: () => void;
   onPress?: () => void;
   onDragStart: (from: number) => void;
   onDragMove: (to: number) => void;
@@ -257,6 +277,8 @@ function Row(props: RowProps) {
   const drop = useCallback(
     (gdy: number) => {
       const to = targetIndex(gdy);
+      // 확정될 때까지 목록을 잠근다 — 그 사이에 다른 행을 집으면 둘이 서로를 지운다
+      live.current.onSettleStart();
       // 손을 뗀 자리에서 도착 칸까지 부드럽게 내려앉힌 뒤에 순서를 확정한다.
       // 확정과 동시에 이동값을 0으로 되돌려야 새 자리에서 다시 튀지 않는다.
       const rest = (to - live.current.index) * ROW_H;
@@ -274,6 +296,8 @@ function Row(props: RowProps) {
         onStartShouldSetPanResponderCapture: () => {
           mode.current = 'idle';
           clearTimer();
+          // 앞의 것이 아직 내려앉는 중이면 기다린다 — 순서가 확정되기 전이다
+          if (live.current.busy()) return false;
           // 하나뿐이거나 굳은 행이면 옮길 자리가 없다
           if (live.current.count - live.current.floor > 1 && !live.current.locked) {
             timer.current = setTimeout(() => {

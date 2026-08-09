@@ -91,8 +91,21 @@ export function useDragAutoScroll() {
           contentH.current = h;
         },
       },
-      /** 집어 든 순간 — 기준 오프셋을 잡고 자리를 다시 잰다(시트는 올라오면서 자리가 바뀐다) */
+      /**
+       * 집어 든 순간 — 기준 오프셋을 잡고 **자리를 버린 뒤 다시 잰다.**
+       *
+       * 버리는 것이 핵심이다. onLayout으로 잰 자리는 믿을 수 없다 — 시트는
+       * translateY 변형으로 올라오는데 변형은 레이아웃을 바꾸지 않아서, 아직
+       * 화면 아래에 있을 때 한 번 재고는 다시 재지 않는다. 그 자리를 그대로
+       * 쓰면 손가락이 늘 위쪽 끝에 있는 것으로 읽혀 목록이 제멋대로 흐르고,
+       * 흐른 만큼이 행의 이동값에 더해져 엉뚱한 자리에 떨어진다 — 시트를 처음
+       * 열고 첫 번째로 옮길 때 순서가 어긋나던 것이 그것이다.
+       *
+       * measureInWindow의 답은 다음 프레임에 온다. 그 사이에는 height가 0이라
+       * track이 아무것도 하지 않는다 — 잘못 흐르느니 한 프레임 늦게 흐른다.
+       */
       begin: (notify: (delta: number) => void) => {
+        box.current = { top: 0, height: 0 };
         measure();
         base.current = offset.current;
         onShift.current = notify;
@@ -100,7 +113,12 @@ export function useDragAutoScroll() {
       /** 끌고 가는 손가락의 화면 높이 */
       track: (pageY: number) => {
         const { top, height } = box.current;
-        if (!height) return;
+        // 아직 자리를 모른다 — 어림잡아 흐르게 하느니 가만히 있는다
+        if (!height) {
+          speed.current = 0;
+          stop();
+          return;
+        }
         const overTop = top + EDGE - pageY;
         const overBottom = pageY - (top + height - EDGE);
         let s = 0;
