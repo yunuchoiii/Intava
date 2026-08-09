@@ -349,29 +349,6 @@ export default function Run() {
           링이 밀려 내려갔고, 그 여덟 개가 다 필요한 순간도 없었다. 전체 차례와
           순서 바꾸기는 오른쪽 목록 버튼 뒤에 둔다.
         */}
-        <View style={styles.stageRow}>
-          <Text style={[styles.stageCount, TABULAR]}>
-            {t('run.stageOf', {
-              i: Math.min(stages.length, Math.max(1, cursor + 1)),
-              n: stages.length,
-            })}
-          </Text>
-          {!simple && (
-            <>
-              <Text style={styles.stageDot}>·</Text>
-              <PressBox
-                onPress={() => setOrdering(true)}
-                hitSlop={12}
-                scaleTo={0.94}
-                dim={0}
-                accessibilityLabel={t('run.orderTitle')}
-              >
-                <Text style={styles.stageLink}>{t('run.reorder')} ›</Text>
-              </PressBox>
-            </>
-          )}
-        </View>
-
         <View style={styles.ringWrap}>
           <Ring
             ratio={run.ratio}
@@ -390,10 +367,10 @@ export default function Run() {
         </View>
 
         {/* 여기부터 아래는 버튼의 자리 — 끌어내려 닫기를 받지 않는다 */}
-        <View onLayout={measureControls} style={{ paddingHorizontal: GUTTER, gap: 20 }}>
+        <View onLayout={measureControls} style={{ paddingHorizontal: GUTTER, gap: 26 }}>
           <View style={styles.controls}>
             <ControlButton label={prevLabel} onPress={run.skipPrev}>
-              <PrevIcon />
+              <PrevIcon size={34} />
             </ControlButton>
 
             <PressBox
@@ -409,7 +386,7 @@ export default function Run() {
             </PressBox>
 
             <ControlButton label={segLabel(run.next)} onPress={run.skipNext}>
-              <NextIcon />
+              <NextIcon size={34} />
             </ControlButton>
           </View>
 
@@ -417,15 +394,46 @@ export default function Run() {
             전체 진행 바 — 구간 눈금. 한 줄로 이어진 막대는 "얼마나 남았나"만
             말하는데, 자리마다 끊어 두면 **몇 번째를 지나고 있는지**가 같이 읽힌다.
             눈금의 폭은 그 자리가 걸리는 시간에 비례한다.
+
+            "3 / 9 구간"은 이 막대 바로 위에 둔다. 머리줄 밑에 있을 때는 제목의
+            부제처럼 읽혔는데, 그 말이 가리키는 것은 여기 이 막대다.
           */}
-          <View>
+          <View style={{ gap: 11 }}>
+            <View style={styles.stageRow}>
+              <Text style={[styles.stageCount, TABULAR]}>
+                {t('run.stageOf', {
+                  i: Math.min(stages.length, Math.max(1, cursor + 1)),
+                  n: stages.length,
+                })}
+              </Text>
+              {!simple && (
+                <PressBox
+                  onPress={() => setOrdering(true)}
+                  hitSlop={12}
+                  scaleTo={0.94}
+                  dim={0}
+                  accessibilityLabel={t('run.orderTitle')}
+                >
+                  <Text style={styles.stageLink}>{t('run.reorder')} ›</Text>
+                </PressBox>
+              )}
+            </View>
             <View style={styles.track}>
-              {stages.map((s) => {
+              {stages.map((s, i) => {
                 const dur = Math.max(0.001, s.end - s.start);
                 const filled = Math.max(0, Math.min(1, (run.elapsed - s.start) / dur));
+                const now = i === cursor;
                 return (
-                  <View key={s.key} style={[styles.tick, { flex: dur }]}>
-                    {filled > 0 && (
+                  <View
+                    key={s.key}
+                    style={[
+                      styles.tick,
+                      { flex: dur },
+                      now && styles.tickNow,
+                      !now && filled >= 1 && styles.tickDone,
+                    ]}
+                  >
+                    {now && filled > 0 && (
                       <View style={[styles.tickFill, { width: `${filled * 100}%` }]} />
                     )}
                   </View>
@@ -484,7 +492,7 @@ function ControlButton({
       style={styles.control}
       accessibilityLabel={label}
     >
-      <View style={{ height: 56, alignItems: 'center', justifyContent: 'center' }}>{children}</View>
+      <View style={{ height: 60, alignItems: 'center', justifyContent: 'center' }}>{children}</View>
       {/* 언어에 따라 라벨 길이가 크게 달라진다. 줄바꿈 대신 살짝 줄여 한 줄을 지킨다 */}
       <Text style={styles.controlLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
         {label}
@@ -511,11 +519,10 @@ const styles = StyleSheet.create({
   routineName: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 19,
-    fontWeight: '700',
-    letterSpacing: -0.3,
+    fontSize: 15,
+    fontWeight: '600',
     color: '#FFFFFF',
-    opacity: 0.95,
+    opacity: 0.85,
   },
   /**
    * 머리줄 아래 한 줄 — 몇 번째 자리를 지나는지와 순서를 바꾸는 길.
@@ -524,26 +531,26 @@ const styles = StyleSheet.create({
    * 링이 이미 크게 말하고 다음은 컨트롤 위에 적힌다. 같은 말을 세 군데서 하는
    * 대신 여기서는 **전체 중 어디쯤인지**만 말한다.
    */
-  stageRow: {
-    marginTop: 12,
-    paddingHorizontal: GUTTER,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  stageCount: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
-  stageDot: { fontSize: 15, color: '#FFFFFF', opacity: 0.45 },
-  stageLink: { fontSize: 15, fontWeight: '600', color: '#FFFFFF', opacity: 0.7 },
+  /** 막대 바로 위 — 왼쪽은 지금 몇 번째인지, 오른쪽은 순서를 바꾸는 길 */
+  stageRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  stageCount: { fontSize: 14, fontWeight: '600', color: '#FFFFFF', opacity: 0.88 },
+  stageLink: { fontSize: 14, fontWeight: '600', color: '#FFFFFF', opacity: 0.78 },
   ringWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 0 },
-  controls: { flexDirection: 'row', gap: 26, alignItems: 'center', justifyContent: 'center' },
-  control: { width: 96, alignItems: 'center', gap: 6 },
-  controlLabel: { fontSize: 12.5, fontWeight: '600', color: '#FFFFFF', opacity: 0.8 },
+  controls: {
+    flexDirection: 'row',
+    gap: 26,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+  },
+  /** 땀난 손으로 누르는 것이 이 둘이다 — 배경은 그대로 두고 글리프와 라벨만 키웠다 */
+  control: { width: 92, alignItems: 'center', gap: 8 },
+  controlLabel: { fontSize: 14, fontWeight: '600', color: '#FFFFFF', opacity: 0.88 },
   mainButton: {
-    width: 96,
-    height: 96,
-    marginBottom: 19,
-    borderRadius: 48,
+    width: 100,
+    height: 100,
+    // 양옆 칸은 아이콘 밑에 라벨이 한 줄 더 있다. 그만큼 내려 앉혀 눈높이를 맞춘다
+    marginBottom: 22,
+    borderRadius: 50,
     backgroundColor: '#F4F5F7',
     alignItems: 'center',
     justifyContent: 'center',
@@ -554,15 +561,21 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 14 },
     elevation: 12,
   },
-  track: { flexDirection: 'row', alignItems: 'center', gap: 3, height: 6 },
+  track: { flexDirection: 'row', alignItems: 'center', gap: 3, height: 10 },
   /** 눈금 하나 — 폭은 그 자리가 걸리는 시간에 비례한다 */
-  tick: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: 'rgba(0,0,0,0.22)',
-    overflow: 'hidden',
+  tick: { height: 6, borderRadius: 3, backgroundColor: 'rgba(0,0,0,0.20)', overflow: 'hidden' },
+  /** 지금 지나는 자리만 두껍고 빛난다 — 숫자를 읽기 전에 어디쯤인지 보인다 */
+  tickNow: {
+    height: 10,
+    borderRadius: 5,
+    shadowColor: '#FFFFFF',
+    shadowOpacity: 0.55,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 0 },
   },
-  tickFill: { height: 6, borderRadius: 3, backgroundColor: '#FFFFFF' },
+  /** 지나온 자리 */
+  tickDone: { backgroundColor: 'rgba(255,255,255,0.85)' },
+  tickFill: { height: '100%', borderRadius: 5, backgroundColor: '#FFFFFF' },
   barLabels: { marginTop: 9, flexDirection: 'row', justifyContent: 'space-between' },
   barLabel: { fontSize: 13, fontWeight: '600', color: '#FFFFFF', opacity: 0.75 },
 });

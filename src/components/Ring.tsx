@@ -1,5 +1,5 @@
 /**
- * 실행 화면의 원형 링 (핸드오프 5.6) — 306×306, r=137, stroke 14, dasharray 861
+ * 실행 화면의 원형 링 (실행 화면 v2) — 330×330, r=148, stroke 15, dasharray 930
  *
  * 진행은 250ms 스냅샷을 그대로 그리지 않는다. 구간이 바뀌거나 시간축이 끊긴
  * 순간(syncKey)에만 기준을 다시 잡고, 그 사이는 남은 시간만큼의 선형
@@ -23,13 +23,13 @@ import Svg, { Circle } from 'react-native-svg';
 import { selectionTick } from '../feedback';
 import { ABS, TABULAR } from '../theme';
 
-export const RING_SIZE = 306;
-const R = 137;
-const CIRC = 861;
+export const RING_SIZE = 330;
+const R = 148;
+const CIRC = 930;
 const CENTER = RING_SIZE / 2;
 /** 링을 잡을 수 있는 반지름 범위 — 가운데 숫자 영역은 제외한다 */
-const GRAB_MIN = 86;
-const GRAB_MAX = 168;
+const GRAB_MIN = 93;
+const GRAB_MAX = 181;
 /** 이만큼은 움직여야 손짓의 방향을 판단한다 */
 const DECIDE_PX = 6;
 
@@ -261,22 +261,30 @@ export function Ring({
           r={R}
           fill="none"
           stroke="#FFFFFF"
-          strokeWidth={scrubbing ? 17 : 14}
+          strokeWidth={scrubbing ? 18 : 15}
           strokeLinecap="round"
           strokeDasharray={CIRC}
           strokeDashoffset={dashoffset}
+          /*
+            멈춰 있으면 링과 글자를 눌러 둔다 — "일시정지"라는 글자를 얹는 대신
+            이것과 ▶ 버튼으로만 알린다. 색조는 건드리지 않는다. 색까지 바뀌면
+            페이즈가 넘어간 것으로 오인된다.
+          */
+          opacity={paused ? 0.34 : 1}
         />
       </Svg>
 
-      <Text numberOfLines={1} style={styles.title}>
+      <Text numberOfLines={1} style={[styles.title, paused && styles.dimmed]}>
         {title}
       </Text>
 
       <View style={styles.clockWrap} pointerEvents="none">
-        <Animated.Text style={[styles.clock, TABULAR, { opacity: pulse }]}>{clock}</Animated.Text>
+        <Animated.Text style={[styles.clock, TABULAR, { opacity: paused ? 0.5 : pulse }]}>
+          {clock}
+        </Animated.Text>
       </View>
 
-      <Text numberOfLines={1} style={[styles.sub, TABULAR]}>
+      <Text numberOfLines={1} style={[styles.sub, TABULAR, { opacity: paused ? 0.5 : 0.82 }]}>
         {sub}
       </Text>
 
@@ -293,49 +301,51 @@ export function Ring({
 const styles = StyleSheet.create({
   disc: {
     position: 'absolute',
-    top: 22,
-    left: 22,
-    right: 22,
-    bottom: 22,
-    borderRadius: (RING_SIZE - 44) / 2,
+    top: 24,
+    left: 24,
+    right: 24,
+    bottom: 24,
+    borderRadius: (RING_SIZE - 48) / 2,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.18)',
   },
   title: {
     position: 'absolute',
-    top: 74,
-    left: 34,
-    right: 34,
+    top: 80,
+    left: 36,
+    right: 36,
     textAlign: 'center',
-    fontSize: 22,
+    fontSize: 23,
     fontWeight: '700',
-    letterSpacing: -0.22,
+    letterSpacing: -0.35,
     color: '#FFFFFF',
   },
+  /** 멈춘 동안 — 링(0.34)보다는 덜 눌러야 글자가 읽힌다 */
+  dimmed: { opacity: 0.5 },
   clockWrap: {
     ...ABS,
     alignItems: 'center',
     justifyContent: 'center',
   },
   clock: {
-    fontSize: 88,
-    // lineHeight를 주지 않는다. 88px 글리프의 상하 여백보다 작은 값을 주면
+    fontSize: 92,
+    // lineHeight를 주지 않는다. 92px 글리프의 상하 여백보다 작은 값을 주면
     // 숫자의 위아래가 상자에 잘린다. 폰트 기본 행높이에 맡긴다.
     fontWeight: '800',
-    letterSpacing: -4.4,
+    letterSpacing: -4.6,
     // 음수 letterSpacing은 마지막 글자 뒤에도 적용돼 상자가 잉크보다 좁아진다.
     // 좌우 여유를 주어 잘리지 않게 하고, 오른쪽 마진으로 광학 중심을 되돌린다.
     paddingHorizontal: 8,
-    marginRight: 4.4,
+    marginRight: 4.6,
     color: '#FFFFFF',
     // RN의 textShadow는 글자 상자 안에서 잘려 사각형 자국을 남긴다 — 쓰지 않는다.
   },
   sub: {
     position: 'absolute',
-    bottom: 76,
-    left: 30,
-    right: 30,
+    bottom: 82,
+    left: 28,
+    right: 28,
     textAlign: 'center',
     fontSize: 15,
     fontWeight: '600',
