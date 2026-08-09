@@ -549,10 +549,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   /** 땀난 손으로 누르는 것이 이 둘이다 — 배경은 그대로 두고 글리프와 라벨만 키웠다 */
-  control: { width: 92, alignItems: 'center', gap: 8 },
+  control: { width: 92, alignItems: 'center' },
   /** 아이콘 칸 — 가운데 버튼과 같은 키라 세 글리프가 한 줄에 선다 */
   controlIcon: { height: MAIN_BUTTON, alignItems: 'center', justifyContent: 'center' },
-  controlLabel: { fontSize: 14, fontWeight: '600', color: '#FFFFFF', opacity: 0.88 },
+  controlLabel: {
+    /*
+      아이콘 칸은 가운데 버튼과 키를 맞추느라 100이라, 글리프(27) 아래로 빈 자리가
+      한참 남는다. 그대로 두면 라벨이 아이콘에서 떨어져 어느 버튼의 말인지 흐려진다.
+      칸은 그대로 두고 라벨만 끌어올려 아이콘에 붙인다.
+    */
+    marginTop: -24,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    opacity: 0.88,
+  },
   mainButton: {
     width: MAIN_BUTTON,
     height: MAIN_BUTTON,
