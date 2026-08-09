@@ -111,7 +111,7 @@ export const en: Catalog = {
   backup: {
     data: 'Data',
     export: 'Export',
-    exportNote: 'Save your routines and settings to a single file.',
+    exportNote: 'Save your routines, workout log and settings to a single file.',
     import: 'Import',
     importNote: 'Restore from an exported file. Matching routines are overwritten.',
     failTitle: 'Could not export',
@@ -119,7 +119,7 @@ export const en: Catalog = {
     badTitle: 'Unreadable file',
     badBody: 'This is not a file exported from intava.',
     askTitle: 'Import?',
-    askBody: '{{count}} routines and your settings will be imported.',
+    askBody: '{{count}} routines, your workout log and settings will be imported.',
     doneTitle: 'Imported',
     doneBody: '{{count}} routines imported.',
   },

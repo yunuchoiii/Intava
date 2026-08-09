@@ -126,6 +126,8 @@ type StoreValue = {
   setSettings: (patch: Partial<Settings>) => void;
   /** 백업 불러오기 — 같은 id는 덮어쓰고, 없는 것은 앞에 더한다 */
   mergePresets: (incoming: Preset[]) => void;
+  /** 백업 불러오기 — 기록은 **덮어쓰지 않는다.** 없는 것만 더한다 */
+  mergeRecords: (incoming: WorkoutRecord[]) => void;
   /** 운동 기록 — 최근 것이 앞에 온다 */
   records: WorkoutRecord[];
   addRecord: (r: WorkoutRecord) => void;
@@ -250,6 +252,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           }
           // 기존 순서는 지키고, 새로 온 것만 앞에 놓는다
           return [...added, ...prev.map((p) => byId.get(p.id) ?? p)];
+        }),
+      /**
+       * 기록은 고칠 수 없는 것이므로 덮어쓸 일도 없다 — 같은 id가 이미 있으면
+       * 같은 기록이다. 없는 것만 받아 시작한 순서로 다시 세운다.
+       */
+      mergeRecords: (incoming: WorkoutRecord[]) =>
+        persistRecords((prev) => {
+          const have = new Set(prev.map((r) => r.id));
+          const fresh = incoming.filter((r) => !have.has(r.id));
+          if (!fresh.length) return prev;
+          return [...prev, ...fresh].sort((a, b) => b.startedAt - a.startedAt);
         }),
     }),
     [ready, presets, settings, persist, records, persistRecords]

@@ -104,7 +104,7 @@ export const ja: Catalog = {
   backup: {
     data: 'データ',
     export: '書き出し',
-    exportNote: 'ルーティンと設定を1つのファイルに保存します。',
+    exportNote: 'ルーティンとトレーニング記録、設定を1つのファイルに保存します。',
     import: '読み込み',
     importNote: '書き出したファイルから復元します。同じルーティンは上書きされます。',
     failTitle: '書き出せませんでした',
@@ -112,7 +112,7 @@ export const ja: Catalog = {
     badTitle: '読み取れないファイル',
     badBody: 'intava で書き出したファイルではありません。',
     askTitle: '読み込みますか？',
-    askBody: 'ルーティン {{count}} 件と設定を読み込みます。',
+    askBody: 'ルーティン {{count}} 件とトレーニング記録、設定を読み込みます。',
     doneTitle: '読み込みました',
     doneBody: 'ルーティン {{count}} 件を読み込みました。',
   },

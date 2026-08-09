@@ -37,10 +37,10 @@ export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const miniSpace = useMiniTimerSpace();
-  const { presets, settings, setSettings, mergePresets } = useStore();
+  const { presets, settings, setSettings, mergePresets, records, mergeRecords } = useStore();
 
   const doExport = async () => {
-    const ok = await exportBackup(presets, settings);
+    const ok = await exportBackup(presets, settings, records);
     if (!ok) Alert.alert(t('backup.failTitle'), t('backup.failBody'));
   };
 
@@ -58,6 +58,7 @@ export default function SettingsScreen() {
         text: t('backup.import'),
         onPress: () => {
           mergePresets(picked.presets);
+          mergeRecords(picked.records);
           setSettings(picked.settings);
           Alert.alert(t('backup.doneTitle'), t('backup.doneBody', { count }));
         },

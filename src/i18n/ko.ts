@@ -120,7 +120,7 @@ export const ko = {
   backup: {
     data: '데이터',
     export: '내보내기',
-    exportNote: '루틴과 설정을 파일 하나로 저장합니다.',
+    exportNote: '루틴과 운동 기록, 설정을 파일 하나로 저장합니다.',
     import: '불러오기',
     importNote: '내보낸 파일에서 되돌립니다. 같은 루틴은 덮어씁니다.',
     failTitle: '내보내지 못했습니다',
@@ -128,7 +128,7 @@ export const ko = {
     badTitle: '읽을 수 없는 파일',
     badBody: '인타바에서 내보낸 파일이 아닙니다.',
     askTitle: '불러올까요?',
-    askBody: '루틴 {{count}}개와 설정을 가져옵니다. 이름이 같아도 다른 루틴이면 따로 추가됩니다.',
+    askBody: '루틴 {{count}}개와 운동 기록, 설정을 가져옵니다. 이름이 같아도 다른 루틴이면 따로 추가됩니다.',
     doneTitle: '불러왔습니다',
     doneBody: '루틴 {{count}}개를 가져왔습니다.',
   },
