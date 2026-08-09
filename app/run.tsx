@@ -469,7 +469,7 @@ export default function Run() {
                       !now && filled >= 1 && styles.tickDone,
                     ]}
                   >
-                    {now && (
+                    {now && filled > 0 && (
                       <View style={[styles.tickFill, { width: `${filled * 100}%` }]}>
                         {/*
                           빛은 겹으로 그린다 — iOS 그림자는 이 자리에서 나오지 않는다.
@@ -674,20 +674,24 @@ const styles = StyleSheet.create({
   track: { flexDirection: 'row', alignItems: 'center', gap: 3, height: 10 },
   /** 눈금 하나 — 폭은 그 자리가 걸리는 시간에 비례한다 */
   tick: { height: 6, borderRadius: 3, backgroundColor: 'rgba(0,0,0,0.20)' },
-  /** 지금 지나는 자리 — 두꺼워져서 눈에 띈다. 흰 것은 차오른 만큼만이다 */
-  tickNow: { height: 10, borderRadius: 5 },
+  /**
+   * 지금 지나는 자리 — 두껍고, 바탕도 옅게 밝다. 흰 것은 차오른 만큼만이다.
+   *
+   * 바탕을 밝히는 것은 **차오름이 0일 때도 여기가 지금임이 읽혀야** 하기 때문이다.
+   * 그 자리를 최소 폭으로 메우면 안 된다 — 짧은 자리에서 진행을 부풀린다.
+   */
+  tickNow: { height: 10, borderRadius: 5, backgroundColor: 'rgba(255,255,255,0.20)' },
   /**
    * 그 안에서 차오르는 흰 부분. 빛도 여기 달려 있다.
    *
-   * 폭이 0일 때 빛만 남아 점처럼 보이지 않도록 최소 폭을 캡슐 하나로 잡는다 —
-   * 자리에 막 들어선 순간에도 머리는 캡슐 모양이어야 한다.
+   * 폭은 지난 시간에 정확히 비례한다. 최소 폭을 주면 10초짜리 자리에서 1초가
+   * 3분의 2로 보인다 — 눈금 전체가 15pt인데 캡슐 하나가 10pt다.
    */
   tickFill: {
     position: 'absolute',
     left: 0,
     top: 0,
     bottom: 0,
-    minWidth: 10,
     borderRadius: 5,
     borderCurve: 'continuous',
     backgroundColor: '#FFFFFF',
