@@ -225,7 +225,8 @@ export default function Records() {
                       styles.cellBox,
                       // 볼륨은 고르든 말든 그대로 보인다 — 고름이 정보를 덮으면 안 된다
                       !!mins && { backgroundColor: `rgba(31,179,161,${tint.toFixed(3)})` },
-                      isToday && styles.cellToday,
+                      // 오늘 표시는 **기록이 없을 때만**. 면이 이미 말하는 자리에 테두리를 더하면 두 번 말하는 것이다
+                      isToday && !mins && styles.cellToday,
                       isSel && styles.cellSelected,
                     ]}
                   >
@@ -238,15 +239,22 @@ export default function Records() {
                     >
                       {day}
                     </Text>
-                    <Text
-                      style={[
-                        styles.cellMins,
-                        TABULAR,
-                        { color: mins ? C.volumeText : 'rgba(154,166,184,0.5)' },
-                      ]}
-                    >
-                      {mins ? t('records.minutes', { m: mins }) : isToday ? t('records.today') : ''}
-                    </Text>
+                    {/*
+                      아랫줄이 없으면 **아예 그리지 않는다.** 빈 글자라도 두면 그
+                      높이만큼 자리를 차지해서, 기록 없는 날의 숫자가 칸 가운데가
+                      아니라 위로 밀린 채 선다.
+                    */}
+                    {(!!mins || isToday) && (
+                      <Text
+                        style={[
+                          styles.cellMins,
+                          TABULAR,
+                          { color: mins ? C.volumeText : 'rgba(154,166,184,0.5)' },
+                        ]}
+                      >
+                        {mins ? t('records.minutes', { m: mins }) : t('records.today')}
+                      </Text>
+                    )}
                   </View>
                 </Pressable>
               );
@@ -496,7 +504,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 3,
-    borderWidth: 1,
+    /*
+      테두리는 **모든 칸이 같은 두께로** 들고 있고 색만 바뀐다. 고른 칸에서만
+      굵히면 그 칸의 안쪽만 좁아져 숫자가 한 칸 안에서 흔들린다.
+    */
+    borderWidth: 2,
     borderColor: 'transparent',
   },
   cellToday: { borderColor: 'rgba(255,255,255,0.22)' },
