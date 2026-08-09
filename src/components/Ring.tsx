@@ -5,7 +5,8 @@
  * 순간(syncKey)에만 기준을 다시 잡고, 그 사이는 남은 시간만큼의 선형
  * 애니메이션으로 흐른다 — 값이 시간 기반이라 프레임이 밀려도 어긋나지 않는다.
  *
- * 링을 잡고 돌리면 현재 구간 안에서 남은 시간을 직접 조정한다.
+ * 링은 남은 시간을 그린다. 줄어드는 머리는 12시에서 출발해 **시계방향으로**
+ * 전진한다. 링을 잡고 돌리면 그 머리를 미는 것이라, 시계방향은 앞으로 감기다.
  */
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -144,8 +145,17 @@ export function Ring({
     return () => anim.stop();
   }, [syncKey, paused, scrubbing, prog]);
 
+  /**
+   * 남은 만큼을 흰 호로 그리되, **줄어드는 머리가 시계방향으로 전진**하게 한다.
+   *
+   * 오프셋을 양수로 키우면 호가 12시에서 시작해 끝점이 반시계로 물러난다 —
+   * 눈에는 링이 거꾸로 도는 것으로 읽힌다. 음수로 주면 dash 패턴이 반대로
+   * 밀려서 경과한 만큼이 12시부터 시계방향으로 벗겨지고, 남은 호는 그 뒤를
+   * 잇는다. 시계도 스톱워치도 그렇게 돌고, 하단 막대가 왼쪽에서 오른쪽으로
+   * 차오르는 것과도 같은 방향이다.
+   */
   const dashoffset = useMemo(
-    () => prog.interpolate({ inputRange: [0, 1], outputRange: [CIRC, 0], extrapolate: 'clamp' }),
+    () => prog.interpolate({ inputRange: [0, 1], outputRange: [-CIRC, 0], extrapolate: 'clamp' }),
     [prog]
   );
 
@@ -233,10 +243,15 @@ export function Ring({
           lastAngle.current = a;
           accum.current += d;
 
+          /*
+            시계방향으로 밀면 **앞으로 감긴다**(남은 시간이 준다). 손가락이 미는
+            것은 지금 지나는 머리이고, 그 머리는 시계방향으로 전진하기 때문이다 —
+            부호가 반대면 잡은 자리가 손가락과 어긋나게 움직인다.
+          */
           const dur = durRef.current || 1;
           const next = Math.max(
             0,
-            Math.min(dur, startRemain.current + (accum.current / (Math.PI * 2)) * dur)
+            Math.min(dur, startRemain.current - (accum.current / (Math.PI * 2)) * dur)
           );
           prog.setValue(next / dur);
 
