@@ -223,6 +223,15 @@ export default function Records() {
                       isSel && styles.cellSelected,
                     ]}
                   >
+                    {/* 고른 날은 단색이 아니라 결이 있는 면이다 — 셀 하나뿐이라 값이 싸다 */}
+                    {isSel && (
+                      <LinearGradient
+                        colors={['#1AA294', '#0E6F64']}
+                        start={{ x: 0.15, y: 0 }}
+                        end={{ x: 0.85, y: 1 }}
+                        style={StyleSheet.absoluteFill}
+                      />
+                    )}
                     <Text
                       style={[
                         styles.cellDay,
@@ -496,7 +505,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   cellToday: { borderColor: 'rgba(255,255,255,0.22)' },
-  cellSelected: { backgroundColor: '#14867A', borderColor: 'rgba(95,216,198,0.5)' },
+  cellSelected: { overflow: 'hidden', borderColor: 'rgba(95,216,198,0.5)' },
   cellDay: { fontSize: 14.5, lineHeight: 17 },
   cellMins: { fontSize: 10.5, fontWeight: '600', lineHeight: 13 },
 
