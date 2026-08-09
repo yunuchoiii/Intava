@@ -26,7 +26,6 @@ export type Preset = {
   rounds: number;
   roundRestSec: number;
   cooldownSec: number;
-  skipLastRest: boolean;
   createdAt: number;
   updatedAt: number;
   lastRunAt?: number;

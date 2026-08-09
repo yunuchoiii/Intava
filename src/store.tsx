@@ -61,7 +61,6 @@ function seedPresets(): Preset[] {
       rounds: 2,
       roundRestSec: 90,
       cooldownSec: 120,
-      skipLastRest: true,
       createdAt: now,
       updatedAt: now,
     },
@@ -75,7 +74,6 @@ function seedPresets(): Preset[] {
       rounds: 1,
       roundRestSec: 90,
       cooldownSec: 0,
-      skipLastRest: true,
       createdAt: now - 1,
       updatedAt: now - 1,
     },
@@ -96,7 +94,6 @@ export function emptyPreset(kind: 'routine' | 'timer'): Preset {
         rounds: 1,
         roundRestSec: 90,
         cooldownSec: 0,
-        skipLastRest: true,
         createdAt: now,
         updatedAt: now,
       }
@@ -111,7 +108,6 @@ export function emptyPreset(kind: 'routine' | 'timer'): Preset {
         rounds: 1,
         roundRestSec: 120,
         cooldownSec: 0,
-        skipLastRest: true,
         createdAt: now,
         updatedAt: now,
       };

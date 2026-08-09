@@ -64,7 +64,6 @@ export const zh: Catalog = {
     warmup: '热身',
     prepare: '准备',
     cooldown: '放松',
-    skipLastRest: '省略最后一次休息',
     alerts: '提示',
     alertsRow: '声音 · 振动 · 倒计时',
     allOn: '全部开启',
@@ -242,7 +241,6 @@ export const zh: Catalog = {
     rounds: '设定把所有动作走几遍。组是一个动作内部的重复，轮是整组动作的重复。',
     startEnd:
       '三项都调到0就会消失。运行时热身显示**橙色**，准备显示**琥珀色**，放松显示**灰蓝色**。',
-    skipLastRest: '最后一组结束后不再休息，直接完成。',
     volume: '不会调低音乐，只把提示音叠加播放。',
     keepScreenOn: '这个应用默认你会在息屏状态下使用。',
   },

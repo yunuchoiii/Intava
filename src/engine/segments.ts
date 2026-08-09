@@ -67,10 +67,7 @@ export function buildPlan(p: Preset, orders?: RoundOrders): Plan {
           segs.push({ phase: 'SET_REST', ...meta, start: t, dur: bl.restSec });
           t += bl.restSec;
         } else if (lastBlk && lastRound) {
-          if (!p.skipLastRest) {
-            segs.push({ phase: 'SET_REST', ...meta, start: t, dur: bl.restSec });
-            t += bl.restSec;
-          }
+          // 다 끝났다 — 쉴 것이 없다. 뒤에 올 종목도 라운드도 없으므로 곧장 쿨다운으로 간다.
         } else if (lastBlk) {
           segs.push({ phase: 'ROUND_REST', ...meta, start: t, dur: p.roundRestSec });
           t += p.roundRestSec;

@@ -11,7 +11,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   View,
@@ -58,7 +57,6 @@ function fingerprint(p: Preset): string {
     p.rounds,
     p.roundRestSec,
     p.cooldownSec,
-    p.skipLastRest,
     p.blocks.map((b) => [b.id, b.name.trim(), b.workSec, b.restSec, b.sets]),
   ]);
 }
@@ -275,18 +273,6 @@ export default function Edit() {
         value={draft.cooldownSec}
         onChange={(cooldownSec) => patch({ cooldownSec })}
       />
-      <View style={[styles.switchRow, tip === 'skipLast' && styles.raised]}>
-        <View style={styles.titleWrap}>
-          <Text style={styles.rowTitle}>{t('edit.skipLastRest')}</Text>
-          <InfoTip text={t('tips.skipLastRest')} {...toInfoTip(tip, setTip, 'skipLast')} />
-        </View>
-        <Switch
-          value={draft.skipLastRest}
-          onValueChange={(skipLastRest) => patch({ skipLastRest })}
-          trackColor={{ true: '#3F8F72', false: 'rgba(255,255,255,0.16)' }}
-          thumbColor="#FFFFFF"
-        />
-      </View>
     </>
   );
 
@@ -535,7 +521,6 @@ export default function Edit() {
               rounds: 1,
               roundRestSec: 90,
               cooldownSec: 0,
-              skipLastRest: true,
               createdAt: now,
               updatedAt: now,
             });
@@ -609,13 +594,6 @@ const styles = StyleSheet.create({
     borderBottomColor: C.divider,
   },
   raised: { zIndex: 30, elevation: 30 },
-  /** 높이를 잰 뒤에는 절대 배치로 두어 부모 높이를 애니메이션이 결정하게 한다 */
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-  },
   titleWrap: { flexDirection: 'row', alignItems: 'center', flexShrink: 1 },
   rowTitle: { fontSize: 18, fontWeight: '600', color: C.textPrimary },
   rowValueMuted: { fontSize: 16, color: C.textSecondary },

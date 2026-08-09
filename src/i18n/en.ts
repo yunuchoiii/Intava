@@ -71,7 +71,6 @@ export const en: Catalog = {
     warmup: 'Warm-up',
     prepare: 'Prepare',
     cooldown: 'Cool-down',
-    skipLastRest: 'Skip final rest',
     alerts: 'Alerts',
     alertsRow: 'Sound · Vibration · Countdown',
     allOn: 'All on',
@@ -250,7 +249,6 @@ export const en: Catalog = {
       'How many times to cycle through every exercise. Sets repeat within one exercise; rounds repeat the whole list.',
     startEnd:
       'Drop any of the three to zero and it disappears. While running, warm-up shows **orange**, prepare **amber**, and cool-down **slate blue**.',
-    skipLastRest: 'Finish right after the last set, with no rest at the end.',
     volume: 'Cues play over your music without turning it down.',
     keepScreenOn: 'This app expects to be used with the screen off.',
   },
