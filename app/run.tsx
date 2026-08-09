@@ -41,6 +41,11 @@ const MAIN_BUTTON = 100;
 const BAR_LABEL = 14;
 /** 막대와 그 위아래 줄 사이 — 한 값으로만 준다. 막대가 두 줄 한가운데 선다 */
 const BAR_GAP = 11;
+/**
+ * 컨트롤 줄과 진행 막대 사이. 둘은 하는 일이 다르다 — 위는 손을 대는 곳,
+ * 아래는 읽는 곳이다. 막대 안쪽 여백(BAR_GAP)보다 넉넉히 벌려야 두 덩이로 읽힌다.
+ */
+const CONTROLS_GAP = 42;
 
 export default function Run() {
   const router = useRouter();
@@ -398,7 +403,7 @@ export default function Run() {
         </View>
 
         {/* 여기부터 아래는 버튼의 자리 — 끌어내려 닫기를 받지 않는다 */}
-        <View onLayout={measureControls} style={{ paddingHorizontal: GUTTER, gap: 26 }}>
+        <View onLayout={measureControls} style={{ paddingHorizontal: GUTTER, gap: CONTROLS_GAP }}>
           <View style={styles.controls}>
             <ControlButton label={prevLabel} onPress={run.skipPrev}>
               <PrevIcon size={34} />
