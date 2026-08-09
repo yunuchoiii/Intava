@@ -89,22 +89,6 @@ export function segLabel(seg: Segment | undefined): string {
   return t('jump.withSet', { name, set: seg.set });
 }
 
-/**
- * 컨트롤 위 예고 — "다음 · 스쿼트 40초".
- *
- * 여기서만 종목 이름을 쓴다. 링은 지금이 운동인지 휴식인지를 말하고(그래서
- * 이름을 쓰지 않는다), 이름을 늘어놓던 종목 줄은 없앴다. 남은 자리가 여기다 —
- * 다음에 무엇을 잡아야 하는지는 이름으로 알아야 한다.
- * 타이머는 종목 이름이 곧 타이머 이름이라 이름을 쓰지 않는다.
- */
-export function nextLine(seg: Segment | undefined, preset: Preset): string {
-  const what =
-    seg && seg.phase === 'WORK' && seg.name && !isSimple(preset)
-      ? t('run.nextWork', { name: seg.name, dur: durationShort(seg.dur) })
-      : describeSegment(seg);
-  return t('run.next', { what });
-}
-
 /** 링 안쪽 아래 줄 */
 export function subLabel(seg: Segment | null, preset: Preset): string {
   if (!seg) return t('sub.finished');
@@ -136,21 +120,38 @@ export function subLabel(seg: Segment | null, preset: Preset): string {
 }
 
 /**
- * 지금 무슨 구간인지.
+ * 미니 바의 한 줄 — "운동 30초".
  *
- * 이름(종목명·타이머명)은 쓰지 않는다. 이름만 있으면 지금이 운동인지 휴식인지
- * 알 수 없고, 타이머는 종목 이름이 곧 타이머 이름이라 화면 전체가 같은 말로
- * 도배된다. 이름은 컨트롤 위의 예고(nextLine)가 든다.
- *
- * 길이(withDur)는 부르는 쪽이 정한다. 링 안에서는 빼고 쓴다 — 큰 숫자가 바로
- * 아래에 있어서 "준비 10초 / 0:09"는 같은 것을 두 번 말하는 셈이다. 미니 바는
- * 남은 시간만 보이므로 전체 길이가 있어야 가늠이 된다.
+ * 여기서는 길이를 함께 쓴다. 남은 시간 하나만 보이는 자리라, 전체가 얼마짜리인지
+ * 없으면 30초 중 20초인지 3분 중 20초인지 가늠이 안 된다.
  */
-export function titleLabel(seg: Segment | null, paused: boolean, withDur = true): string {
+export function titleLabel(seg: Segment | null, paused: boolean): string {
+  if (paused) return t('phase.paused');
+  if (!seg) return t('phase.DONE');
+  return t('run.titleWithDur', { phase: phaseLabel(seg.phase), dur: durationShort(seg.dur) });
+}
+
+/**
+ * 링 안쪽 위 — "스쿼트 · 운동".
+ *
+ * 이름과 무엇인지를 한 줄에 붙인다. 이름만으로는 지금이 운동인지 휴식인지 알 수
+ * 없고, 무엇인지만으로는 어느 종목인지 알 수 없다 — 운동 중에 볼 수 있는 글자가
+ * 이 한 줄뿐인 때가 많으니 둘 다 있어야 한다.
+ *
+ * 길이는 쓰지 않는다. 바로 아래 큰 숫자가 남은 시간을 말하고 있어서, 제목까지
+ * 시간을 들면 같은 것을 두 번 말하는 셈이다.
+ *
+ * 이름을 붙이는 것은 운동과 그 사이 휴식뿐이다. 웜업·준비·쿨다운에는 종목이
+ * 없고, 종목 전환·라운드 휴식에 실린 이름은 방금 끝낸 종목이라 지금을 가리키지
+ * 않는다. 타이머는 종목 이름이 곧 타이머 이름이라 붙이지 않는다.
+ */
+export function ringTitle(seg: Segment | null, paused: boolean, preset: Preset): string {
   if (paused) return t('phase.paused');
   if (!seg) return t('phase.DONE');
   const phase = phaseLabel(seg.phase);
-  return withDur ? t('run.titleWithDur', { phase, dur: durationShort(seg.dur) }) : phase;
+  const named = seg.phase === 'WORK' || seg.phase === 'SET_REST';
+  if (!named || !seg.name || isSimple(preset)) return phase;
+  return t('run.titleWithName', { name: seg.name, phase });
 }
 
 /** 홈 목록 요약 줄 */

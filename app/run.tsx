@@ -19,15 +19,7 @@ import { NextIcon, PauseIcon, PencilIcon, PlayIcon, PrevIcon } from '../src/comp
 import { OrderSheet } from '../src/components/OrderSheet';
 import { PhaseFlood } from '../src/components/PhaseFlood';
 import { Ring } from '../src/components/Ring';
-import {
-  clock,
-  isSimple,
-  nextLine,
-  phaseLabel,
-  segLabel,
-  subLabel,
-  titleLabel,
-} from '../src/engine/labels';
+import { clock, isSimple, phaseLabel, ringTitle, segLabel, subLabel } from '../src/engine/labels';
 import { useMorph } from '../src/morph';
 import { ensurePermission } from '../src/notify';
 import { useSession } from '../src/session';
@@ -385,7 +377,7 @@ export default function Run() {
             ratio={run.ratio}
             remainSec={run.remain}
             durSec={run.seg?.dur ?? 0}
-            title={titleLabel(run.seg, run.paused, false)}
+            title={ringTitle(run.seg, run.paused, preset)}
             clock={clock(run.remain)}
             sub={subLabel(run.seg, preset)}
             warn={!run.done && run.remain <= 3 && !run.paused}
@@ -396,15 +388,6 @@ export default function Run() {
             onScrubEnd={run.commitScrub}
           />
         </View>
-
-        {/*
-          다음에 올 것 — 종목 줄이 사라진 자리에서 이름을 대신 들고 있다.
-          컨트롤 묶음 바깥에 둔다. 저 안에 넣으면 끌어내려 닫는 손짓을 받지 않는
-          영역이 이 줄까지 올라온다.
-        */}
-        <Text style={styles.nextLine} numberOfLines={1}>
-          {nextLine(run.next, preset)}
-        </Text>
 
         {/* 여기부터 아래는 버튼의 자리 — 끌어내려 닫기를 받지 않는다 */}
         <View onLayout={measureControls} style={{ paddingHorizontal: GUTTER, gap: 20 }}>
@@ -552,16 +535,6 @@ const styles = StyleSheet.create({
   stageCount: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
   stageDot: { fontSize: 15, color: '#FFFFFF', opacity: 0.45 },
   stageLink: { fontSize: 15, fontWeight: '600', color: '#FFFFFF', opacity: 0.7 },
-  /** 컨트롤 위 예고 — 링과 버튼 사이의 숨통을 겸한다 */
-  nextLine: {
-    paddingHorizontal: GUTTER,
-    paddingBottom: 18,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    opacity: 0.85,
-    textAlign: 'center',
-  },
   ringWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 0 },
   controls: { flexDirection: 'row', gap: 26, alignItems: 'center', justifyContent: 'center' },
   control: { width: 96, alignItems: 'center', gap: 6 },

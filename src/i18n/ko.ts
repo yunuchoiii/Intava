@@ -167,6 +167,8 @@ export const ko = {
     resume: '재개',
     next: '다음 · {{what}}',
     titleWithDur: '{{phase}} {{dur}}',
+    /** 링 안쪽 위 — 종목과 무엇인지를 한 줄에 */
+    titleWithName: '{{name}} · {{phase}}',
     switchTitle: '이미 실행 중입니다',
     switchBody: "'{{running}}'을(를) 끝내고 '{{next}}'을(를) 시작할까요?",
     switchConfirm: '끝내고 시작',
@@ -176,8 +178,6 @@ export const ko = {
     /** 머리줄 아래 — 전체 자리 중 몇 번째인지, 그리고 순서를 바꾸는 길 */
     stageOf: '{{i}} / {{n}} 구간',
     reorder: '순서 바꾸기',
-    /** 컨트롤 위 예고에서 종목을 부를 때 — "스쿼트 40초" */
-    nextWork: '{{name}} {{dur}}',
     /** 실행 중 종목 순서 시트 */
     orderTitle: '종목 순서',
     orderNote: '지나간 종목과 지금 하는 종목은 옮길 수 없습니다.',
