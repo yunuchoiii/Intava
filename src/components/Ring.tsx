@@ -72,6 +72,44 @@ export function Ring({
   const prog = useRef(new Animated.Value(ratio)).current;
   const [scrubbing, setScrubbing] = useState(false);
 
+  /**
+   * 멈춤의 정도 — 0이면 돌고 있고 1이면 멈춰 있다. 톡 꺼지지 않고 건너간다.
+   *
+   * 값이 둘인 이유는 드라이버가 다르기 때문이다. 글자의 투명도는 네이티브
+   * 드라이버로 돌릴 수 있지만(그래야 맥동과 곱해져도 끊기지 않는다), SVG의
+   * opacity는 속성이라 JS 쪽에서만 움직인다. 같은 시간으로 나란히 돌린다.
+   */
+  const dim = useRef(new Animated.Value(paused ? 1 : 0)).current;
+  const dimSvg = useRef(new Animated.Value(paused ? 1 : 0)).current;
+  /*
+    링을 잡고 있는 동안은 누르지 않는다. 잡으면 세션이 스스로 멈추는데(값을 맞추는
+    사이에 시간이 흐르면 손가락과 숫자가 서로 밀린다), 그 멈춤까지 눌림으로 그리면
+    지금 맞추고 있는 바로 그 숫자가 흐려진다. 손이 올라가 있는 것은 멈춤이 아니다.
+  */
+  const held = paused && !scrubbing;
+  useEffect(() => {
+    const to = held ? 1 : 0;
+    const opts = { toValue: to, duration: 300, easing: Easing.out(Easing.cubic) };
+    Animated.parallel([
+      Animated.timing(dim, { ...opts, useNativeDriver: true }),
+      Animated.timing(dimSvg, { ...opts, useNativeDriver: false }),
+    ]).start();
+  }, [held, dim, dimSvg]);
+
+  /** 멈추면 링은 0.34까지, 글자는 0.5까지 눌린다 — 색조는 건드리지 않는다 */
+  const ringDim = useMemo(
+    () => dimSvg.interpolate({ inputRange: [0, 1], outputRange: [1, 0.34] }),
+    [dimSvg]
+  );
+  const textDim = useMemo(
+    () => dim.interpolate({ inputRange: [0, 1], outputRange: [1, 0.5] }),
+    [dim]
+  );
+  const subDim = useMemo(
+    () => dim.interpolate({ inputRange: [0, 1], outputRange: [0.82, 0.5] }),
+    [dim]
+  );
+
   const ratioRef = useRef(ratio);
   ratioRef.current = ratio;
   const remainRef = useRef(remainSec);
@@ -270,23 +308,22 @@ export function Ring({
             이것과 ▶ 버튼으로만 알린다. 색조는 건드리지 않는다. 색까지 바뀌면
             페이즈가 넘어간 것으로 오인된다.
           */
-          opacity={paused ? 0.34 : 1}
+          opacity={ringDim}
         />
       </Svg>
 
-      <Text numberOfLines={1} style={[styles.title, paused && styles.dimmed]}>
+      <Animated.Text numberOfLines={1} style={[styles.title, { opacity: textDim }]}>
         {title}
-      </Text>
+      </Animated.Text>
 
-      <View style={styles.clockWrap} pointerEvents="none">
-        <Animated.Text style={[styles.clock, TABULAR, { opacity: paused ? 0.5 : pulse }]}>
-          {clock}
-        </Animated.Text>
-      </View>
+      {/* 맥동과 멈춤을 겹쳐 곱한다 — 둘을 한 값에 섞으면 드라이버가 엉킨다 */}
+      <Animated.View style={[styles.clockWrap, { opacity: textDim }]} pointerEvents="none">
+        <Animated.Text style={[styles.clock, TABULAR, { opacity: pulse }]}>{clock}</Animated.Text>
+      </Animated.View>
 
-      <Text numberOfLines={1} style={[styles.sub, TABULAR, { opacity: paused ? 0.5 : 0.82 }]}>
+      <Animated.Text numberOfLines={1} style={[styles.sub, TABULAR, { opacity: subDim }]}>
         {sub}
-      </Text>
+      </Animated.Text>
 
       {/*
         손가락을 받는 겹. 링 상자와 정확히 같은 크기여야 안쪽 좌표(locationX/Y)가
@@ -321,8 +358,6 @@ const styles = StyleSheet.create({
     letterSpacing: -0.35,
     color: '#FFFFFF',
   },
-  /** 멈춘 동안 — 링(0.34)보다는 덜 눌러야 글자가 읽힌다 */
-  dimmed: { opacity: 0.5 },
   clockWrap: {
     ...ABS,
     alignItems: 'center',
@@ -349,7 +384,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 15,
     fontWeight: '600',
-    opacity: 0.82,
     color: '#FFFFFF',
   },
 });

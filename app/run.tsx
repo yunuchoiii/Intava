@@ -388,7 +388,7 @@ export default function Run() {
               style={styles.mainButton}
               accessibilityLabel={run.paused ? t('run.resume') : t('run.pause')}
             >
-              {run.paused ? <PlayIcon color={color} /> : <PauseIcon color={color} />}
+              <MainGlyph color={color} paused={run.paused} />
             </PressBox>
 
             <ControlButton label={segLabel(run.next)} onPress={run.skipNext}>
@@ -467,6 +467,40 @@ export default function Run() {
       />
       </Animated.View>
     </Animated.View>
+  );
+}
+
+/**
+ * 가운데 버튼 안의 글리프 — 페이즈가 바뀌면 배경과 **같은 속도로** 색이 건너간다.
+ *
+ * 흰 버튼 위의 색은 화면에서 페이즈 색이 가장 진하게 남는 자리다. 배경은 0.6초에
+ * 걸쳐 녹아드는데 이것만 톡 갈아끼우면 그 순간이 튄다. 배경과 같은 방법을 쓴다 —
+ * 옛 색을 깔아두고 새 색을 그 위에 띄운다(RN에는 색 전환이 없다).
+ *
+ * 모양(▶/⏸)은 건너가지 않는다. 그건 누른 결과라 즉시 바뀌어야 손에 붙는다.
+ */
+function MainGlyph({ color, paused }: { color: string; paused: boolean }) {
+  const [prev, setPrev] = useState(color);
+  const [curr, setCurr] = useState(color);
+  const fade = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (color === curr) return;
+    setPrev(curr);
+    setCurr(color);
+    fade.setValue(0);
+    Animated.timing(fade, { toValue: 1, duration: 600, useNativeDriver: true }).start();
+  }, [color, curr, fade]);
+
+  const Glyph = paused ? PlayIcon : PauseIcon;
+  return (
+    <View>
+      <Glyph color={prev} />
+      {/* 같은 글리프를 같은 자리에 겹친다 — 크기도 여백도 같아 정확히 포개진다 */}
+      <Animated.View style={{ position: 'absolute', top: 0, left: 0, opacity: fade }}>
+        <Glyph color={curr} />
+      </Animated.View>
+    </View>
   );
 }
 
