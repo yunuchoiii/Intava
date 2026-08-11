@@ -7,7 +7,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "backgroundColor": "#1B1B21",
+    "backgroundColor": "#17171C",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.intava.app",
@@ -67,7 +67,7 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#1B1B21"
+          "backgroundColor": "#17171C"
         }
       ],
       [

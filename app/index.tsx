@@ -1,4 +1,6 @@
 /** 5.1 홈 — 운동 직전에 화면을 오래 붙들지 않게 한다. 실행까지 한 번의 탭. */
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -17,7 +19,7 @@ import { Surface } from '../src/components/Surface';
 import { PressBox } from '../src/components/PressBox';
 import { CalendarIcon, GearIcon, PlayIcon } from '../src/components/Icons';
 import { useMiniTimerSpace } from '../src/components/MiniTimer';
-import { Screen, ScreenBackground } from '../src/components/Screen';
+import { Screen } from '../src/components/Screen';
 import { Wordmark } from '../src/components/Wordmark';
 import { presetSummary, presetTimeLine } from '../src/engine/labels';
 import { totalSec } from '../src/engine/segments';
@@ -66,17 +68,11 @@ export default function Home() {
   const session = useSession();
   const miniSpace = useMiniTimerSpace();
   const insets = useSafeAreaInsets();
-  const { width, height: screenHeight } = useWindowDimensions();
+  const { width } = useWindowDimensions();
   const { presets, ready, settings, setSettings, duplicatePreset, deletePreset } = useStore();
   const toast = useToast();
   const [tab, setTab] = useState<PresetKind>('routine');
   const [toolHeight, setToolHeight] = useState(TOOL_ROW_GUESS);
-  /**
-   * 목록 자리가 화면 위끝에서 얼마나 내려와 있는지 — 정렬 줄 뒤에 깔 배경
-   * 복사본을 그만큼 끌어올려야 진짜 배경과 겹친다. onLayout의 y는 바깥 틀의
-   * 위 여백까지 이미 셈한 값이다. 첫 프레임 어림값은 여백 + 머리줄 64 + 탭 74.
-   */
-  const [listTop, setListTop] = useState(insets.top + 6 + 64 + 74);
   const pager = useRef<ScrollView>(null);
   // 손가락으로 끄는 동안에만 탭 표시를 따라가게 한다. 첫 레이아웃 때 iOS가
   // 흘리는 스크롤 이벤트에 탭이 넘어가 버리는 것을 막는다.
@@ -179,7 +175,7 @@ export default function Home() {
   );
 
   return (
-    <Screen gradient>
+    <Screen>
       {/*
         아래쪽은 비워두지 않는다 — 목록은 화면 끝까지 자라고, 홈 인디케이터와
         미니 바가 차지하는 만큼은 목록 **내용**의 끝에 붙인다(TabPage의 bottomPad).
@@ -227,10 +223,7 @@ export default function Home() {
           목록과 그 위에 뜬 정렬 줄. 줄은 흐름에서 빼서 얹고, 목록은 줄 높이만큼
           위쪽 여백을 두고 시작한다 — 스크롤하면 행이 줄 뒤로 미끄러져 들어간다.
         */}
-        <View
-          style={{ flex: 1 }}
-          onLayout={(e) => setListTop(Math.round(e.nativeEvent.layout.y))}
-        >
+        <View style={{ flex: 1 }}>
           <ScrollView
             ref={pager}
             horizontal
@@ -263,11 +256,7 @@ export default function Home() {
           </ScrollView>
 
           {/* 목록보다 뒤에 그린다 — 지나가는 행을 덮어야 하므로 */}
-          <ToolRowBackdrop
-            height={toolHeight}
-            screenTop={listTop}
-            screenHeight={screenHeight}
-          />
+          <ToolRowBackdrop height={toolHeight} />
 
           {/* 정렬은 왼쪽, 추가는 오른쪽 — 목록을 다루는 두 손잡이가 한 줄에 있다 */}
           <View
@@ -294,33 +283,37 @@ export default function Home() {
 }
 
 /**
- * 정렬 줄 뒤 — 화면 배경을 그 자리에 그대로 한 겹 더 그린다.
+ * 정렬 줄 뒤 — 흐린 판. 행이 이 아래로 미끄러져 들어가면서 흐려지다 사라진다.
  *
- * 흐림(BlurView)은 접었다. 흐림 재질은 뒤에 아무것도 없어도 제가 덮은
- * 사각형만큼 색을 얹는다. 그래서 판의 윗변이 어디에 놓이든 — 세그먼트 밑에
- * 밀어 넣든, 아랫변에 딱 맞추든 — 좌우로 삐져나온 자리에서 가로선으로 읽혔다.
- * 세기를 낮추면 가리지를 못하고, 올리면 선이 더 굵어진다. 빠져나갈 데가 없다.
+ * 한때 흐림을 접고 배경을 복사해 깔았다. 흐림 재질은 뒤에 아무것도 없어도 제가
+ * 덮은 사각형만큼 색을 얹는데, 그때 배경이 세로 그라디언트라 그 균일한 색이
+ * 어디에 놓이든 배경과 어긋나 아랫변이 가로선으로 읽혔기 때문이다.
  *
- * 대신 배경을 복사해 깐다. 화면 그라디언트와 좌상단 글로우를 **화면 전체 크기로**
- * 그린 다음 이 줄 높이만큼만 잘라 보여주므로, 밑에 깔린 진짜 배경과 픽셀이
- * 정확히 겹친다. 아무것도 지나가지 않을 때는 있는지도 알 수 없고, 지나가는
- * 행은 이 겹에 완전히 가려진다.
+ * **그 전제가 사라졌다.** 배경이 단색이 되면서, 위쪽을 배경색으로 꽉 채워도 밑에
+ * 깔린 진짜 배경과 픽셀이 정확히 같다. 그래서 두 겹으로 끝낸다 —
+ *
+ *   1) BlurView가 판 전체를 흐린다.
+ *   2) 그 위에 배경색 스크림을 얹되 아래로 갈수록 걷는다.
+ *
+ * 정렬 줄과 추가 버튼이 앉는 위쪽은 스크림이 꽉 차 배경 그대로이고, 아래로 가면서
+ * 열려 흐림만 남는다. 판이 끝나는 자리에서 행은 흐림에서 또렷함으로 건너가지만
+ * 그때 스크림은 이미 투명이라 **색 경계가 생기지 않는다** — 옛 주석이 빠져나갈
+ * 데가 없다고 적은 자리가 여기다.
  */
-function ToolRowBackdrop({
-  height,
-  screenTop,
-  screenHeight,
-}: {
-  height: number;
-  /** 이 판이 화면 위끝에서 얼마나 내려와 있는지 — 배경 복사본을 그만큼 끌어올린다 */
-  screenTop: number;
-  screenHeight: number;
-}) {
+function ToolRowBackdrop({ height }: { height: number }) {
   return (
     <View style={[styles.backdrop, { height }]} pointerEvents="none">
-      <View style={{ position: 'absolute', top: -screenTop, left: 0, right: 0, height: screenHeight }}>
-        <ScreenBackground />
-      </View>
+      {/*
+        안드로이드에서는 experimentalBlurMethod 없이 반투명 겹으로만 떨어진다.
+        Sheet도 그 프로프 없이 쓰고 있어 같은 수준으로 맞춘다 — 여기만 실험
+        옵션을 켜면 시트와 홈의 재질이 갈린다.
+      */}
+      <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+      <LinearGradient
+        colors={[C.bgPlain, C.bgPlain, C.bgPlainClear]}
+        locations={[0, 0.55, 1]}
+        style={StyleSheet.absoluteFill}
+      />
     </View>
   );
 }
@@ -638,7 +631,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  /** 배경 복사본이 이 틀 밖으로 자라 있으므로 잘라낸다 */
+  /** 흐림 재질이 틀 밖으로 새지 않게 잘라낸다 */
   backdrop: { position: 'absolute', top: 0, left: 0, right: 0, overflow: 'hidden' },
   sortRow: {
     paddingVertical: 12,

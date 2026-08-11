@@ -6,7 +6,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { ScreenBackground } from '../src/components/Screen';
 import { Wordmark } from '../src/components/Wordmark';
 import { C } from '../src/theme';
 import { installHandler } from '../src/notify';
@@ -64,7 +63,7 @@ export default function RootLayout() {
   }, [fade]);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: C.bgBase }} onLayout={onReady}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: C.bgPlain }} onLayout={onReady}>
       <SafeAreaProvider>
         <ThemeProvider value={NAV_THEME}>
           <StoreProvider>
@@ -133,8 +132,7 @@ export default function RootLayout() {
               pointerEvents="none"
               style={[StyleSheet.absoluteFill, styles.splash, { opacity: fade }]}
             >
-              {/* 홈과 같은 그라디언트 — 스플래시에서 홈으로 넘어갈 때 배경이 바뀌지 않는다 */}
-              <ScreenBackground />
+              {/* 바탕은 styles.splash가 깐다 — 홈과 같은 단색이라 넘어가는 순간이 보이지 않는다 */}
               <View style={styles.splashCenter}>
                 <Wordmark width={SPLASH_LOGO_WIDTH} />
               </View>
@@ -151,6 +149,7 @@ export default function RootLayout() {
 }
 
 const styles = StyleSheet.create({
-  splash: { backgroundColor: C.bgBase, zIndex: 100 },
+  /** 네이티브 스플래시(app.json의 backgroundColor)와 같은 값이어야 이어붙는 순간이 안 보인다 */
+  splash: { backgroundColor: C.bgPlain, zIndex: 100 },
   splashCenter: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });
