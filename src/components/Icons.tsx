@@ -25,6 +25,49 @@ export function BackIcon({ size = 26, color = '#FFFFFF' }: IconProps) {
   );
 }
 
+/**
+ * ‹ › — 한 칸 앞으로 · 뒤로. 기록 화면의 월 이동.
+ *
+ * BackIcon과 같은 26 격자에 같은 획(2.2)으로 그린다. 크기만 작다.
+ *
+ * 글리프(‹ ›)를 쓰지 않는 이유는 BackIcon과 같되 여기서는 더 아프다. 이 둘은
+ * 40×40 사각형 **한가운데**에 놓이는데, alignItems/justifyContent center가 가운데
+ * 두는 것은 글자의 줄 상자이지 글리프의 잉크가 아니다. ‹(U+2039)는 따옴표 계열이라
+ * em 박스 안에서 소문자 중간 높이에 앉아, 줄 상자를 가운데 두면 잉크는 그보다
+ * 아래에 선다. 폰트가 바뀌면 치우친 양도 바뀌므로 마진 상수로 메우면 그 폰트에만
+ * 맞는 답이 된다. 획으로 그리면 잉크의 기하학적 중심이 곧 뷰박스 중심이다.
+ */
+export function ChevronIcon({
+  size = 20,
+  color = '#FFFFFF',
+  dir = 'left',
+}: IconProps & { dir?: 'left' | 'right' }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 26 26">
+      {/*
+        잉크가 x 9.5~16.5, y 6~20 — 가로세로 모두 26 격자의 정중앙(13)에 대칭이다.
+        BackIcon은 x를 8~16.5로 잡아 살짝 왼쪽에 두는데(머리줄 왼쪽 끝에 서는
+        글리프라 그쪽이 맞다) 여기는 사각형 한가운데라 대칭이어야 한다.
+
+        폭:높이 = 1:2로 BackIcon과 같은 비율이되 한 단계 작다. size 20에서 획 끝까지
+        재면 12.6pt × 획 1.85pt다. 대신 쓰던 ‹(20pt SF Pro)는 10.8pt에 획 1.6pt라,
+        바뀌면 화살표가 조금 커지고 굵어진다 — 40pt 타일 안에서 글리프가 가늘고
+        작았던 것이 맞다고 보고 그대로 둔다.
+      */}
+      <Path
+        d="M16.5 6 L9.5 13 l7 7"
+        stroke={color}
+        strokeWidth={2.4}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+        // 오른쪽은 같은 획을 통째로 뒤집는다 — 두 방향의 무게가 같아야 한 쌍으로 읽힌다
+        transform={dir === 'right' ? 'translate(26,0) scale(-1,1)' : undefined}
+      />
+    </Svg>
+  );
+}
+
 /** 목록 — 실행 화면에서 종목 순서 시트를 여는 자리 */
 export function ListIcon({ size = 22, color = '#FFFFFF' }: IconProps) {
   return (

@@ -12,7 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React, { useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BackIcon } from '../src/components/Icons';
+import { BackIcon, ChevronIcon } from '../src/components/Icons';
 import { useMiniTimerSpace } from '../src/components/MiniTimer';
 import { PressBox } from '../src/components/PressBox';
 import { Screen } from '../src/components/Screen';
@@ -142,7 +142,7 @@ export default function Records() {
               style={styles.monthArrow}
               accessibilityLabel={t('records.a11yPrevMonth')}
             >
-              <Text style={styles.arrowGlyph}>‹</Text>
+              <ChevronIcon dir="left" size={20} color={C.textSecondary} />
             </PressBox>
             <Text style={[styles.monthLabel, TABULAR]}>
               {t('records.monthLabel', { y: view.y, m: view.m })}
@@ -156,7 +156,7 @@ export default function Records() {
               style={styles.monthArrow}
               accessibilityLabel={t('records.a11yNextMonth')}
             >
-              <Text style={styles.arrowGlyph}>›</Text>
+              <ChevronIcon dir="right" size={20} color={C.textSecondary} />
             </PressBox>
           </View>
 
@@ -483,7 +483,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.05)',
   },
-  arrowGlyph: { fontSize: 20, lineHeight: 24, color: C.textSecondary },
   monthLabel: { fontSize: 19, fontWeight: '700', letterSpacing: -0.38, color: C.textPrimary },
 
   glass: {
