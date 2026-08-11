@@ -21,9 +21,19 @@ import { Screen } from '../src/components/Screen';
 import Constants from 'expo-constants';
 import { preview } from '../src/audio';
 import { exportBackup, pickBackup } from '../src/backup';
+import { ExportSheet, type ExportPick } from '../src/components/ExportSheet';
 import { useStore } from '../src/store';
 import { t } from '../src/i18n';
 import { C, GUTTER, TABULAR } from '../src/theme';
+
+/**
+ * 내보내기 시트가 닫히기를 기다리는 시간 — 그다음에 공유 시트를 연다.
+ *
+ * 우리 시트는 RN Modal이고 공유 시트는 OS가 루트에서 띄우는 것이라, 앞의 것이 아직
+ * 화면에 남아 있는 동안 부르면 iOS가 "이미 표시 중"이라며 삼킨다. Sheet의 닫는
+ * 스프링(speed 18)이 끝나고 Modal이 실제로 벗겨지기까지 잡은 여유다.
+ */
+const SHEET_DISMISS_MS = 320;
 
 /** 설치된 앱의 버전 — 문제를 알릴 때 사용자가 그대로 읽어줄 수 있어야 한다 */
 const appVersion = (() => {
@@ -38,9 +48,16 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const miniSpace = useMiniTimerSpace();
   const { presets, settings, setSettings, mergePresets, records, mergeRecords } = useStore();
+  const [exporting, setExporting] = useState(false);
 
-  const doExport = async () => {
-    const ok = await exportBackup(presets, settings, records);
+  const doExport = async (pick: ExportPick) => {
+    setExporting(false);
+    await new Promise((r) => setTimeout(r, SHEET_DISMISS_MS));
+    const ok = await exportBackup({
+      presets: pick.presets ? presets : undefined,
+      records: pick.records ? records : undefined,
+      settings: pick.settings ? settings : undefined,
+    });
     if (!ok) Alert.alert(t('backup.failTitle'), t('backup.failBody'));
   };
 
@@ -51,16 +68,28 @@ export default function SettingsScreen() {
       Alert.alert(t('backup.badTitle'), t('backup.badBody'));
       return;
     }
-    const count = picked.presets.length;
-    Alert.alert(t('backup.askTitle'), t('backup.askBody', { count }), [
+    /*
+      파일에 들어 있는 것만 되돌린다. 골라 내보낸 파일에는 없는 덩어리가 있고,
+      없는 것을 빈 값으로 덮으면 이 기기의 멀쩡한 기록·설정이 날아간다.
+
+      무엇이 들어 있는지는 문장으로 잇지 않고 **줄로 세운다.** 세 덩어리의 조합이
+      일곱 가지라, 경우마다 문장을 두면 언어마다 일곱 줄을 써야 한다.
+    */
+    const items = [
+      picked.presets?.length ? t('backup.itemPresets', { count: picked.presets.length }) : null,
+      picked.records?.length ? t('backup.itemRecords', { count: picked.records.length }) : null,
+      picked.settings ? t('backup.itemSettings') : null,
+    ].filter(Boolean);
+
+    Alert.alert(t('backup.askTitle'), `${t('backup.askBody')}\n\n${items.join('\n')}`, [
       { text: t('common.cancel'), style: 'cancel' },
       {
         text: t('backup.import'),
         onPress: () => {
-          mergePresets(picked.presets);
-          mergeRecords(picked.records);
-          setSettings(picked.settings);
-          Alert.alert(t('backup.doneTitle'), t('backup.doneBody', { count }));
+          if (picked.presets?.length) mergePresets(picked.presets);
+          if (picked.records?.length) mergeRecords(picked.records);
+          if (picked.settings) setSettings(picked.settings);
+          Alert.alert(t('backup.doneTitle'), items.join('\n'));
         },
       },
     ]);
@@ -189,11 +218,19 @@ export default function SettingsScreen() {
           <ActionRow
             title={t('backup.export')}
             note={t('backup.exportNote')}
-            onPress={doExport}
+            onPress={() => setExporting(true)}
           />
           <ActionRow title={t('backup.import')} note={t('backup.importNote')} onPress={doImport} last />
         </ScrollView>
       </View>
+
+      <ExportSheet
+        visible={exporting}
+        onClose={() => setExporting(false)}
+        presetCount={presets.length}
+        recordCount={records.length}
+        onExport={doExport}
+      />
     </Screen>
   );
 }

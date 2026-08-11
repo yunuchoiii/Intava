@@ -13,6 +13,7 @@ import { durationShort } from '../engine/labels';
 import { t } from '../i18n';
 import { C, GUTTER, RADIUS } from '../theme';
 import type { Block } from '../types';
+import { Checkbox } from './Checkbox';
 import { ClearButton } from './ClearButton';
 import { PressBox } from './PressBox';
 import { Sheet } from './Sheet';
@@ -118,9 +119,7 @@ export function BlockSheet({ block, canDelete, isNew, onClose, onSave, onDelete 
       {/* 새로 만드는 종목은 타이머로도 남길 수 있다 — 다음 루틴에서 그대로 가져다 쓴다 */}
       {isNew && (
         <Pressable style={styles.saveAsTimer} onPress={() => setAlsoTimer((v) => !v)}>
-          <View style={[styles.checkbox, alsoTimer && styles.checkboxOn]}>
-            {alsoTimer && <Text style={styles.check}>✓</Text>}
-          </View>
+          <Checkbox on={alsoTimer} />
           <Text style={styles.saveAsTimerLabel}>{t('sheet.alsoSaveAsTimer')}</Text>
         </Pressable>
       )}
@@ -160,17 +159,6 @@ const styles = StyleSheet.create({
     paddingTop: 6,
     paddingBottom: 2,
   },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 7,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.28)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxOn: { backgroundColor: C.white, borderColor: C.white },
-  check: { fontSize: 14, fontWeight: '800', color: C.onWhite, lineHeight: 17 },
   saveAsTimerLabel: { fontSize: 15, color: C.textSecondary },
   nameRow: { paddingTop: 12, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: C.divider },
   nameLabel: { fontSize: 15, color: C.textTertiary },
