@@ -168,7 +168,10 @@ export const ja: Catalog = {
     stageOf: '{{i}} / {{n}} 区間',
     reorder: '順番を変える',
     orderTitle: '種目の順番',
-    orderNote: '終わった種目と今の種目は動かせません。',
+    orderNote:
+      'チェックを外すと残りのラウンドから外れます。終わった種目と今の種目は動かすことも外すこともできません。',
+    a11ySkip: '{{name}} を外す',
+    a11yInclude: '{{name}} を戻す',
   },
 
   phase: {

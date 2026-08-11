@@ -33,6 +33,7 @@ import {
   type Lived,
   type Plan,
   type RoundOrders,
+  type RoundSkips,
 } from './engine/segments';
 import { blockSummary, shapeLabel } from './engine/labels';
 import { countdownFeedback, segmentFeedback } from './feedback';
@@ -62,6 +63,14 @@ type Stored = {
    * 화면에서 따로 묻는다.
    */
   orders?: RoundOrders;
+  /**
+   * 실행 중에 빼기로 한 종목 — 라운드별. orders와 같은 이유로 라운드별이다.
+   *
+   * 지금 라운드에서 **이미 지나간 종목은 여기 들어오지 않는다.** 지나간 배치가
+   * 바뀌면 흐른 시간이 가리키는 구간이 어긋난다 — 순서를 못 옮기게 한 것과 같은
+   * 이유이고, 그래서 시트도 굳은 행의 체크박스를 잠근다.
+   */
+  skips?: RoundSkips;
   /** 실제로 지나온 몫 — 넘긴 구간은 빠진다 */
   lived?: Lived;
 };
@@ -95,9 +104,16 @@ export type Session = RunSnapshot & {
   restoredFromStorage: boolean;
   /** 이번 실행의 종목 차례 — 라운드별. 손대지 않았으면 비어 있다 */
   orders: RoundOrders | undefined;
-  /** 지금 라운드의 차례(종목 id) — 순서 시트가 보여주는 목록 */
+  /** 이번 실행에서 뺀 종목 — 라운드별. 손대지 않았으면 비어 있다 */
+  skips: RoundSkips | undefined;
+  /**
+   * 지금 라운드의 차례(종목 id) — 순서 시트가 보여주는 목록.
+   * 뺀 종목도 여기 그대로 있다. 목록에서 사라지면 다시 넣을 자리가 없다.
+   */
   roundOrder: string[];
-  /** 그중 앞에서 몇 개가 이미 지났는지 — 여기까지는 못 옮긴다 */
+  /** 그중 지금 라운드에서 빠진 것 — 시트의 체크가 꺼진 행 */
+  roundSkips: string[];
+  /** 앞에서 몇 개가 이미 지났는지 — 여기까지는 옮길 수도, 뺄 수도 없다 */
   lockedCount: number;
   /**
    * 남은 차례를 새로 정한다. ids는 지금 라운드의 **전체** 차례이고,
@@ -105,11 +121,16 @@ export type Session = RunSnapshot & {
    */
   reorder: (ids: string[]) => void;
   /**
+   * 뺄 종목을 새로 정한다. ids는 지금 라운드에서 **빼는 것 전체**이고,
+   * 앞의 lockedCount개는 들어올 수 없다. 다음 라운드부터도 이대로 빠진다.
+   */
+  setSkipped: (ids: string[]) => void;
+  /**
    * 지금까지 지나온 몫을 셈에 반영하고 돌려준다 — 완료 화면으로 넘길 숫자다.
    * 매 초 적어두면 저장이 너무 잦아서, 끝내는 순간에 한 번 정산한다.
    */
   settle: () => Lived;
-  start: (presetId: string, orders?: RoundOrders) => void;
+  start: (presetId: string, orders?: RoundOrders, skips?: RoundSkips) => void;
   toggle: () => void;
   skipNext: () => void;
   skipPrev: () => void;
@@ -150,8 +171,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   );
   /** 프리셋 내용이 바뀌면 구간을 다시 편다 — 실행 중 편집을 위해 updatedAt까지 본다 */
   const plan = useMemo(
-    () => (preset ? buildPlan(preset, stored?.orders) : null),
-    [preset, stored?.orders]
+    () => (preset ? buildPlan(preset, stored?.orders, stored?.skips) : null),
+    [preset, stored?.orders, stored?.skips]
   );
   const planRef = useRef(plan);
   planRef.current = plan;
@@ -414,37 +435,62 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     const edit = (() => {
       const natural = preset?.blocks.map((b) => b.id) ?? [];
       const orderOf = (round: number) => stored?.orders?.[round - 1] ?? natural;
+      const skipOf = (round: number) => stored?.skips?.[round - 1] ?? [];
+      const at = (round: number, locked: number) => ({
+        round,
+        locked,
+        order: orderOf(round),
+        skip: skipOf(round),
+      });
       const seg = snap.seg;
-      if (!preset || !seg) return { round: 1, locked: natural.length, order: orderOf(1) };
-      const pos = seg.blk ?? -1;
+      if (!preset || !seg) return at(1, natural.length);
       switch (seg.phase) {
         case 'WARMUP':
         case 'PREPARE':
-          return { round: 1, locked: 0, order: orderOf(1) };
+          return at(1, 0);
         case 'WORK':
         case 'SET_REST':
-        case 'BLOCK_REST':
-          return { round: seg.round ?? 1, locked: pos + 1, order: orderOf(seg.round ?? 1) };
+        case 'BLOCK_REST': {
+          const round = seg.round ?? 1;
+          /*
+            굳은 자리는 seg.blk로 셀 수 없다. blk은 **실제로 도는 목록**에서 몇
+            번째냐인데, 시트가 보여주는 목록은 뺀 종목까지 들고 있어서 빼기가
+            하나라도 있으면 두 자리가 어긋난다. 정체(blockId)로 되짚는다.
+          */
+          const order = orderOf(round);
+          const pos = seg.blockId ? order.indexOf(seg.blockId) : -1;
+          /*
+            차례에 없는 종목을 돌고 있을 수 있다 — 실행 중에 편집 화면에서 종목을
+            더하면 계획에는 라운드 끝에 붙지만 이 차례에는 없다. 그때는 통째로
+            잠근다. 시트에 보이는 것은 전부 그 앞의 종목이라 이미 다 지난 것이다.
+          */
+          return {
+            round,
+            locked: pos >= 0 ? pos + 1 : order.length,
+            order,
+            skip: skipOf(round),
+          };
+        }
         case 'ROUND_REST': {
           const next = Math.min(preset.rounds, (seg.round ?? 1) + 1);
-          return { round: next, locked: 0, order: orderOf(next) };
+          return at(next, 0);
         }
         default:
           // 쿨다운 — 종목은 다 끝났다
-          return { round: preset.rounds, locked: natural.length, order: orderOf(preset.rounds) };
+          return at(preset.rounds, natural.length);
       }
     })();
 
     const controls = {
-      start: (presetId: string, orders?: RoundOrders) => {
+      start: (presetId: string, orders?: RoundOrders, skips?: RoundSkips) => {
         lastIdx.current = -1;
         lastTick.current = '';
         doneFired.current = false;
         recorded.current = false;
         markRun(presetId);
-        // 완료 화면의 "다시 하기"는 방금 쓴 차례를 그대로 물려받는다
+        // 완료 화면의 "다시 하기"는 방금 돌던 구성을 그대로 물려받는다 — 차례도, 뺀 것도
         const now = Date.now();
-        persist({ presetId, zeroAt: now, startedAt: now, pausedAt: null, orders });
+        persist({ presetId, zeroAt: now, startedAt: now, pausedAt: null, orders, skips });
         setSyncId((n) => n + 1);
       },
       /**
@@ -464,6 +510,35 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           next[r - 1] = r < edit.round ? (s.orders?.[r - 1] ?? natural) : ids;
         }
         persist({ ...s, orders: next });
+        setSyncId((n) => n + 1);
+        void reschedule();
+      },
+      /**
+       * 뺄 종목을 바꾼다 — 순서와 같은 규칙이다. 지나간 라운드는 그대로 두고
+       * 손댈 수 있는 라운드부터 새 목록을 쓴다.
+       *
+       * 지금 라운드에서 이미 지나간 종목은 ids에 들어오지 않는다(시트가 굳은 행의
+       * 체크박스를 잠근다). 들어오면 지나간 배치가 바뀌어 흐른 시간이 엉뚱한
+       * 구간을 가리키게 되므로, 여기서 한 겹 더 걸러 앞자리를 지킨다.
+       */
+      setSkipped: (ids: string[]) => {
+        const s = storedRef.current;
+        const p = presetRef.current;
+        if (!s || !p) return;
+        const head = edit.order.slice(0, edit.locked);
+        const frozen = new Set(head);
+        const wasSkipped = new Set(edit.skip);
+        const safe = [
+          // 굳은 자리는 지금 상태 그대로 — 새로 빼지도, 도로 넣지도 않는다.
+          // 통째로 걸러내면 앞서 빼둔 종목이 다음 라운드에 되살아난다.
+          ...head.filter((id) => wasSkipped.has(id)),
+          ...ids.filter((id) => !frozen.has(id)),
+        ];
+        const next: RoundSkips = [];
+        for (let r = 1; r <= p.rounds; r++) {
+          next[r - 1] = r < edit.round ? (s.skips?.[r - 1] ?? []) : safe;
+        }
+        persist({ ...s, skips: next });
         setSyncId((n) => n + 1);
         void reschedule();
       },
@@ -612,11 +687,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       syncId,
       restoredFromStorage,
       orders: stored?.orders,
+      skips: stored?.skips,
       roundOrder: edit.order,
+      roundSkips: edit.skip,
       lockedCount: edit.locked,
       ...controls,
     };
-  }, [snap, preset, plan, syncId, restoredFromStorage, stored?.orders, persist, seekTo, tick, reschedule, elapsedNow, snapshotAt, markRun, addRecord]);
+  }, [snap, preset, plan, syncId, restoredFromStorage, stored?.orders, stored?.skips, persist, seekTo, tick, reschedule, elapsedNow, snapshotAt, markRun, addRecord]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }

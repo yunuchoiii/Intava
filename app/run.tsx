@@ -168,6 +168,7 @@ export default function Run() {
     lived: JSON.stringify(run.settle()),
     full: run.done ? '1' : '',
     orders: run.orders ? JSON.stringify(run.orders) : '',
+    skips: run.skips ? JSON.stringify(run.skips) : '',
   });
 
   // 전체가 끝나면 완료 화면으로 — 세션은 완료 화면에서 정리한다
@@ -510,7 +511,9 @@ export default function Run() {
         onClose={() => setOrdering(false)}
         blocks={orderBlocks}
         lockedCount={run.lockedCount}
+        skipped={run.roundSkips}
         onReorder={run.reorder}
+        onSkipped={run.setSkipped}
       />
     </>
   );

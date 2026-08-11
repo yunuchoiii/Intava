@@ -168,7 +168,9 @@ export const zh: Catalog = {
     stageOf: '{{i}} / {{n}} 段',
     reorder: '调整顺序',
     orderTitle: '动作顺序',
-    orderNote: '已完成的动作和当前动作无法移动。',
+    orderNote: '取消勾选后，该动作会从剩余轮次中移除。已完成的动作和当前动作无法移动或移除。',
+    a11ySkip: '移除 {{name}}',
+    a11yInclude: '恢复 {{name}}',
   },
 
   phase: {

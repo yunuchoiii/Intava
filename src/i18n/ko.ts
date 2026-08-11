@@ -189,7 +189,10 @@ export const ko = {
     reorder: '순서 바꾸기',
     /** 실행 중 종목 순서 시트 */
     orderTitle: '종목 순서',
-    orderNote: '지나간 종목과 지금 하는 종목은 옮길 수 없습니다.',
+    orderNote:
+      '체크를 끄면 남은 라운드에서 빠집니다. 지나간 종목과 지금 하는 종목은 옮기거나 뺄 수 없습니다.',
+    a11ySkip: '{{name}} 빼기',
+    a11yInclude: '{{name}} 다시 넣기',
   },
 
   phase: {

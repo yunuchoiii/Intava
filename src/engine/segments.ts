@@ -21,23 +21,37 @@ export type Plan = {
 export type RoundOrders = string[][];
 
 /**
- * 주어진 차례대로 종목을 늘어놓는다.
+ * 라운드마다 어떤 종목을 **빼고** 돌지 — 종목 id의 배열, 라운드 수만큼.
+ *
+ * 차례(RoundOrders)와 나란한 두 번째 축이다. 뺀 것을 차례에서 지워버리지 않는
+ * 이유는 순서 시트 때문이다 — 목록에서 사라지면 다시 넣을 자리가 없다. 차례는
+ * 언제나 종목 전부를 들고 있고, 여기 든 id만 계획을 펼 때 걸러진다.
+ */
+export type RoundSkips = string[][];
+
+/**
+ * 주어진 차례대로 종목을 늘어놓고, 빼기로 한 것을 걸러낸다.
  *
  * 실행 중에 편집 화면에서 종목이 추가·삭제될 수 있으므로 id를 곧이곧대로 믿지
- * 않는다. 없어진 id는 버리고, 차례에 없는 종목은 뒤에 붙인다 — 어떤 경우에도
- * 프리셋의 종목이 하나도 빠지지 않게 한다.
+ * 않는다. 없어진 id는 버리고, 차례에 없는 종목은 뒤에 붙인다 — 사용자가 빼기로
+ * 한 것 말고는 하나도 빠지지 않게 한다.
  */
-function roundBlocks(p: Preset, ids: string[] | undefined) {
-  if (!ids) return p.blocks;
-  const picked = ids.map((id) => p.blocks.find((b) => b.id === id)).filter((b) => !!b);
-  const rest = p.blocks.filter((b) => !picked.includes(b));
-  return [...picked, ...rest];
+function roundBlocks(p: Preset, ids: string[] | undefined, skip: string[] | undefined) {
+  let list = p.blocks;
+  if (ids) {
+    const picked = ids.map((id) => p.blocks.find((b) => b.id === id)).filter((b) => !!b);
+    const rest = p.blocks.filter((b) => !picked.includes(b));
+    list = [...picked, ...rest];
+  }
+  if (!skip?.length) return list;
+  const kept = list.filter((b) => !skip.includes(b.id));
+  // 전부 빠지면 빼기를 통째로 무시한다 — 종목 0개짜리 라운드는 계획에 구멍을 낸다
+  return kept.length ? kept : list;
 }
 
-export function buildPlan(p: Preset, orders?: RoundOrders): Plan {
+export function buildPlan(p: Preset, orders?: RoundOrders, skips?: RoundSkips): Plan {
   const segs: Segment[] = [];
   let t = 0;
-  const B = p.blocks.length;
 
   if (p.warmupSec > 0) {
     segs.push({ phase: 'WARMUP', start: t, dur: p.warmupSec });
@@ -49,7 +63,12 @@ export function buildPlan(p: Preset, orders?: RoundOrders): Plan {
   }
 
   for (let r = 1; r <= p.rounds; r++) {
-    const blocks = roundBlocks(p, orders?.[r - 1]);
+    /*
+      길이는 라운드마다 다를 수 있다 — 도중에 종목을 빼면 그 라운드부터 짧아진다.
+      상한과 "마지막 종목"을 프리셋의 종목 수로 재면 blocks[b]가 undefined가 된다.
+    */
+    const blocks = roundBlocks(p, orders?.[r - 1], skips?.[r - 1]);
+    const B = blocks.length;
     for (let b = 0; b < B; b++) {
       const bl = blocks[b];
       for (let s = 1; s <= bl.sets; s++) {

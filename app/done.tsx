@@ -7,7 +7,7 @@ import { WhiteButton } from '../src/components/Buttons';
 import { PressBox } from '../src/components/PressBox';
 import { PhaseFlood } from '../src/components/PhaseFlood';
 import { clock, isSimple } from '../src/engine/labels';
-import { NO_LIVED, type Lived, type RoundOrders } from '../src/engine/segments';
+import { NO_LIVED, type Lived, type RoundOrders, type RoundSkips } from '../src/engine/segments';
 import { useSession } from '../src/session';
 import { useStore } from '../src/store';
 import { useToast } from '../src/components/Toast';
@@ -23,11 +23,12 @@ export default function Done() {
    * 어떤 차례로 돌았는지(orders). **세션에서 읽지 않는다.** 이 화면은 뜨자마자
    * 세션을 비우기 때문에(미니 바가 남으면 안 된다) 그 뒤에는 물어볼 데가 없다.
    */
-  const { id, lived, full, orders } = useLocalSearchParams<{
+  const { id, lived, full, orders, skips } = useLocalSearchParams<{
     id: string;
     lived?: string;
     full?: string;
     orders?: string;
+    skips?: string;
   }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -42,15 +43,15 @@ export default function Done() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   /** 실행 중에 바꾼 차례 — 라운드별. 마지막 라운드의 것이 최종 차례다 */
-  const rounds = useMemo<RoundOrders | undefined>(() => {
-    if (!orders) return undefined;
-    try {
-      const parsed = JSON.parse(orders);
-      return Array.isArray(parsed) && parsed.length ? (parsed as RoundOrders) : undefined;
-    } catch {
-      return undefined;
-    }
-  }, [orders]);
+  const rounds = useMemo<RoundOrders | undefined>(() => parseRounds(orders), [orders]);
+  /**
+   * 실행 중에 뺀 종목 — 라운드별.
+   *
+   * "다시 하기"에만 쓴다. 루틴에 남길지는 **묻지 않는다** — 빼기는 "오늘 어깨가
+   * 아파서 건너뛴다" 같은 일회성 판단이라, 루틴에서 영영 지우는 것은 편집 화면의
+   * 삭제가 할 일이다. 순서와 한꺼번에 물으면 되돌릴 수 없는 쪽이 묻어 들어간다.
+   */
+  const dropped = useMemo<RoundSkips | undefined>(() => parseRounds(skips), [skips]);
 
   /**
    * 계획이 아니라 실제로 지나온 만큼 — 세션이 정산해 넘겨준 값이다.
@@ -142,7 +143,7 @@ export default function Done() {
         */}
         <PressBox
           onPress={() => {
-            session.start(preset.id, rounds);
+            session.start(preset.id, rounds, dropped);
             router.replace('/run');
           }}
           haptic="commit"
@@ -164,6 +165,17 @@ export default function Done() {
       </View>
     </View>
   );
+}
+
+/** 라운드별 id 배열 — 차례와 뺀 것이 같은 꼴이라 읽는 법도 하나다 */
+function parseRounds(raw?: string): string[][] | undefined {
+  if (!raw) return undefined;
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length ? (parsed as string[][]) : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 /**

@@ -176,7 +176,10 @@ export const en: Catalog = {
     stageOf: '{{i}} / {{n}}',
     reorder: 'Reorder',
     orderTitle: 'Exercise order',
-    orderNote: 'Finished exercises and the current one cannot be moved.',
+    orderNote:
+      'Unchecking drops an exercise from the remaining rounds. Finished exercises and the current one cannot be moved or dropped.',
+    a11ySkip: 'Drop {{name}}',
+    a11yInclude: 'Put {{name}} back',
   },
 
   phase: {
