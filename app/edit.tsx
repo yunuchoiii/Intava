@@ -4,8 +4,9 @@
  * 블록 1개 · 라운드 1이면 "라운드"·"종목"이라는 말이 어디에도 나오지 않는다.
  * 웜업·준비·쿨다운은 0으로 내리면 그 구간이 사라진다 — 별도 on/off 토글이 없다.
  */
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
+import { usePreventRemove } from 'expo-router/react-navigation';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Pressable,
@@ -65,6 +66,7 @@ function fingerprint(p: Preset): string {
 export default function Edit() {
   const { id, kind } = useLocalSearchParams<{ id?: string; kind?: 'routine' | 'timer' }>();
   const router = useRouter();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const miniSpace = useMiniTimerSpace();
   const running = useTimerRunning();
@@ -99,6 +101,37 @@ export default function Edit() {
   const pure = workSec(draft);
   /** 저장하지 않은 편집이 남아 있는지 — 나가기와 시작하기가 이걸 보고 묻는다 */
   const dirty = useMemo(() => fingerprint(draft) !== fingerprint(initial), [draft, initial]);
+
+  /**
+   * 우리 손으로 떠나는 길 — 저장·시작처럼 이미 결론이 난 것들이다.
+   *
+   * 아래 문지기(usePreventRemove)는 router.back()에도 똑같이 걸린다. 저장하고
+   * 나가는데 "버리고 나갈까요"를 묻게 되는 셈이라, 문지기를 먼저 내리고 그다음
+   * 그림에서 떠난다. 내려간 값은 이번 그림이 끝나야 문지기에 닿기 때문이다.
+   */
+  const [leaving, setLeaving] = useState<{ go: () => void } | null>(null);
+  const exit = (go: () => void) => setLeaving({ go });
+  useEffect(() => {
+    leaving?.go();
+  }, [leaving]);
+
+  /**
+   * 나가려는 손을 붙잡는다 — 뒤로가기 버튼이든 밀어서 나가기든 같은 물음이다.
+   *
+   * 네이티브 스택에서 스와이프는 화면을 먼저 벗겨내고 JS에 알린다. beforeRemove를
+   * 직접 듣고 막아도 이미 늦은 이유다. usePreventRemove는 막고 있다는 사실을
+   * 화면까지(preventNativeDismiss) 내려보내서 벗겨지는 것 자체를 붙든다.
+   */
+  usePreventRemove(dirty && leaving == null, ({ data }) => {
+    Alert.alert(t('edit.discardTitle'), t('edit.discardBody'), [
+      { text: t('edit.discardStay'), style: 'cancel' },
+      {
+        text: t('edit.discardLeave'),
+        style: 'destructive',
+        onPress: () => navigation.dispatch(data.action),
+      },
+    ]);
+  });
 
   const patch = (p: Partial<Preset>) => setDraft((d) => ({ ...d, ...p }));
   const toggleRow = (key: string) => {
@@ -145,23 +178,11 @@ export default function Edit() {
   const save = () => {
     savePreset(normalized());
     toast(t(isNew ? 'toast.saved' : 'toast.updated'));
-    router.back();
+    exit(() => router.back());
   };
 
-  /**
-   * 나간다 — 고친 것이 남아 있으면 한 번 묻는다.
-   * 이 화면은 가장자리 스와이프를 꺼 두었으므로(_layout) 나가는 길은 여기 하나다.
-   */
-  const leave = () => {
-    if (!dirty) {
-      router.back();
-      return;
-    }
-    Alert.alert(t('edit.discardTitle'), t('edit.discardBody'), [
-      { text: t('edit.discardStay'), style: 'cancel' },
-      { text: t('edit.discardLeave'), style: 'destructive', onPress: () => router.back() },
-    ]);
-  };
+  /** 나간다 — 고친 것이 남아 있으면 문지기가 묻는다 */
+  const leave = () => router.back();
 
   /**
    * 편집 화면은 스택에서 걷어내고 홈 위에 실행 화면을 올린다. 실행 화면을 접었을 때
@@ -181,10 +202,14 @@ export default function Edit() {
     const p = normalized();
     savePreset(p);
     session.start(p.id);
-    goRun();
+    exit(goRun);
   };
 
-  /** 도는 것을 보러 간다 — 고치던 것을 두고 떠나는 셈이라 남아 있으면 묻는다 */
+  /**
+   * 도는 것을 보러 간다 — 고치던 것을 두고 떠나는 셈이라 남아 있으면 묻는다.
+   * 문지기에게 맡기지 않고 여기서 묻는다 — goRun은 홈까지 걷어내고 실행 화면을
+   * 얹는 두 걸음이라, 첫 걸음만 붙잡히면 두 번째가 엉뚱한 자리에 쌓인다.
+   */
   const openRunning = () => {
     if (!dirty) {
       goRun();
@@ -192,7 +217,7 @@ export default function Edit() {
     }
     Alert.alert(t('edit.discardTitle'), t('edit.discardBody'), [
       { text: t('edit.discardStay'), style: 'cancel' },
-      { text: t('edit.discardLeave'), style: 'destructive', onPress: goRun },
+      { text: t('edit.discardLeave'), style: 'destructive', onPress: () => exit(goRun) },
     ]);
   };
 
