@@ -43,15 +43,30 @@ export function InfoTip({ text, open, onToggle }: Props) {
     iconRef.current?.measureInWindow((x, y, _w, h) => setAnchor({ x, y, h }));
   }, []);
 
+  /** 뒤늦게 도는 정리가 "지금도 닫힌 상태인가"를 물어볼 창구 */
+  const openRef = useRef(open);
+  openRef.current = open;
+
   useEffect(() => {
     if (open) {
       measure();
       setMounted(true);
       Animated.timing(fade, { toValue: 1, duration: 140, useNativeDriver: true }).start();
     } else if (mounted) {
-      Animated.timing(fade, { toValue: 0, duration: 120, useNativeDriver: true }).start(
-        ({ finished }) => finished && setMounted(false)
-      );
+      /*
+        Sheet와 같은 이유로 완주에 매달지 않는다. 닫힘이 끊기면 `mounted`가
+        true로 굳고 `open`은 이미 false라 이 effect가 다시 돌지 않는다 —
+        투명한 전면 Modal이 남아 화면 전체의 터치를 삼킨다.
+      */
+      let done = false;
+      const drop = () => {
+        if (done || openRef.current) return;
+        done = true;
+        setMounted(false);
+      };
+      Animated.timing(fade, { toValue: 0, duration: 120, useNativeDriver: true }).start(drop);
+      const id = setTimeout(drop, 400);
+      return () => clearTimeout(id);
     }
   }, [open, measure, fade, mounted]);
 

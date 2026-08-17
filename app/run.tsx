@@ -292,11 +292,24 @@ export default function Run() {
    */
   const goEdit = () => {
     const id = preset.id;
+    // 끌어내려 닫을 때와 같이 문지방을 찍는다 — 접히자마자 드러난 미니 바가
+    // 늦게 도착한 손짓에 눌려 편집 화면 **위에** 실행 화면을 다시 쌓지 않게
+    morph.collapsedAt.current = Date.now();
     morph.animate(1, {
       duration: 260,
       onDone: () => {
+        /*
+          두 라우팅을 **다른 커밋으로** 쪼갠다.
+
+          한 tick에 부르면 expo-router가 둘을 연달아 dispatch하고 React가 하나의
+          커밋으로 묶는다. 그러면 iOS가 "모달(이 화면)을 해제하면서 동시에 같은
+          스택에 새 화면을 push"하는 꼴이 되어, 해제 트랜지션과 push가 겹치는
+          동안 잔여 레이어가 창에 남는다 — 화면은 그려지는데 터치만 먹지 않는다.
+        */
         router.dismissTo('/');
-        router.push({ pathname: '/edit', params: { id } });
+        requestAnimationFrame(() => {
+          router.push({ pathname: '/edit', params: { id } });
+        });
       },
     });
   };

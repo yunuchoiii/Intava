@@ -190,8 +190,10 @@ export default function Edit() {
    * (실행 화면에서 편집으로 나갈 때 run.tsx가 하는 것과 같은 길이다.)
    */
   const goRun = () => {
+    // 한 커밋에 묶이면 iOS가 모달 해제와 push를 겹쳐 처리하다 잔여 레이어를
+    // 남긴다 — 그려지는데 터치만 안 먹는 화면이 된다. 프레임을 하나 띄운다.
     router.dismissTo('/');
-    router.push('/run');
+    requestAnimationFrame(() => router.push('/run'));
   };
 
   /**

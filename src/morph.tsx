@@ -49,10 +49,24 @@ export function MorphProvider({ children }: { children: React.ReactNode }) {
   const radius = useRef(new Animated.Value(1)).current;
   const dragging = useRef(false);
   const collapsedAt = useRef(0);
+  /**
+   * 우리가 돌리고 있는 전환이 있는 동안 참.
+   *
+   * 아래 안전망이 이 값을 보고 비켜선다. 안 그러면 **안전망이 정상적으로 돌던
+   * 전환을 죽인다** — `Animated.Value.setValue`는 돌던 애니메이션을 강제로 멈추고,
+   * 그러면 start 콜백이 `finished: false`로 불려 거기 달린 화면 이동이 통째로
+   * 사라진다. 실행 화면은 투명 모달이라, 이동을 놓치면 아무것도 안 보이는 채로
+   * 스택에 남아 화면 전체의 터치를 삼킨다.
+   */
+  const animating = useRef(false);
+  /** 전환의 세대. set·stop·새 animate가 앞의 것을 밀어낼 때 올라간다 */
+  const gen = useRef(0);
   const pathname = usePathname();
 
   const api = useMemo<MorphApi>(() => {
     const set = (v: number) => {
+      gen.current += 1;
+      animating.current = false;
       p.setValue(v);
       radius.setValue(v);
     };
@@ -76,13 +90,35 @@ export function MorphProvider({ children }: { children: React.ReactNode }) {
               useNativeDriver,
             });
 
+      const mine = (gen.current += 1);
+      animating.current = true;
+
+      let settled = false;
+      /**
+       * 끝을 한 번만 셈한다. `reached`가 참일 때만 onDone을 부른다 —
+       * 뒤이은 손짓이 이 전환을 밀어냈다면 그 손짓의 결말을 따라야 한다.
+       */
+      const settle = (reached: boolean) => {
+        if (settled) return;
+        settled = true;
+        if (gen.current === mine) animating.current = false;
+        if (reached) onDone?.();
+      };
+
       make(radius, false).start();
-      make(p, true).start(({ finished }) => {
-        if (finished) onDone?.();
-      });
+      make(p, true).start(({ finished }) => settle(finished));
+
+      /*
+        콜백이 아예 오지 않는 경우의 마지막 그물. 아무도 이 전환을 밀어내지
+        않았다면 끝난 것으로 보고 onDone을 부른다. 화면 이동을 놓치는 쪽이
+        한 프레임 어긋나는 쪽보다 훨씬 비싸다.
+      */
+      setTimeout(() => settle(gen.current === mine), (duration ?? 600) + 250);
     };
 
     const stop = () => {
+      gen.current += 1;
+      animating.current = false;
       p.stopAnimation();
       radius.stopAnimation();
     };
@@ -99,12 +135,19 @@ export function MorphProvider({ children }: { children: React.ReactNode }) {
    * 굳어 아무것도 눌리지 않는다 — 제스처가 놓임/취소 어느 쪽으로도 끝나지 못하면
    * 그렇게 될 수 있다. 화면이 정해진 뒤 잠깐 기다렸다가, 손가락이 쥐고 있지 않으면
    * 제자리로 돌려놓는다. 원인을 못 찾더라도 갇히지는 않게.
+   *
+   * **돌고 있는 전환에는 손대지 않는다.** 예전에는 이 안전망이 `/run`에 들어올
+   * 때마다 900ms 타이머를 새로 걸고 무조건 `set()`을 때렸다. 그래서 실행 화면에
+   * 들어온 지 900ms 안에 연필을 누르면, 접히는 도중에 안전망이 끼어들어 전환을
+   * 죽이고 편집 화면으로 가지도 못한 채 투명한 실행 화면만 남았다. 안전망이
+   * 곧 사고 원인이었다.
    */
   useEffect(() => {
+    const idle = () => !dragging.current && !animating.current;
     const rest = pathname === '/run' ? 0 : 1;
-    if (rest === 1 && !dragging.current) api.set(1);
+    if (rest === 1 && idle()) api.set(1);
     const id = setTimeout(() => {
-      if (!dragging.current) api.set(rest);
+      if (idle()) api.set(rest);
     }, 900);
     return () => clearTimeout(id);
   }, [pathname, api]);

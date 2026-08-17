@@ -87,6 +87,20 @@ export function MiniTimer() {
   );
 
   /**
+   * 이 바가 손짓을 쥐고 있는가.
+   *
+   * `morph.dragging`을 되돌리는 곳은 PanResponder의 놓임·취소뿐인데, 그 전에
+   * 바가 사라지면(세션이 끝나면 아래에서 null을 돌려준다) 두 콜백이 영영 오지
+   * 않는다. 깃발이 참으로 굳으면 morph의 안전망이 **즉시 복구와 지연 복구를
+   * 둘 다 건너뛰어**, 실행 화면이 영영 펼쳐지지 않는다.
+   */
+  const owning = useRef(false);
+  const release = useCallback(() => {
+    owning.current = false;
+    morph.dragging.current = false;
+  }, [morph]);
+
+  /**
    * 바를 위로 끌어올리면 실행 화면이 자라 오른다. 손가락이 잡는 순간 화면을 띄우고,
    * 끝까지 올리지 않고 놓으면 다시 접으면서 방금 띄운 화면을 물린다.
    */
@@ -97,12 +111,13 @@ export function MiniTimer() {
           mayOpen() && g.dy < -8 && Math.abs(g.dy) > Math.abs(g.dx) * 1.5,
         onPanResponderGrant: () => {
           morph.stop();
+          owning.current = true;
           morph.dragging.current = true;
           router.push('/run');
         },
         onPanResponderMove: (_e, g) => morph.set(Math.max(0, Math.min(1, 1 + g.dy / screenH))),
         onPanResponderRelease: (_e, g) => {
-          morph.dragging.current = false;
+          release();
           if (-g.dy > 110 || -g.vy > 0.7) {
             morph.animate(0, { velocity: (g.vy * 1000) / screenH });
           } else {
@@ -110,11 +125,11 @@ export function MiniTimer() {
           }
         },
         onPanResponderTerminate: () => {
-          morph.dragging.current = false;
+          release();
           morph.animate(1, { duration: 220, onDone: () => router.back() });
         },
       }),
-    [morph, router, screenH, mayOpen]
+    [morph, router, screenH, mayOpen, release]
   );
 
   /** 실행 화면이 접히는 만큼 아래에서 올라오며 드러난다 */
@@ -130,7 +145,14 @@ export function MiniTimer() {
     extrapolate: 'clamp',
   });
 
-  if (!running || !run.preset) return null;
+  const shown = running && !!run.preset;
+
+  /* 바가 사라지는 순간, 쥐고 있던 손짓이 있으면 깃발을 되돌린다 */
+  useEffect(() => {
+    if (!shown && owning.current) release();
+  }, [shown, release]);
+
+  if (!shown || !run.preset) return null;
 
   const color = PHASE_COLOR[run.seg?.phase ?? 'DONE'];
   const title = run.seg

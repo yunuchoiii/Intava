@@ -75,6 +75,10 @@ export function Sheet({ visible, onClose, children, style }: Props) {
     [anim]
   );
 
+  /** 뒤늦게 도는 정리가 "지금도 닫힌 상태인가"를 물어볼 창구 */
+  const visibleRef = useRef(visible);
+  visibleRef.current = visible;
+
   useEffect(() => {
     if (visible) {
       closing.current = false;
@@ -82,7 +86,25 @@ export function Sheet({ visible, onClose, children, style }: Props) {
       setMounted(true);
       animateTo(1);
     } else if (mounted) {
-      animateTo(0, () => setMounted(false));
+      /*
+        내리는 일을 **애니메이션 완주에 매달지 않는다.**
+
+        예전에는 `animateTo(0, () => setMounted(false))` 하나였는데, 닫힘이
+        중간에 끊기면 콜백이 오지 않아 `mounted`가 true로 굳었다. `visible`은
+        이미 false라 이 effect도 다시 돌지 않는다. 그러면 **불투명도 0짜리 전면
+        Modal이 남아 화면 전체의 터치를 삼킨다** — `closing.current`까지 true라
+        backdrop을 눌러도 `onClose`가 다시 불리지 않아 빠져나갈 길이 없다.
+      */
+      let done = false;
+      const drop = () => {
+        // 그 사이 다시 열렸으면 내리지 않는다
+        if (done || visibleRef.current) return;
+        done = true;
+        setMounted(false);
+      };
+      animateTo(0, drop);
+      const id = setTimeout(drop, 600);
+      return () => clearTimeout(id);
     }
   }, [visible, mounted, animateTo, drag]);
 
