@@ -21,8 +21,11 @@ FILES=(
   og.png
   icon.png
   lockup.png
+  shot-warmup.webp
   shot-work.webp
   shot-rest.webp
+  shot-switch.webp
+  shot-cooldown.webp
   shot-records.webp
 )
 
