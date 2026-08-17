@@ -201,6 +201,17 @@ export default function SettingsScreen() {
           />
           <Text style={styles.note}>{t('tips.volume')}</Text>
 
+          {/* 볼륨 바로 아래 — 「알림음이 음악에 어떻게 얹히는가」가 한 이야기다 */}
+          <View style={{ marginTop: 18 }}>
+            <ToggleRow
+              title={t('settings.duckMusic')}
+              note={t('settings.duckMusicNote')}
+              value={settings.duckMusic}
+              onChange={(duckMusic) => setSettings({ duckMusic })}
+              last
+            />
+          </View>
+
           <Text style={styles.section}>{t('settings.screen')}</Text>
           <ToggleRow
             title={t('settings.keepAwake')}

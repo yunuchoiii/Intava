@@ -141,6 +141,8 @@ export const zh: Catalog = {
     languageNote: '在 iOS 设置中更改此应用的语言。',
     volume: '音量',
     volumeLabel: '提示音音量',
+    duckMusic: '提示音响起时降低音乐',
+    duckMusicNote: '只在提示音播放时把音乐调低，随后立即恢复。',
     screen: '屏幕',
     keepAwake: '运行时保持屏幕常亮',
   },
@@ -257,7 +259,7 @@ export const zh: Catalog = {
     rounds: '设定把所有动作走几遍。组是一个动作内部的重复，轮是整组动作的重复。',
     startEnd:
       '三项都调到0就会消失。运行时热身显示**橙色**，准备显示**琥珀色**，放松显示**灰蓝色**。',
-    volume: '不会调低音乐，只把提示音叠加播放。',
+    volume: '不会停止音乐，只把提示音叠加播放。可在下方设置为仅在提示音期间降低音乐。',
     keepScreenOn: '这个应用默认你会在息屏状态下使用。',
   },
 

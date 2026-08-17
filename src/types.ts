@@ -49,6 +49,13 @@ export type Settings = {
   countdownBeep: boolean;
   keepScreenOn: boolean;
   volume: number;
+  /**
+   * 알림음이 울리는 동안 다른 앱의 음악을 낮춘다.
+   *
+   * 기본은 꺼짐이다 — 이 앱의 원래 약속은 "음악에 손대지 않는다"였고, 켜는 것은
+   * 사용자가 고르는 쪽이어야 한다. 켜도 알림음 앞뒤로만 눌린다.
+   */
+  duckMusic: boolean;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -59,6 +66,7 @@ export const DEFAULT_SETTINGS: Settings = {
   countdownBeep: true,
   keepScreenOn: false,
   volume: 0.8,
+  duckMusic: false,
 };
 
 export type Phase =

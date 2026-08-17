@@ -23,7 +23,7 @@ import React, {
   useState,
 } from 'react';
 import { AppState } from 'react-native';
-import { endSession, resumeSession, setCueVolume, startSession } from './audio';
+import { endSession, resumeSession, setCueVolume, setDuckMusic, startSession } from './audio';
 import {
   advanceLived,
   buildPlan,
@@ -383,6 +383,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setCueVolume(settings.volume);
   }, [settings.volume]);
+
+  useEffect(() => {
+    setDuckMusic(settings.duckMusic);
+  }, [settings.duckMusic]);
 
   /** 백그라운드에 다녀오면 다시 계산하고 알림을 다시 채운다 (iOS 64개 제한) */
   useEffect(() => {

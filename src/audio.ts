@@ -4,9 +4,12 @@
  * iOS는 오디오 백그라운드 모드가 활성화된 앱의 JS 타이머를 계속 돌려준다.
  * 실행 중에는 무음 루프를 재생해 세션을 붙잡아 둔다.
  *
- * 오디오 믹싱 정책: 다른 앱의 음악을 절대 멈추거나 줄이지 않는다.
- * → interruptionMode는 항상 'mixWithOthers'. 'duckOthers'·'doNotMix' 사용 금지.
- *   (Android에서도 이 모드가 오디오 포커스를 요청하지 않는다.)
+ * 오디오 믹싱 정책: 음악을 **멈추지는 않는다.** 'doNotMix'는 쓰지 않는다.
+ *
+ * 기본은 'mixWithOthers' — 음악에 손대지 않고 알림음만 겹쳐 얹는다. 설정에서
+ * "알림음 나올 때 음악 줄이기"를 켜면 알림음 앞뒤로만 'duckOthers'로 바꾼다.
+ * 세션을 무음 루프로 운동 내내 붙잡고 있어서, 전역으로 켜면 0.5초가 아니라
+ * 30분 내내 음악이 작아지기 때문이다.
  */
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
 
@@ -35,22 +38,61 @@ const SILENCE = require('../assets/sounds/silence.wav');
 
 let players: Partial<Record<Cue, AudioPlayer>> = {};
 let keepAlive: AudioPlayer | null = null;
-let configured = false;
 
-async function configure(): Promise<void> {
-  if (configured) return;
+/** 지금 세션에 적용돼 있는 모드. null이면 아직 한 번도 설정하지 않았다 */
+let appliedDuck: boolean | null = null;
+/** 설정값 — 알림음 나올 때 음악을 줄일지 */
+let duckWanted = false;
+let unduck: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * 마지막 알림음 뒤 이만큼 지나면 음악을 되돌린다.
+ *
+ * 알림음 하나하나에 모드를 껐다 켜지 않는 이유는 카운트다운이다 — 3·2·1이 1초
+ * 간격으로 울리는데 그때마다 토글하면 비동기 호출이 서로 앞지른다. 마지막 소리
+ * 뒤에 한 번만 되돌리면 그 사이는 눌린 채로 이어진다. 가장 긴 알림음이 0.98초라
+ * 그보다 넉넉하게 잡았다.
+ */
+const DUCK_TAIL_MS = 1400;
+
+async function applyMode(duck: boolean): Promise<void> {
+  if (appliedDuck === duck) return;
+  appliedDuck = duck;
   await setAudioModeAsync({
     playsInSilentMode: true, // 무음 스위치와 무관하게 재생
     shouldPlayInBackground: true, // 화면이 꺼져도 세션 유지
-    interruptionMode: 'mixWithOthers', // 음악을 멈추거나 줄이지 않는다
+    // 음악을 멈추지는 않는다 — 그냥 얹거나(mix), 잠깐 낮추거나(duck)
+    interruptionMode: duck ? 'duckOthers' : 'mixWithOthers',
     allowsRecording: false,
   });
-  configured = true;
+}
+
+/** 설정에서 바꾸면 알려준다. 끄는 순간 눌려 있던 음악은 바로 되돌린다 */
+export function setDuckMusic(on: boolean): void {
+  duckWanted = on;
+  if (!on && appliedDuck) {
+    if (unduck) {
+      clearTimeout(unduck);
+      unduck = null;
+    }
+    void applyMode(false);
+  }
+}
+
+/** 알림음 앞뒤로만 음악을 낮춘다 — 연달아 울리면 마지막 소리 기준으로 미뤄진다 */
+function duckAround(): void {
+  if (!duckWanted) return;
+  if (unduck) clearTimeout(unduck);
+  void applyMode(true);
+  unduck = setTimeout(() => {
+    unduck = null;
+    void applyMode(false);
+  }, DUCK_TAIL_MS);
 }
 
 /** 실행 화면 진입 시 호출. 무음 루프로 세션을 붙잡고 알림음을 미리 로드한다. */
 export async function startSession(volume: number): Promise<void> {
-  await configure();
+  await applyMode(false);
   if (!keepAlive) {
     keepAlive = createAudioPlayer(SILENCE);
     keepAlive.loop = true;
@@ -93,6 +135,12 @@ export function endSession(): void {
   const dyingKeepAlive = keepAlive;
   players = {};
   keepAlive = null;
+  // 눌러 둔 음악을 그대로 두고 떠나지 않는다
+  if (unduck) {
+    clearTimeout(unduck);
+    unduck = null;
+  }
+  void applyMode(false);
   setTimeout(() => {
     for (const p of Object.values(dying)) p?.remove();
     dyingKeepAlive?.pause();
@@ -106,7 +154,7 @@ export function setCueVolume(volume: number): void {
 
 /** 설정 화면의 볼륨 미리듣기 — 세션을 잡지 않고 한 번만 울린다 */
 export async function preview(volume: number): Promise<void> {
-  await configure();
+  await applyMode(appliedDuck ?? false);
   const p = createAudioPlayer(SOURCES.work);
   p.volume = volume;
   p.play();
@@ -127,6 +175,7 @@ export async function preview(volume: number): Promise<void> {
 export function play(name: Cue): void {
   const p = players[name];
   if (!p) return;
+  duckAround();
   try {
     p.seekTo(0, 0, 0)
       .then(() => p.play())

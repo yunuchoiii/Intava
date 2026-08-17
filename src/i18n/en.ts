@@ -149,6 +149,8 @@ export const en: Catalog = {
     languageNote: 'Change the language for this app in iOS Settings.',
     volume: 'Volume',
     volumeLabel: 'Cue volume',
+    duckMusic: 'Lower music for cues',
+    duckMusicNote: 'Music dips only while a cue plays, then comes back.',
     screen: 'Screen',
     keepAwake: 'Keep screen on while running',
   },
@@ -267,7 +269,7 @@ export const en: Catalog = {
       'How many times to cycle through every exercise. Sets repeat within one exercise; rounds repeat the whole list.',
     startEnd:
       'Drop any of the three to zero and it disappears. While running, warm-up shows **orange**, prepare **amber**, and cool-down **slate blue**.',
-    volume: 'Cues play over your music without turning it down.',
+    volume: 'Cues play over your music without stopping it. Below, you can dip the music just while a cue plays.',
     keepScreenOn: 'This app expects to be used with the screen off.',
   },
 
