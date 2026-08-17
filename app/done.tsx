@@ -194,11 +194,17 @@ export default function Done() {
           */}
           {!!entry?.blocks.length && (
             <View style={styles.blocks}>
+              {/*
+                눌림을 **밝기로만** 말한다. 축소는 가운데를 기준으로 일어나서,
+                폭이 꽉 찬 줄에서는 왼쪽 글자가 안쪽으로 미끄러졌다 돌아온다 —
+                눌린 것이 아니라 글자가 흔들린 것으로 읽힌다.
+              */}
               <PressBox
                 onPress={() => setBlocksOpen((v) => !v)}
                 radius={10}
-                scaleTo={0.99}
-                dim={0}
+                scaleTo={1}
+                dim={0.14}
+                dimColor="#FFF"
                 style={styles.blocksHead}
                 accessibilityLabel={t('count.exercises', { count: entry.blocks.length })}
               >
