@@ -164,14 +164,19 @@ export default function Run() {
    * (미니 바가 남으면 안 되니까). 그때 바꾼 차례도 같이 사라지면, 나중에 홈으로를
    * 누를 때 루틴에 저장할 것이 남아 있지 않다.
    */
-  const doneParams = () => ({
-    id: preset!.id,
-    // 계획상의 위치가 아니라 실제로 지나온 몫 — 넘긴 구간은 빠져 있다
-    lived: JSON.stringify(run.settle()),
-    full: run.done ? '1' : '',
-    orders: run.orders ? JSON.stringify(run.orders) : '',
-    skips: run.skips ? JSON.stringify(run.skips) : '',
-  });
+  const doneParams = () => {
+    const { lived, recordId } = run.settle();
+    return {
+      id: preset!.id,
+      // 계획상의 위치가 아니라 실제로 지나온 몫 — 넘긴 구간은 빠져 있다
+      lived: JSON.stringify(lived),
+      // 종목별 몫과 구간 이력은 기록에 이미 들어 있다 — 열쇠만 넘긴다
+      record: recordId ?? '',
+      full: run.done ? '1' : '',
+      orders: run.orders ? JSON.stringify(run.orders) : '',
+      skips: run.skips ? JSON.stringify(run.skips) : '',
+    };
+  };
 
   // 전체가 끝나면 완료 화면으로 — 세션은 완료 화면에서 정리한다
   useEffect(() => {

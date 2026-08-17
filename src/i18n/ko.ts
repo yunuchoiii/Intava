@@ -262,6 +262,8 @@ export const ko = {
     home: '홈으로',
     /** 도중에 끈 경우 — 같은 화면을 쓰되 말은 달라야 한다 */
     titleStopped: '운동 종료',
+    /** 언제부터 언제까지 — 기록 화면의 카드 머리와 같은 사실 */
+    span: '{{from}} ~ {{to}}',
     saveOrderTitle: '바뀐 순서를 저장할까요?',
     saveOrderBody: '이번에 변경된 종목 순서를 이 루틴에 저장합니다.',
     saveOrderSkip: '저장 안 함',

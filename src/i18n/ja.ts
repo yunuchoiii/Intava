@@ -234,6 +234,7 @@ export const ja: Catalog = {
     again: 'もう一度',
     home: 'ホームへ',
     titleStopped: 'ワークアウト終了',
+    span: '{{from}} 〜 {{to}}',
     saveOrderTitle: '新しい順番を保存しますか？',
     saveOrderBody: '今回変更した種目の順番をこのルーティンに保存します。',
     saveOrderSkip: '保存しない',

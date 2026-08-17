@@ -1,12 +1,13 @@
 /** 5.7 완료 — DONE 색 플러드 */
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WhiteButton } from '../src/components/Buttons';
 import { PressBox } from '../src/components/PressBox';
 import { PhaseFlood } from '../src/components/PhaseFlood';
 import { clock, isSimple } from '../src/engine/labels';
+import { clockTime } from '../src/engine/records';
 import { NO_LIVED, type Lived, type RoundOrders, type RoundSkips } from '../src/engine/segments';
 import { useSession } from '../src/session';
 import { useStore } from '../src/store';
@@ -23,16 +24,18 @@ export default function Done() {
    * 어떤 차례로 돌았는지(orders). **세션에서 읽지 않는다.** 이 화면은 뜨자마자
    * 세션을 비우기 때문에(미니 바가 남으면 안 된다) 그 뒤에는 물어볼 데가 없다.
    */
-  const { id, lived, full, orders, skips } = useLocalSearchParams<{
+  const { id, lived, record, full, orders, skips } = useLocalSearchParams<{
     id: string;
     lived?: string;
+    /** 방금 남긴 기록의 id — 종목별 몫과 구간 이력은 거기서 꺼낸다 */
+    record?: string;
     full?: string;
     orders?: string;
     skips?: string;
   }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { getPreset, savePreset } = useStore();
+  const { getPreset, savePreset, records } = useStore();
   const toast = useToast();
   const session = useSession();
   const preset = getPreset(id);
@@ -65,6 +68,17 @@ export default function Done() {
       return NO_LIVED;
     }
   }, [lived]);
+
+  /**
+   * 방금 남긴 기록 — 종목별 몫과 구간 이력이 여기 들어 있다.
+   *
+   * 세션이 정산하면서 이미 계산해 저장소에 넣어 둔 것이라 다시 셀 필요가 없다.
+   * 세션은 이 화면이 뜨자마자 비워지지만 **기록은 저장소에 남으므로** 안전하다.
+   */
+  const entry = useMemo(
+    () => (record ? records.find((r) => r.id === record) : undefined),
+    [record, records]
+  );
 
   /** 마지막에 돌던 차례가 저장된 루틴과 다른가 */
   const changed = useMemo(() => {
@@ -115,7 +129,16 @@ export default function Done() {
           paddingHorizontal: GUTTER,
         }}
       >
-        <View style={{ flex: 1, justifyContent: 'center' }}>
+        {/*
+          가운데는 스크롤한다. 종목이 많은 루틴에서는 표가 길어져 아래 버튼을
+          밀어내는데, 운동을 막 끝낸 사람이 홈으로 갈 길을 잃으면 안 된다.
+          짧을 때는 가운데 정렬 그대로다(contentContainer의 flexGrow + center).
+        */}
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}
+        >
           {/* 끝까지 갔는지 도중에 껐는지 — 숫자만 다르고 말은 그대로면 거짓말이 된다 */}
           <Text style={styles.title}>
             {t(full ? 'doneScreen.title' : 'doneScreen.titleStopped')}
@@ -125,16 +148,69 @@ export default function Done() {
             {preset.name}
           </Text>
           {!!detailLine(preset) && <Text style={styles.detail}>{detailLine(preset)}</Text>}
+          {/* 언제부터 언제까지 — 기록 화면이 카드 머리에 적는 것과 같은 사실이다 */}
+          {!!entry && (
+            <Text style={[styles.detail, TABULAR]}>
+              {t('doneScreen.span', {
+                from: clockTime(entry.startedAt),
+                to: clockTime(entry.endedAt),
+              })}
+            </Text>
+          )}
 
-          <View style={{ marginTop: 34 }}>
+          {/*
+            구간 스트립 — 긴 막대가 운동, 짧은 막대가 휴식. 페이즈를 그대로
+            칠하지 않고 **운동이냐 아니냐**로만 가른다. 기록 화면과 같은 문법이되
+            색은 다시 잡았다. 저기는 어두운 유리 위라 분홍·민트였지만 여기는
+            초록 위 흰 글자의 화면이라, 흰색의 농도로만 말하는 것이 맞다.
+          */}
+          {!!entry?.segs.length && (
+            <View style={styles.strip}>
+              {entry.segs.slice(0, 40).map((s, i) => (
+                <View
+                  key={i}
+                  style={{
+                    flex: Math.max(0.4, s.durSec),
+                    borderRadius: 4,
+                    backgroundColor:
+                      s.phase === 'WORK' ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.34)',
+                  }}
+                />
+              ))}
+            </View>
+          )}
+
+          <View style={{ marginTop: 28, alignSelf: 'stretch' }}>
             <StatRow label={t('doneScreen.totalTime')} value={clock(stats.total)} first />
             <StatRow label={t('doneScreen.pureWork')} value={clock(stats.work)} />
-            <StatRow
-              label={isSimple(preset) ? t('doneScreen.completedSets') : t('doneScreen.completedRounds')}
-              value={isSimple(preset) ? `${stats.sets}` : `${stats.rounds}`}
-            />
+            {/*
+              예전에는 세트와 라운드 중 하나만 보였다. 둘 다 Lived에 있는데
+              굳이 고를 이유가 없다 — 라운드를 도는 루틴에서 "몇 세트 했나"는
+              그 자체로 알고 싶은 숫자다.
+            */}
+            <StatRow label={t('doneScreen.completedSets')} value={`${stats.sets}`} />
+            {!isSimple(preset) && (
+              <StatRow label={t('doneScreen.completedRounds')} value={`${stats.rounds}`} />
+            )}
           </View>
-        </View>
+
+          {/* 종목별로 실제 보낸 시간 — 넘긴 종목은 여기 없다 */}
+          {!!entry?.blocks.length && (
+            <View style={styles.blocks}>
+              {entry.blocks.map((b, i) => (
+                <View key={`${b.name}${i}`} style={styles.blockRow}>
+                  <Text style={styles.blockName} numberOfLines={1}>
+                    {b.name}
+                  </Text>
+                  <Text style={[styles.blockSpec, TABULAR]} numberOfLines={1}>
+                    {b.spec}
+                  </Text>
+                  <Text style={[styles.blockDur, TABULAR]}>{clock(b.durSec)}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </ScrollView>
 
         {/*
           자리는 그대로 두고 무게만 바꿨다. 운동을 마친 사람이 여기서 열에 아홉은
@@ -217,6 +293,8 @@ function StatRow({ label, value, first }: { label: string; value: string; first?
 }
 
 const styles = StyleSheet.create({
+  /** 짧으면 가운데, 길면 스크롤 — flexGrow가 그 둘을 한 규칙으로 만든다 */
+  scroll: { flexGrow: 1, justifyContent: 'center', paddingVertical: 8 },
   title: {
     fontSize: 44,
     fontWeight: '800',
@@ -254,4 +332,23 @@ const styles = StyleSheet.create({
   /** 바탕 없는 글자 버튼 — 흰 버튼 옆에서 한 걸음 물러선다 */
   textButton: { height: 60, alignItems: 'center', justifyContent: 'center' },
   textButtonLabel: { fontSize: 18, fontWeight: '600', color: '#FFFFFF' },
+
+  /** 구간 스트립 — 실행 화면 하단 눈금과 같은 두께로 */
+  strip: { marginTop: 26, flexDirection: 'row', gap: 3, height: 8, alignSelf: 'stretch' },
+
+  /**
+   * 종목별 표 — 어두운 판을 깔지 않는다. 이 화면은 초록 위 흰 글자가 규칙이라
+   * 판을 깔면 그 자리만 다른 화면처럼 뜬다. 줄 사이의 얇은 선으로만 나눈다.
+   */
+  blocks: { marginTop: 22, alignSelf: 'stretch' },
+  blockRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 11,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.20)',
+  },
+  blockName: { flex: 1, fontSize: 15, fontWeight: '600', color: '#FFFFFF' },
+  blockSpec: { marginRight: 12, fontSize: 12.5, color: '#FFFFFF', opacity: 0.62 },
+  blockDur: { fontSize: 13, fontWeight: '700', color: '#FFFFFF', opacity: 0.9 },
 });

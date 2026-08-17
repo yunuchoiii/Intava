@@ -129,8 +129,13 @@ export type Session = RunSnapshot & {
   /**
    * 지금까지 지나온 몫을 셈에 반영하고 돌려준다 — 완료 화면으로 넘길 숫자다.
    * 매 초 적어두면 저장이 너무 잦아서, 끝내는 순간에 한 번 정산한다.
+   *
+   * 방금 남긴 기록의 id도 함께 준다. 이 함수는 이미 종목별 몫과 구간 이력을
+   * 다 계산해서 기록에 넣고 있는데, 예전에는 숫자 다섯 개만 돌려주는 바람에
+   * 완료 화면이 그 나머지를 볼 길이 없었다. 큰 JSON을 라우터 파라미터에 싣는
+   * 대신 id만 넘기고 완료 화면이 저장소에서 꺼내 보게 한다.
    */
-  settle: () => Lived;
+  settle: () => { lived: Lived; recordId?: string };
   start: (presetId: string, orders?: RoundOrders, skips?: RoundSkips) => void;
   toggle: () => void;
   skipNext: () => void;
@@ -287,6 +292,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const doneFired = useRef(false);
   /** 이 실행을 이미 기록했는가 — 한 실행에 한 건만 남긴다 */
   const recorded = useRef(false);
+  /** 그때 남긴 기록의 id — 완료 화면이 저장소에서 꺼내 볼 열쇠다 */
+  const recordedId = useRef<string | undefined>(undefined);
   /** 드래그하느라 우리가 멈춘 것인지 — 사용자가 멈춰둔 것과 구분해야 한다 */
   const autoPaused = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -501,6 +508,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         lastTick.current = '';
         doneFired.current = false;
         recorded.current = false;
+        recordedId.current = undefined;
         markRun(presetId);
         // 완료 화면의 "다시 하기"는 방금 돌던 구성을 그대로 물려받는다 — 차례도, 뺀 것도
         const now = Date.now();
@@ -565,23 +573,25 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
        *
        * **한 실행에 한 건이다.** 같은 세션에서 두 번 불려도 두 번 적지 않는다.
        */
-      settle: (): Lived => {
+      settle: () => {
         const s = storedRef.current;
         const p = planRef.current;
         const preset = presetRef.current;
-        if (!s || !p) return NO_LIVED;
+        if (!s || !p) return { lived: NO_LIVED };
         const lived = advanceLived(s.lived, p, elapsedNow());
         persist({ ...s, lived });
 
         if (preset && !recorded.current) {
           recorded.current = true;
+          const recordId = uid();
+          recordedId.current = recordId;
           // at 하나가 아니라 실제로 지나온 구간들로 센다 — 넘긴 종목은 여기서 빠진다
           const { blocks, segs } = summarizeLived(p, livedSpans(lived));
           const specOf = new Map(
             preset.blocks.map((b) => [b.id, blockSummary(b.workSec, b.restSec, b.sets)])
           );
           addRecord({
-            id: uid(),
+            id: recordId,
             presetId: preset.id,
             presetName: preset.name,
             startedAt: s.startedAt ?? s.zeroAt,
@@ -599,7 +609,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
             segs: segs.map((x) => ({ phase: x.phase, durSec: x.durSec })),
           });
         }
-        return lived;
+        // 두 번 불려도 같은 기록을 가리킨다 — 완료 화면이 뒤늦게 물어도 답이 있다
+        return { lived, recordId: recordedId.current };
       },
       toggle: () => {
         const s = storedRef.current;

@@ -242,6 +242,7 @@ export const en: Catalog = {
     again: 'Do it again',
     home: 'Home',
     titleStopped: 'Workout ended',
+    span: '{{from}} – {{to}}',
     saveOrderTitle: 'Save the new order?',
     saveOrderBody: 'The exercise order you changed this time will be saved to this routine.',
     saveOrderSkip: "Don't save",
