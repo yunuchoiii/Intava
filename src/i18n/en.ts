@@ -164,7 +164,6 @@ export const en: Catalog = {
     a11ySound: 'Sound and vibration settings',
     pause: 'Pause',
     resume: 'Resume',
-    next: 'Next · {{what}}',
     titleWithDur: '{{phase}} {{dur}}',
     titleWithName: '{{name}} · {{phase}}',
     switchTitle: 'A timer is already running',
@@ -224,6 +223,8 @@ export const en: Catalog = {
   jump: {
     none: 'To finish',
     withSet: '{{name}} · Set {{set}}',
+    block: '{{block}} · {{name}}',
+    blockWithSet: '{{block}} · Set {{set}}',
   },
 
   doneScreen: {

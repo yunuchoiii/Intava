@@ -174,7 +174,6 @@ export const ko = {
     a11ySound: '소리 · 진동 설정',
     pause: '일시정지',
     resume: '재개',
-    next: '다음 · {{what}}',
     titleWithDur: '{{phase}} {{dur}}',
     /** 링 안쪽 위 — 종목과 무엇인지를 한 줄에 */
     titleWithName: '{{name}} · {{phase}}',
@@ -241,6 +240,9 @@ export const ko = {
   jump: {
     none: '완료로',
     withSet: '{{name}} · {{set}}세트',
+    /** 다른 종목으로 건너갈 때 — 무엇을 하러 가는지가 페이즈보다 먼저다 */
+    block: '{{block}} · {{name}}',
+    blockWithSet: '{{block}} · {{set}}세트',
   },
 
   doneScreen: {

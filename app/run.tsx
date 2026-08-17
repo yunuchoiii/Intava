@@ -340,7 +340,7 @@ export default function Run() {
    * 첫 구간에는 앞이 없으니 늘 "다시 처음"이다.
    */
   const prevSeg = run.seg && run.elapsed - run.seg.start <= 1.2 ? run.prev : undefined;
-  const prevLabel = prevSeg ? segLabel(prevSeg) : t('run.prevRestart');
+  const prevLabel = prevSeg ? segLabel(prevSeg, run.seg, preset) : t('run.prevRestart');
 
   return (
     /*
@@ -437,7 +437,7 @@ export default function Run() {
               <MainGlyph color={color} paused={run.paused} />
             </PressBox>
 
-            <ControlButton label={segLabel(run.next)} onPress={run.skipNext}>
+            <ControlButton label={segLabel(run.next, run.seg, preset)} onPress={run.skipNext}>
               <NextIcon size={34} />
             </ControlButton>
           </View>

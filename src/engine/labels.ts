@@ -75,18 +75,40 @@ export function describeSegment(seg: Segment | undefined): string {
   }
 }
 
-/** 「다음」 버튼 라벨 — 도착할 구간을 쓴다 */
 /**
  * 구간 버튼의 문구 — 그 버튼을 누르면 **실제로 무엇이 오는지** 그대로 적는다.
  * "휴식 시작"처럼 동작을 덧붙이지 않는다. 운동과 그 사이 휴식에만 세트 번호를 붙인다 —
  * 라운드 휴식·종목 전환에 실려 있는 set은 방금 끝낸 세트라 그 구간을 가리키지 않는다.
+ *
+ * **다른 종목으로 건너갈 때는 종목 이름을 붙인다.** 준비·종목 전환·라운드 휴식에서
+ * 「운동 · 1세트」만 보이면 무엇을 하러 가는지 알 수 없다 — 그 자리에서는 링 제목도
+ * 다음 종목을 말해주지 않기 때문에 이 버튼이 유일한 단서다.
+ *
+ * 반대로 세트 사이 휴식에서는 붙이지 않는다. 링 제목이 이미 그 이름을 들고 있어
+ * 같은 말이 두 번 된다. 그래서 판단 기준은 도착점이 아니라 **지금 있는 자리가 그
+ * 종목에 속하는가**다. 타이머(종목 1·라운드 1)는 종목 이름이 곧 타이머 이름이라
+ * 어느 경우에도 붙이지 않는다.
  */
-export function segLabel(seg: Segment | undefined): string {
+export function segLabel(seg: Segment | undefined, from?: Segment | null, preset?: Preset): string {
   if (!seg) return t('jump.none');
-  const name = phaseLabel(seg.phase);
+  const phase = phaseLabel(seg.phase);
   const numbered = seg.phase === 'WORK' || seg.phase === 'SET_REST';
-  if (!numbered || seg.set == null) return name;
-  return t('jump.withSet', { name, set: seg.set });
+
+  const crossing =
+    seg.phase === 'WORK' &&
+    !!seg.name &&
+    !(preset && isSimple(preset)) &&
+    // 지금 자리가 그 종목의 것이 아니면 건너가는 길이다 (준비·종목 전환·라운드 휴식)
+    (!from || from.blockId !== seg.blockId || from.round !== seg.round);
+
+  if (crossing) {
+    return seg.set != null
+      ? t('jump.blockWithSet', { block: seg.name, name: phase, set: seg.set })
+      : t('jump.block', { block: seg.name, name: phase });
+  }
+
+  if (!numbered || seg.set == null) return phase;
+  return t('jump.withSet', { name: phase, set: seg.set });
 }
 
 /** 링 안쪽 아래 줄 */

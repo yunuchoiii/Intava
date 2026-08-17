@@ -156,7 +156,6 @@ export const zh: Catalog = {
     a11ySound: '声音与振动设置',
     pause: '暂停',
     resume: '继续',
-    next: '下一个 · {{what}}',
     titleWithDur: '{{phase}} {{dur}}',
     titleWithName: '{{name}} · {{phase}}',
     switchTitle: '已有计时器在运行',
@@ -215,6 +214,8 @@ export const zh: Catalog = {
   jump: {
     none: '前往完成',
     withSet: '{{name}} · 第{{set}}组',
+    block: '{{block}} · {{name}}',
+    blockWithSet: '{{block}} · 第{{set}}组',
   },
 
   doneScreen: {

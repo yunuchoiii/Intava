@@ -156,7 +156,6 @@ export const ja: Catalog = {
     a11ySound: '音・振動の設定',
     pause: '一時停止',
     resume: '再開',
-    next: '次 · {{what}}',
     titleWithDur: '{{phase}} {{dur}}',
     titleWithName: '{{name}} · {{phase}}',
     switchTitle: 'すでに実行中です',
@@ -216,6 +215,8 @@ export const ja: Catalog = {
   jump: {
     none: '完了へ',
     withSet: '{{name}} · {{set}}セット',
+    block: '{{block}} · {{name}}',
+    blockWithSet: '{{block}} · {{set}}セット',
   },
 
   doneScreen: {

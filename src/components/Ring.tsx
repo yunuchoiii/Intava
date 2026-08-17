@@ -315,7 +315,22 @@ export function Ring({
         />
       </Svg>
 
-      <Animated.Text numberOfLines={1} style={[styles.title, { opacity: textDim }]}>
+      {/*
+        긴 종목 이름은 잘라내기 전에 **줄여서** 한 줄을 지킨다.
+
+        제목 자리는 링 폭에서 좌우 36씩 뺀 258pt뿐인데 글자가 23pt Bold라 한글
+        10~11자에서 끊긴다. "{{이름}} · 운동" 형식이라 " · 운동" 넉 자가 이미
+        고정으로 먹으니 이름에 남는 자리는 예닐곱 자다 — 「케틀벨 스윙」쯤만 돼도
+        말줄임이 시작된다. 컨트롤 라벨이 쓰는 것과 같은 처방이다.
+
+        위아래로는 늘릴 자리가 없다. 제목은 top 고정이고 그 아래 92pt 시계가 있다.
+      */}
+      <Animated.Text
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.72}
+        style={[styles.title, { opacity: textDim }]}
+      >
         {title}
       </Animated.Text>
 
