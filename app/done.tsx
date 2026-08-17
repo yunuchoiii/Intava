@@ -1,9 +1,10 @@
 /** 5.7 완료 — DONE 색 플러드 */
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WhiteButton } from '../src/components/Buttons';
+import { Chevron, Collapsible } from '../src/components/Collapsible';
 import { PressBox } from '../src/components/PressBox';
 import { PhaseFlood } from '../src/components/PhaseFlood';
 import { clock, isSimple } from '../src/engine/labels';
@@ -39,6 +40,8 @@ export default function Done() {
   const toast = useToast();
   const session = useSession();
   const preset = getPreset(id);
+  /** 종목별 표는 접어 둔 채로 시작한다 — 먼저 보는 것은 아래 숫자 넷이다 */
+  const [blocksOpen, setBlocksOpen] = useState(false);
 
   // 완료 화면에 닿았으면 그 세션은 끝난 것이다 — 미니 바가 남지 않게 정리한다
   useEffect(() => {
@@ -180,7 +183,47 @@ export default function Done() {
             </View>
           )}
 
-          <View style={{ marginTop: 28, alignSelf: 'stretch' }}>
+          {/*
+            종목별로 실제 보낸 시간 — 넘긴 종목은 여기 없다.
+
+            막대 바로 아래 둔다. 막대가 "어떤 결로 흘렀나"를 그림으로 말하면,
+            이 목록이 그 그림의 이름표다 — 둘이 떨어져 있으면 서로를 못 가리킨다.
+
+            접어 둔 채로 시작한다. 운동을 막 끝낸 사람이 먼저 보는 것은 아래 숫자
+            넷이고, 종목별 몫은 궁금할 때 펴 보는 것이다.
+          */}
+          {!!entry?.blocks.length && (
+            <View style={styles.blocks}>
+              <PressBox
+                onPress={() => setBlocksOpen((v) => !v)}
+                radius={10}
+                scaleTo={0.99}
+                dim={0}
+                style={styles.blocksHead}
+                accessibilityLabel={t('count.exercises', { count: entry.blocks.length })}
+              >
+                <Text style={styles.blocksTitle}>
+                  {t('count.exercises', { count: entry.blocks.length })}
+                </Text>
+                <Chevron open={blocksOpen} />
+              </PressBox>
+              <Collapsible open={blocksOpen}>
+                {entry.blocks.map((b, i) => (
+                  <View key={`${b.name}${i}`} style={styles.blockRow}>
+                    <Text style={styles.blockName} numberOfLines={1}>
+                      {b.name}
+                    </Text>
+                    <Text style={[styles.blockSpec, TABULAR]} numberOfLines={1}>
+                      {b.spec}
+                    </Text>
+                    <Text style={[styles.blockDur, TABULAR]}>{clock(b.durSec)}</Text>
+                  </View>
+                ))}
+              </Collapsible>
+            </View>
+          )}
+
+          <View style={{ marginTop: 24, alignSelf: 'stretch' }}>
             <StatRow label={t('doneScreen.totalTime')} value={clock(stats.total)} first />
             <StatRow label={t('doneScreen.pureWork')} value={clock(stats.work)} />
             {/*
@@ -193,23 +236,6 @@ export default function Done() {
               <StatRow label={t('doneScreen.completedRounds')} value={`${stats.rounds}`} />
             )}
           </View>
-
-          {/* 종목별로 실제 보낸 시간 — 넘긴 종목은 여기 없다 */}
-          {!!entry?.blocks.length && (
-            <View style={styles.blocks}>
-              {entry.blocks.map((b, i) => (
-                <View key={`${b.name}${i}`} style={styles.blockRow}>
-                  <Text style={styles.blockName} numberOfLines={1}>
-                    {b.name}
-                  </Text>
-                  <Text style={[styles.blockSpec, TABULAR]} numberOfLines={1}>
-                    {b.spec}
-                  </Text>
-                  <Text style={[styles.blockDur, TABULAR]}>{clock(b.durSec)}</Text>
-                </View>
-              ))}
-            </View>
-          )}
         </ScrollView>
 
         {/*
@@ -345,7 +371,15 @@ const styles = StyleSheet.create({
    * 종목별 표 — 어두운 판을 깔지 않는다. 이 화면은 초록 위 흰 글자가 규칙이라
    * 판을 깔면 그 자리만 다른 화면처럼 뜬다. 줄 사이의 얇은 선으로만 나눈다.
    */
-  blocks: { marginTop: 22, alignSelf: 'stretch' },
+  blocks: { marginTop: 18, alignSelf: 'stretch' },
+  /** 접었다 펴는 손잡이 — 막대와 같은 폭에 걸쳐 눌리는 자리를 넓게 준다 */
+  blocksHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+  },
+  blocksTitle: { fontSize: 15, fontWeight: '600', color: '#FFFFFF', opacity: 0.78 },
   blockRow: {
     flexDirection: 'row',
     alignItems: 'center',
