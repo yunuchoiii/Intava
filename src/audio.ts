@@ -67,6 +67,23 @@ export async function startSession(volume: number): Promise<void> {
 }
 
 /**
+ * 포그라운드로 돌아왔을 때 무음 루프가 살아 있는지 확인하고, 멎어 있으면 다시 켠다.
+ *
+ * 전화·Siri·알람이 끼어들면 expo-audio가 재생 중인 플레이어를 **전부 멈춘다.**
+ * 되살아나는 것은 시스템이 `shouldResume`을 줄 때뿐이라, 안 주면 그대로 멎어 있다.
+ * 이 루프가 멎으면 알림음만 빠지는 게 아니라 **백그라운드에서 타이머를 붙잡아 두는
+ * 힘 자체가 사라진다** — 화면을 끄면 시간이 흐르지 않는 앱이 된다.
+ */
+export function resumeSession(): void {
+  if (!keepAlive) return;
+  try {
+    if (!keepAlive.playing) keepAlive.play();
+  } catch {
+    // 정리 직후 등 — 소리 하나 살리자고 앱이 멈추면 안 된다
+  }
+}
+
+/**
  * 실행 화면 이탈 시 호출.
  * 완료음은 화면이 바뀐 뒤에도 끝까지 울려야 하므로 잠깐 뒤에 정리한다.
  * 참조는 즉시 비워서 다시 시작할 때 새 플레이어와 섞이지 않게 한다.
@@ -100,12 +117,18 @@ export async function preview(volume: number): Promise<void> {
  * 알림음 재생. 이미 끝까지 재생된 플레이어는 재생 위치가 끝에 남아 있어서
  * 그대로 play()를 부르면 소리가 나지 않는다(카운트다운 3·2·1의 2번째·3번째가
  * 빠지던 원인). 되감기가 끝난 뒤에 재생한다.
+ *
+ * **되감기에 tolerance 0을 명시해야 한다.** 인자를 하나만 주면 네이티브가 앞뒤
+ * tolerance를 둘 다 무한대로 잡는데, AVPlayer는 그러면 "아무 데나 편한 지점"을
+ * 허용한다 — 재생 헤드가 **끝에 그대로 머무는 것도 유효한 결과**다. 그 상태에서
+ * play()를 부르면 actionAtItemEnd가 pause라 소리가 나지 않는다. 시뮬레이터에서는
+ * 멀쩡하고 실기기에서만 알림음이 통째로 안 들리던 원인이 이것이다.
  */
 export function play(name: Cue): void {
   const p = players[name];
   if (!p) return;
   try {
-    p.seekTo(0)
+    p.seekTo(0, 0, 0)
       .then(() => p.play())
       .catch(() => {});
   } catch {

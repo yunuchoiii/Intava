@@ -23,7 +23,7 @@ import React, {
   useState,
 } from 'react';
 import { AppState } from 'react-native';
-import { endSession, setCueVolume, startSession } from './audio';
+import { endSession, resumeSession, setCueVolume, startSession } from './audio';
 import {
   advanceLived,
   buildPlan,
@@ -381,6 +381,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     const sub = AppState.addEventListener('change', (state) => {
       if (!storedRef.current) return;
       if (state === 'active') {
+        // 전화·알람이 끼어들면 무음 루프가 멎은 채 남는다 — 살아 있는지 보고 되살린다
+        resumeSession();
         setSyncId((n) => n + 1);
         tick();
         void reschedule();
