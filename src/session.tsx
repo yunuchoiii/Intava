@@ -27,6 +27,7 @@ import { endSession, resumeSession, setCueVolume, startSession } from './audio';
 import {
   advanceLived,
   buildPlan,
+  livedSpans,
   segmentAt,
   summarizeLived,
   NO_LIVED,
@@ -134,6 +135,13 @@ export type Session = RunSnapshot & {
   toggle: () => void;
   skipNext: () => void;
   skipPrev: () => void;
+  /**
+   * 지금 하는 종목을 통째로 넘긴다 — 남은 세트를 건너뛰고 그 뒤 휴식으로 간다.
+   * 넘길 종목이 없는 자리(웜업·준비·쿨다운, 이미 휴식 중)에서는 아무 일도 없다.
+   */
+  skipBlock: () => void;
+  /** 지금 종목을 넘길 수 있는 자리인가 — 버튼을 흐리게 둘지 정한다 */
+  canSkipBlock: boolean;
   restart: () => void;
   stop: () => void;
   /** 링을 잡는 순간 — 값을 맞추는 동안 시간이 흐르면 손가락과 숫자가 서로 밀린다 */
@@ -563,7 +571,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
         if (preset && !recorded.current) {
           recorded.current = true;
-          const { blocks, segs } = summarizeLived(p, lived.at);
+          // at 하나가 아니라 실제로 지나온 구간들로 센다 — 넘긴 종목은 여기서 빠진다
+          const { blocks, segs } = summarizeLived(p, livedSpans(lived));
           const specOf = new Map(
             preset.blocks.map((b) => [b.id, blockSummary(b.workSec, b.restSec, b.sets)])
           );
@@ -610,6 +619,41 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         const found = segmentAt(p, elapsedNow());
         const nextSeg = found ? p.segs[found.idx + 1] : undefined;
         seekTo(nextSeg ? nextSeg.start + 0.01 : p.total, storedRef.current?.pausedAt == null);
+      },
+      /**
+       * 지금 하는 종목을 통째로 넘긴다.
+       *
+       * `buildPlan`은 한 종목의 세그먼트를 연속으로 펼치고, 뒤따르는 휴식들이 방금
+       * 끝낸 세트의 meta(round·blockId)를 그대로 물려받는다. 그래서 규칙 하나로
+       * 족하다 — **같은 종목의 운동·세트휴식인 동안 건너뛰고, 처음 만나는 그 밖의
+       * 자리가 도착점이다.** 이 한 줄이 경계를 전부 흡수한다:
+       *
+       *   보통                     → 그 종목의 BLOCK_REST
+       *   라운드의 마지막 종목      → ROUND_REST
+       *   마지막 라운드의 마지막    → COOLDOWN, 없으면 완료
+       *   종목 사이 휴식이 0초     → BLOCK_REST 자체가 없으니 다음 종목의 첫 WORK
+       */
+      skipBlock: () => {
+        const p = planRef.current;
+        if (!p) return;
+        const found = segmentAt(p, elapsedNow());
+        if (!found) return;
+        const { seg, idx } = found;
+        // 웜업·준비·쿨다운에는 넘길 종목이 없고, 휴식은 이미 그 종목을 지난 뒤다
+        if (!seg.blockId || (seg.phase !== 'WORK' && seg.phase !== 'SET_REST')) return;
+
+        let i = idx;
+        while (i < p.segs.length) {
+          const s = p.segs[i];
+          const mine =
+            s.blockId === seg.blockId &&
+            s.round === seg.round &&
+            (s.phase === 'WORK' || s.phase === 'SET_REST');
+          if (!mine) break;
+          i += 1;
+        }
+        const target = p.segs[i];
+        seekTo(target ? target.start + 0.01 : p.total, storedRef.current?.pausedAt == null);
       },
       skipPrev: () => {
         const p = planRef.current;
@@ -686,6 +730,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       total: plan?.total ?? 0,
       next: plan?.segs[snap.idx + 1],
       prev: snap.idx > 0 ? plan?.segs[snap.idx - 1] : undefined,
+      // 종목에 속한 자리에서만 넘길 것이 남아 있다 — skipBlock의 문지기와 같은 조건
+      canSkipBlock:
+        !!snap.seg?.blockId && (snap.seg.phase === 'WORK' || snap.seg.phase === 'SET_REST'),
       syncId,
       restoredFromStorage,
       orders: stored?.orders,

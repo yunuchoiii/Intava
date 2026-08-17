@@ -17,6 +17,7 @@ import { FloodTile } from '../src/components/Surface';
 import { PressBox } from '../src/components/PressBox';
 import { NextIcon, PauseIcon, PencilIcon, PlayIcon, PrevIcon } from '../src/components/Icons';
 import { OrderSheet } from '../src/components/OrderSheet';
+import { RunMoreSheet } from '../src/components/RunMoreSheet';
 import { PhaseFlood } from '../src/components/PhaseFlood';
 import { Ring } from '../src/components/Ring';
 import { clock, isSimple, phaseLabel, ringTitle, segLabel, subLabel } from '../src/engine/labels';
@@ -68,6 +69,7 @@ export default function Run() {
   const run = useSession();
   const preset = run.preset;
   const [ordering, setOrdering] = useState(false);
+  const [more, setMore] = useState(false);
   /**
    * 시트가 떠 있는가 — 아래 화면의 끌어내리기가 이걸 보고 비켜선다.
    *
@@ -80,7 +82,7 @@ export default function Run() {
    * PanResponder가 새로 만들어져 쥐고 있던 손짓이 끊긴다.
    */
   const sheetUp = useRef(false);
-  sheetUp.current = ordering;
+  sheetUp.current = ordering || more;
   useEffect(() => {
     void ensurePermission();
   }, []);
@@ -458,13 +460,13 @@ export default function Run() {
               </Text>
               {!simple && (
                 <PressBox
-                  onPress={() => setOrdering(true)}
+                  onPress={() => setMore(true)}
                   hitSlop={12}
                   scaleTo={0.94}
                   dim={0}
-                  accessibilityLabel={t('run.orderTitle')}
+                  accessibilityLabel={t('run.moreTitle')}
                 >
-                  <Text style={styles.stageLink}>{t('run.reorder')} ›</Text>
+                  <Text style={styles.stageLink}>{t('run.more')} ›</Text>
                 </PressBox>
               )}
             </View>
@@ -519,6 +521,14 @@ export default function Run() {
         형제로 두면 올라갈 길 자체가 없다. 시트는 Modal이라 어디에 적든 화면
         맨 위에 뜨므로 보이는 것은 달라지지 않는다.
       */}
+      <RunMoreSheet
+        visible={more}
+        onClose={() => setMore(false)}
+        onReorder={() => setOrdering(true)}
+        onSkipBlock={run.skipBlock}
+        canSkipBlock={run.canSkipBlock}
+      />
+
       <OrderSheet
         visible={ordering}
         onClose={() => setOrdering(false)}

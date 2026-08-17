@@ -187,6 +187,12 @@ export const ko = {
     /** 머리줄 아래 — 전체 자리 중 몇 번째인지, 그리고 순서를 바꾸는 길 */
     stageOf: '{{i}} / {{n}} 구간',
     reorder: '순서 바꾸기',
+    reorderNote: '남은 종목의 차례를 바꾸거나 오늘은 뺍니다.',
+    /** 하단 진행 바 위 — 이 안에 순서 바꾸기와 종목 넘기기가 들어 있다 */
+    more: '더보기',
+    moreTitle: '더보기',
+    skipBlock: '지금 종목 넘기기',
+    skipBlockNote: '남은 세트를 건너뛰고 다음 휴식으로 갑니다.',
     /** 실행 중 종목 순서 시트 */
     orderTitle: '종목 순서',
     orderNote:

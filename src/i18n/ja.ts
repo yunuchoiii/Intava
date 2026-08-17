@@ -167,6 +167,11 @@ export const ja: Catalog = {
     total: '合計 {{time}}',
     stageOf: '{{i}} / {{n}} 区間',
     reorder: '順番を変える',
+    reorderNote: '残りの種目の順番を変えたり、今日は外したりします。',
+    more: 'その他',
+    moreTitle: 'その他',
+    skipBlock: 'この種目をスキップ',
+    skipBlockNote: '残りのセットを飛ばして次の休憩へ進みます。',
     orderTitle: '種目の順番',
     orderNote:
       'チェックを外すと残りのラウンドから外れます。終わった種目と今の種目は動かすことも外すこともできません。',

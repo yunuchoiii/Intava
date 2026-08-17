@@ -175,6 +175,11 @@ export const en: Catalog = {
     total: 'of {{time}}',
     stageOf: '{{i}} / {{n}}',
     reorder: 'Reorder',
+    reorderNote: 'Change the order of what’s left, or drop one for today.',
+    more: 'More',
+    moreTitle: 'More',
+    skipBlock: 'Skip this exercise',
+    skipBlockNote: 'Skips the remaining sets and goes to the next rest.',
     orderTitle: 'Exercise order',
     orderNote:
       'Unchecking drops an exercise from the remaining rounds. Finished exercises and the current one cannot be moved or dropped.',
