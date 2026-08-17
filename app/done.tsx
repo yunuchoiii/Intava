@@ -205,20 +205,23 @@ export default function Done() {
                 <Text style={styles.blocksTitle}>
                   {t('count.exercises', { count: entry.blocks.length })}
                 </Text>
-                <Chevron open={blocksOpen} />
+                <Chevron open={blocksOpen} color="#FFFFFF" />
               </PressBox>
               <Collapsible open={blocksOpen}>
-                {entry.blocks.map((b, i) => (
-                  <View key={`${b.name}${i}`} style={styles.blockRow}>
-                    <Text style={styles.blockName} numberOfLines={1}>
-                      {b.name}
-                    </Text>
-                    <Text style={[styles.blockSpec, TABULAR]} numberOfLines={1}>
-                      {b.spec}
-                    </Text>
-                    <Text style={[styles.blockDur, TABULAR]}>{clock(b.durSec)}</Text>
-                  </View>
-                ))}
+                {/* 마지막 줄이 테두리에 닿지 않게 — 안쪽 여백은 여기서 준다 */}
+                <View style={{ paddingBottom: 8 }}>
+                  {entry.blocks.map((b, i) => (
+                    <View key={`${b.name}${i}`} style={styles.blockRow}>
+                      <Text style={styles.blockName} numberOfLines={1}>
+                        {b.name}
+                      </Text>
+                      <Text style={[styles.blockSpec, TABULAR]} numberOfLines={1}>
+                        {b.spec}
+                      </Text>
+                      <Text style={[styles.blockDur, TABULAR]}>{clock(b.durSec)}</Text>
+                    </View>
+                  ))}
+                </View>
               </Collapsible>
             </View>
           )}
@@ -325,7 +328,7 @@ const styles = StyleSheet.create({
    * 아래 여백은 넉넉해야 한다. 종목 표가 길어지면 마지막 줄이 「다시 하기」에
    * 그대로 붙어, 표의 일부인지 버튼인지 구분이 안 된다.
    */
-  scroll: { flexGrow: 1, justifyContent: 'center', paddingTop: 8, paddingBottom: 28 },
+  scroll: { flexGrow: 1, justifyContent: 'center', paddingTop: 8, paddingBottom: 40 },
   title: {
     fontSize: 44,
     fontWeight: '800',
@@ -371,15 +374,30 @@ const styles = StyleSheet.create({
    * 종목별 표 — 어두운 판을 깔지 않는다. 이 화면은 초록 위 흰 글자가 규칙이라
    * 판을 깔면 그 자리만 다른 화면처럼 뜬다. 줄 사이의 얇은 선으로만 나눈다.
    */
-  blocks: { marginTop: 18, alignSelf: 'stretch' },
-  /** 접었다 펴는 손잡이 — 막대와 같은 폭에 걸쳐 눌리는 자리를 넓게 준다 */
+  /**
+   * 접히는 상자 — 반투명한 흰 테두리로 둘레를 긋는다.
+   *
+   * 이 화면은 판을 깔지 않는 것이 규칙이라(초록 위 흰 글자) 배경 대신 선으로만
+   * 묶는다. `overflow: hidden`은 펼쳐지는 내용이 둥근 모서리 밖으로 새지 않게 한다.
+   */
+  blocks: {
+    marginTop: 18,
+    alignSelf: 'stretch',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.28)',
+    borderRadius: 16,
+    borderCurve: 'continuous',
+    overflow: 'hidden',
+    paddingHorizontal: 14,
+  },
+  /** 접었다 펴는 손잡이 — 상자 폭에 걸쳐 눌리는 자리를 넓게 준다 */
   blocksHead: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 10,
+    paddingVertical: 13,
   },
-  blocksTitle: { fontSize: 15, fontWeight: '600', color: '#FFFFFF', opacity: 0.78 },
+  blocksTitle: { fontSize: 15, fontWeight: '600', color: '#FFFFFF', opacity: 0.85 },
   blockRow: {
     flexDirection: 'row',
     alignItems: 'center',

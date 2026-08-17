@@ -64,7 +64,7 @@ export function Collapsible({ open, children }: { open: boolean; children: React
  * 그대로 90도 돌리면 화살표가 줄 한가운데가 아니라 옆으로 비껴 앉는다.
  * 크기를 못 박은 정사각형 상자 안에 글자를 가운데 두고, 그 상자를 돌린다.
  */
-export function Chevron({ open }: { open: boolean }) {
+export function Chevron({ open, color }: { open: boolean; color?: string }) {
   const spin = useRef(new Animated.Value(open ? 1 : 0)).current;
   useEffect(() => {
     Animated.timing(spin, {
@@ -77,7 +77,8 @@ export function Chevron({ open }: { open: boolean }) {
   const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '90deg'] });
   return (
     <Animated.View style={[styles.chevronBox, { transform: [{ rotate }] }]}>
-      <Text style={styles.chevron}>›</Text>
+      {/* 색은 바깥에서 정할 수 있다 — 어두운 표면 위와 페이즈 색 위는 기준이 다르다 */}
+      <Text style={[styles.chevron, !!color && { color }]}>›</Text>
     </Animated.View>
   );
 }
