@@ -293,8 +293,13 @@ function StatRow({ label, value, first }: { label: string; value: string; first?
 }
 
 const styles = StyleSheet.create({
-  /** 짧으면 가운데, 길면 스크롤 — flexGrow가 그 둘을 한 규칙으로 만든다 */
-  scroll: { flexGrow: 1, justifyContent: 'center', paddingVertical: 8 },
+  /**
+   * 짧으면 가운데, 길면 스크롤 — flexGrow가 그 둘을 한 규칙으로 만든다.
+   *
+   * 아래 여백은 넉넉해야 한다. 종목 표가 길어지면 마지막 줄이 「다시 하기」에
+   * 그대로 붙어, 표의 일부인지 버튼인지 구분이 안 된다.
+   */
+  scroll: { flexGrow: 1, justifyContent: 'center', paddingTop: 8, paddingBottom: 28 },
   title: {
     fontSize: 44,
     fontWeight: '800',
