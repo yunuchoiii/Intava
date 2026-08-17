@@ -199,6 +199,24 @@ h1{margin:18px auto 0;font-size:32px;max-width:11.5em}
     50%  {transform:translateY(0);z-index:3}
     100% {transform:translateY(11%);z-index:1}
   }
+  /* 다섯 장이 서는 화면에서는 바깥 두 장을 안쪽으로 당긴다.
+     자리 간격(--pitch)은 일정한데 카드는 바깥일수록 작아지고 더 눕기 때문에,
+     당기지 않으면 1-2·4-5 사이만 벌어진다(실측 62px 대 24px).
+     당기는 양 15.6%(카드 폭의)는 그 차이를 그대로 메운 값이다.
+     모바일은 세 장이라 벌어질 짝이 없으므로 당기지 않는다 — 같은 값을 쓰면
+     이웃이 가운데 카드에 붙어버린다. */
+  @media (min-width:720px){
+    .card{animation-name:deckArcWide}
+    @keyframes deckArcWide{
+      0%   {transform:translateX(-20%) translateY(11%);z-index:1}
+      16%  {transform:translateX(-16.4%) translateY(9.5%);z-index:1}
+      32%  {transform:translateX(0) translateY(4.5%);z-index:2}
+      50%  {transform:translateX(0) translateY(0);z-index:3}
+      68%  {transform:translateX(0) translateY(4.5%);z-index:2}
+      84%  {transform:translateX(16.4%) translateY(9.5%);z-index:1}
+      100% {transform:translateX(20%) translateY(11%);z-index:1}
+    }
+  }
   /* 폰은 가운데에서 정면을 보고 가장 크며, 옆으로 갈수록 안쪽을 향해 눕고
      작아지고 어두워지다 배경색으로 사그라진다(끝에서 opacity 0).
      perspective() 를 transform 안에 두는 이유는, 상자에 perspective 를 걸면

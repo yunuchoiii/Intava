@@ -130,6 +130,10 @@ docs/
   그냥 나란히 선다(겹치지 않으니 깨질 데가 없다)
 - 무한 루프라 '가운데'가 계속 바뀐다. **`nth-child` 로 고정하지 말고** keyframes 안에서
   `z-index` 까지 같이 물린다
+- **간격이 일정해 보이려면 바깥 두 장을 안쪽으로 당겨야 한다**(720px 이상, `deckArcWide`의
+  `translateX`). 자리 간격은 일정한데 카드는 바깥일수록 작아지고 더 누워서, 안 당기면
+  1-2·4-5 사이만 벌어진다(실측 62px 대 24px → 15.6% 당겨서 넷 다 24px).
+  모바일은 세 장이라 벌어질 짝이 없다. **같은 값을 모바일에 쓰면 이웃이 가운데에 붙는다**
 - keyframes에 `transform:none`·`filter:none` 을 쓰면 보간이 끊긴다.
   `rotateY(0deg)`·`brightness(1)` 처럼 **항등값을 적는다**
 - `perspective()` 는 transform 안에 둔다. 상자에 `perspective` 를 걸면 스크롤 상자와
