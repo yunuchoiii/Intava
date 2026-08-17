@@ -18,37 +18,47 @@ import { C, GUTTER, RADIUS } from '../theme';
 type Props = {
   visible: boolean;
   onClose: () => void;
-  /** 순서 시트를 연다 — 이 시트는 닫고 그 시트를 띄운다 */
+  /**
+   * 순서 시트를 열어달라는 **뜻만** 전한다 — 실제로 여는 것은 이 시트가 내려간 뒤다.
+   *
+   * ⚠️ 여기서 곧장 열면 안 된다. iOS는 한 화면이 동시에 두 모달을 띄우지 못해서,
+   * 닫는 것과 여는 것이 같은 프레임에 겹치면 순서 시트가 아예 안 뜨고 이 시트의
+   * 투명한 껍데기만 남아 화면 전체의 터치를 먹는다.
+   */
   onReorder: () => void;
   onSkipBlock: () => void;
   /** 넘길 종목이 없는 자리(웜업·준비·쿨다운, 이미 휴식 중)에서는 흐리게 둔다 */
   canSkipBlock: boolean;
+  /** 완전히 내려간 뒤 — 미뤄둔 일을 여기서 처리한다 */
+  onClosed?: () => void;
 };
 
-export function RunMoreSheet({ visible, onClose, onReorder, onSkipBlock, canSkipBlock }: Props) {
+export function RunMoreSheet({
+  visible,
+  onClose,
+  onReorder,
+  onSkipBlock,
+  canSkipBlock,
+  onClosed,
+}: Props) {
   const insets = useSafeAreaInsets();
 
   return (
-    <Sheet visible={visible} onClose={onClose}>
+    <Sheet visible={visible} onClose={onClose} onClosed={onClosed}>
       <View style={[styles.body, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
         <Text style={styles.title}>{t('run.moreTitle')}</Text>
 
-        <Row
-          label={t('run.reorder')}
-          note={t('run.reorderNote')}
-          onPress={() => {
-            onClose();
-            onReorder();
-          }}
-        />
+        {/*
+          두 줄 다 **뜻만 전하고 곧바로 실행하지 않는다.** 넘기기는 모달을 띄우지
+          않으니 여기서 불러도 되지만, 닫히는 애니메이션 위에서 화면 색이 바뀌면
+          어수선하다. 둘 다 내려간 뒤에 처리하는 편이 결이 고르다.
+        */}
+        <Row label={t('run.reorder')} note={t('run.reorderNote')} onPress={onReorder} />
         <Row
           label={t('run.skipBlock')}
           note={t('run.skipBlockNote')}
           disabled={!canSkipBlock}
-          onPress={() => {
-            onClose();
-            onSkipBlock();
-          }}
+          onPress={onSkipBlock}
         />
       </View>
     </Sheet>

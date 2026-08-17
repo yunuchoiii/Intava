@@ -30,11 +30,19 @@ const DISMISS_VELOCITY = 0.7;
 type Props = {
   visible: boolean;
   onClose: () => void;
+  /**
+   * 시트가 화면에서 **완전히 내려간 뒤** 불린다.
+   *
+   * 이어서 다른 시트를 열어야 할 때 이걸 기다린다. iOS는 한 화면이 동시에 두
+   * 모달을 띄우지 못해서, 닫는 것과 여는 것이 겹치면 뒤엣것이 아예 안 뜨고
+   * 앞엣것의 투명한 껍데기만 남아 화면 전체의 터치를 먹는다.
+   */
+  onClosed?: () => void;
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
 };
 
-export function Sheet({ visible, onClose, children, style }: Props) {
+export function Sheet({ visible, onClose, onClosed, children, style }: Props) {
   const [mounted, setMounted] = useState(visible);
   const anim = useRef(new Animated.Value(0)).current; // 0 = 닫힘, 1 = 열림
   const drag = useRef(new Animated.Value(0)).current; // 손가락으로 끌어내린 거리
@@ -101,12 +109,13 @@ export function Sheet({ visible, onClose, children, style }: Props) {
         if (done || visibleRef.current) return;
         done = true;
         setMounted(false);
+        onClosed?.();
       };
       animateTo(0, drop);
       const id = setTimeout(drop, 600);
       return () => clearTimeout(id);
     }
-  }, [visible, mounted, animateTo, drag]);
+  }, [visible, mounted, animateTo, drag, onClosed]);
 
   const close = useCallback(() => {
     if (closing.current) return;

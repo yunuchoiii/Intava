@@ -70,6 +70,8 @@ export default function Run() {
   const preset = run.preset;
   const [ordering, setOrdering] = useState(false);
   const [more, setMore] = useState(false);
+  /** 「더보기」에서 고른 것 — 시트가 다 내려간 뒤에 실행한다 */
+  const pending = useRef<'order' | 'skip' | null>(null);
   /**
    * 시트가 떠 있는가 — 아래 화면의 끌어내리기가 이걸 보고 비켜선다.
    *
@@ -526,12 +528,32 @@ export default function Run() {
         형제로 두면 올라갈 길 자체가 없다. 시트는 Modal이라 어디에 적든 화면
         맨 위에 뜨므로 보이는 것은 달라지지 않는다.
       */}
+      {/*
+        「더보기」에서 고른 것은 시트가 **완전히 내려간 뒤에** 실행한다.
+
+        순서 시트도 Modal이라, 닫는 것과 여는 것이 같은 프레임에 겹치면 iOS가
+        뒤엣것을 아예 띄우지 않고 앞엣것의 투명한 껍데기만 남긴다 — 아무것도 안
+        보이는데 화면 전체가 안 눌리는 그 상태다. 실행 화면이 투명 모달 라우트라
+        그 위에서는 모달이 한 번에 하나뿐이다.
+      */}
       <RunMoreSheet
         visible={more}
         onClose={() => setMore(false)}
-        onReorder={() => setOrdering(true)}
-        onSkipBlock={run.skipBlock}
+        onReorder={() => {
+          pending.current = 'order';
+          setMore(false);
+        }}
+        onSkipBlock={() => {
+          pending.current = 'skip';
+          setMore(false);
+        }}
         canSkipBlock={run.canSkipBlock}
+        onClosed={() => {
+          const what = pending.current;
+          pending.current = null;
+          if (what === 'order') setOrdering(true);
+          else if (what === 'skip') run.skipBlock();
+        }}
       />
 
       <OrderSheet
