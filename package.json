@@ -48,6 +48,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "sounds": "node scripts/gen-sounds.js",
+    "pages": "bash scripts/publish-pages.sh",
     "typecheck": "tsc --noEmit"
   },
   "private": true
