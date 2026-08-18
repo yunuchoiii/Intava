@@ -282,7 +282,12 @@ h1{margin:18px auto 0;font-size:32px;max-width:11.5em}
 .proof h2{font-size:25px}
 .proof .desc{margin:14px 0 0;color:var(--sub);font-size:16px}
 .proof .phone{max-width:330px;margin:0 auto}
-.proof-glow{position:relative;overflow:hidden}
+/* overflow:hidden 은 장식용 글로우가 페이지를 가로로 밀지 않게 하려고 건 것인데,
+   그 상자가 폰의 box-shadow 까지 잘라 그림자가 직선으로 끊겼다. 그림자가 퍼지는
+   만큼(아래 24+30, 옆 30) 안쪽 여백을 줘서 상자 안에 들어오게 한다. */
+.proof-glow{position:relative;overflow:hidden;padding:14px 34px 58px;
+  margin:-14px -24px -58px}   /* 여백만큼 밖으로 물려 폰 크기는 그대로 둔다.
+     좌우는 .wrap 패딩(24px)까지만 물린다 — 더 물리면 화면 밖으로 나가 페이지가 가로로 밀린다 */
 .proof-glow::before{
   content:"";position:absolute;inset:-8% -18%;pointer-events:none;
   background:radial-gradient(50% 50% at 50% 50%, rgba(31,179,161,0.18), rgba(31,179,161,0) 70%);
