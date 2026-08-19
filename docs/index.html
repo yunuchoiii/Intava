@@ -573,6 +573,7 @@ if ('IntersectionObserver' in window &&
   deck.addEventListener('scroll', function () {
     if (jumping) return;
     clearTimeout(settle);
+    plan(); // 자동 넘김도 여기서 미뤄진다 — 마지막 움직임 기준 2초 뒤
     // 트랙 끝에 닿기 직전이면 기다리지 않는다(길게 끌었을 때 막히지 않게)
     var x = deck.scrollLeft;
     if (x > setW * 2.1 || x < setW * 0.15) wrap();
@@ -581,6 +582,40 @@ if ('IntersectionObserver' in window &&
 
   var t;
   addEventListener('resize', function () { clearTimeout(t); t = setTimeout(measure, 150); });
+
+  /* 2초마다 한 장씩 자동으로 넘긴다.
+
+     자동이 손을 이기면 안 된다 — 손가락이 닿아 있는 동안은 쉬고, 어떤 스크롤이든
+     (손이든 자동이든) 완전히 멎고 나서 2초 뒤에 다음 장으로 간다. 다음 판 예약은
+     아래 scroll 리스너가 한다: 움직이는 동안 계속 미뤄지다가 마지막 이벤트 기준
+     2초 뒤에 넘어가므로, 체인이 따로 없어도 이어진다.
+
+     모션 줄이기에서는 아예 돌리지 않는다. 탭이 뒤로 가 있거나 덱이 화면 밖이면
+     그 판은 건너뛰고 다음 기회를 다시 잡는다 — 백그라운드에서 쌓였다가 돌아오는
+     순간 몰아서 넘어가는 것을 막는다. */
+  var auto, held = false;
+  var still = matchMedia('(prefers-reduced-motion: reduce)');
+  function tick() {
+    if (held) return;
+    if (!document.hidden) {
+      var r = deck.getBoundingClientRect();
+      if (r.bottom > 0 && r.top < innerHeight) {
+        deck.scrollBy({ left: setW / originals.length, behavior: 'smooth' });
+        return; // 이 스크롤이 멎으면 scroll 리스너가 다음 판을 예약한다
+      }
+    }
+    plan();
+  }
+  function plan() {
+    clearTimeout(auto);
+    if (still.matches) return;
+    auto = setTimeout(tick, 2000);
+  }
+  deck.addEventListener('pointerdown', function () { held = true; clearTimeout(auto); });
+  addEventListener('pointerup', function () { held = false; plan(); });
+  addEventListener('pointercancel', function () { held = false; plan(); });
+  addEventListener('visibilitychange', plan);
+  plan();
 
 })();
 </script>
