@@ -150,7 +150,9 @@ h1{margin:18px auto 0;font-size:32px;max-width:11.5em}
    덱이 이 상자보다 넓어져서, 삐져나온 24px 이 덮이지 않고 그대로 드러난다. */
 .deck-wrap{
   position:relative;--fade-solid:4%;--fade-end:26%;
-  margin-inline:calc(50% - 50vw);
+  /* 화면 끝까지 흘리되 1368px 에서 멈춘다 — 그보다 넓으면 일곱 장까지 서서
+     다섯 장 무대가 흐트러진다. 1368 은 카드 다섯 자리(260×1.04×5)+숨이다. */
+  margin-inline:calc(50% - min(50vw, 684px));
 }
 .deck-wrap::after{
   content:"";position:absolute;inset:0;z-index:4;pointer-events:none;
@@ -593,14 +595,34 @@ if ('IntersectionObserver' in window &&
      모션 줄이기에서는 아예 돌리지 않는다. 탭이 뒤로 가 있거나 덱이 화면 밖이면
      그 판은 건너뛰고 다음 기회를 다시 잡는다 — 백그라운드에서 쌓였다가 돌아오는
      순간 몰아서 넘어가는 것을 막는다. */
-  var auto, held = false;
+  var auto, held = false, glide = 0;
   var still = matchMedia('(prefers-reduced-motion: reduce)');
+
+  /* 손으로 미는 것과 달리 자동은 서두를 이유가 없다 — 브라우저의 smooth 는
+     0.3초쯤에 휙 끝나서, 850ms 완급(easeInOutCubic)으로 직접 끈다.
+     끄는 동안 손이 닿거나(pointerdown→held) 휠이 돌면 즉시 놓는다.
+     한 판의 이동폭(+0.2벌)으로는 즉시 되감기 문턱(2.1벌)에 닿지 않고,
+     되감기 자체는 멎은 뒤 140ms 에 오므로 끄는 중에 좌표가 바뀔 일이 없다. */
+  function slide(dist) {
+    var from = deck.scrollLeft, t0 = performance.now(), D = 850;
+    cancelAnimationFrame(glide);
+    function step(t) {
+      if (held) return;
+      var p = Math.min(1, (t - t0) / D);
+      var e = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+      deck.scrollLeft = from + dist * e;
+      if (p < 1) glide = requestAnimationFrame(step);
+    }
+    glide = requestAnimationFrame(step);
+  }
+  deck.addEventListener('wheel', function () { cancelAnimationFrame(glide); }, { passive: true });
+
   function tick() {
     if (held) return;
     if (!document.hidden) {
       var r = deck.getBoundingClientRect();
       if (r.bottom > 0 && r.top < innerHeight) {
-        deck.scrollBy({ left: setW / originals.length, behavior: 'smooth' });
+        slide(setW / originals.length);
         return; // 이 스크롤이 멎으면 scroll 리스너가 다음 판을 예약한다
       }
     }
