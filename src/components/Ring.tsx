@@ -424,7 +424,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 3.5,
     shadowColor: '#000',
-    shadowOpacity: 0.12,
+    /*
+      시안은 0 2px 8px rgba(0,0,0,.12)인데, iOS는 도형의 알파만큼 그림자를 다시
+      깎는다 — 배경이 0.22라 0.12를 그대로 주면 실효 0.03으로 안 보인다.
+      0.12/0.22를 미리 곱해 화면에서 시안의 짙기가 나오게 한다.
+    */
+    shadowOpacity: 0.55,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
   },
