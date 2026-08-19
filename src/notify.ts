@@ -161,6 +161,47 @@ export async function scheduleUpcoming(args: ScheduleArgs): Promise<void> {
   }
 }
 
+/**
+ * 절대 시각 트리거 — iOS는 CALENDAR로 준다.
+ *
+ * DATE 트리거는 iOS 네이티브(DateTriggerRecord)에서 ms를 초 단위로 **버림**한 뒤
+ * "그 시각까지 남은 시간"을 재서 UNTimeIntervalNotificationTrigger, 즉 상대
+ * 카운트다운으로 바꿔 넣는다. 카운트다운의 출발점이 예약을 처리하는 순간이라
+ * 처리 지연이 그대로 얹히고, 만료도 벽시계가 아니라 타이머라 한 박자 늦는다 —
+ * 알림이 실제 전환보다 살짝 늦게 오던 원인. CALENDAR는
+ * UNCalendarNotificationTrigger로 벽시계의 그 초에 맞춰 울린다.
+ *
+ * 초는 반올림해서 넘긴다(전환 시각은 시작 시각의 ms 끝수를 따라 어중간한 자리에
+ * 선다). 이미 지난 초를 가리키면 비반복 캘린더 트리거는 영영 울리지 않으므로,
+ * 최소한 다음 초를 가리키게 민다.
+ *
+ * Android의 DATE는 AlarmManager.setExactAndAllowWhileIdle이라 정확하다 — 그대로 둔다.
+ * (CALENDAR는 iOS 전용이기도 하다.)
+ */
+function triggerAt(
+  atMs: number,
+  channelId: string
+): Notifications.NotificationTriggerInput {
+  if (Platform.OS === 'ios') {
+    const sec = Math.max(Math.round(atMs / 1000), Math.floor(Date.now() / 1000) + 1);
+    const d = new Date(sec * 1000);
+    return {
+      type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+      year: d.getFullYear(),
+      month: d.getMonth() + 1, // JS는 0부터, DateComponents는 1부터
+      day: d.getDate(),
+      hour: d.getHours(),
+      minute: d.getMinutes(),
+      second: d.getSeconds(),
+    };
+  }
+  return {
+    type: Notifications.SchedulableTriggerInputTypes.DATE,
+    date: new Date(atMs),
+    channelId,
+  };
+}
+
 async function schedule(
   phase: Phase,
   title: string,
@@ -178,11 +219,7 @@ async function schedule(
         color: PHASE_COLOR[phase], // 잠금화면 좌측 색 막대 — 문구를 읽지 않아도 구분된다
         data: { phase },
       },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DATE,
-        date: new Date(atMs),
-        channelId: spec.id,
-      },
+      trigger: triggerAt(atMs, spec.id),
     });
   } catch {
     // 예약 실패는 안전망의 실패일 뿐 — 실행 자체는 계속되어야 한다
