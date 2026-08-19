@@ -358,20 +358,32 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
    * 재개하는 순간 현재 구간의 시작음이 다시 울린다.
    */
   const sessionId = stored?.presetId ?? null;
+  /**
+   * 계획이 펴졌는가 — **의존성에 같이 넣어야 한다.**
+   *
+   * 앱을 껐다 켜면 세션 복원(AsyncStorage 읽기 한 번)이 프리셋 목록 로딩(세 번)보다
+   * 먼저 끝나서, sessionId가 잡히는 순간에는 계획이 아직 없다. sessionId만 보면
+   * 그 첫 실행에서 "세션 없음"으로 빠진 뒤 계획이 도착해도 다시 돌지 않는다 —
+   * 아래 계획 갱신 effect가 타이머와 알림 예약은 살려내는데 startSession만 빠져서,
+   * 껐다 켠 뒤 타이머는 도는데 알림음(과 백그라운드를 붙잡는 무음 루프)만 없던 원인.
+   */
+  const hasPlan = plan != null;
   useEffect(() => {
-    if (!sessionId || !planRef.current) {
+    if (!sessionId || !hasPlan) {
       clearTimer();
       setSnap(EMPTY);
       return;
     }
     void startSession(settingsRef.current.volume);
-    lastIdx.current = -1;
+    const e = elapsedNow();
+    // 되살린 세션(이미 흐른 시간이 있다)은 지금 구간의 시작음을 다시 울리지 않는다
+    lastIdx.current = e > 0.5 ? snapshotAt(e).idx : -1;
     lastTick.current = '';
-    doneFired.current = elapsedNow() >= planRef.current.total;
+    doneFired.current = e >= planRef.current!.total;
     tick();
     void reschedule();
     return clearTimer;
-  }, [sessionId, tick, reschedule, elapsedNow]);
+  }, [sessionId, hasPlan, tick, reschedule, elapsedNow, snapshotAt]);
 
   /** 프리셋 내용이 바뀌면(실행 중 편집) 구간만 다시 계산해 그린다 — 안내음은 다시 울리지 않는다 */
   useEffect(() => {
