@@ -348,15 +348,13 @@ export function Ring({
       )}
 
       {/* 맥동과 멈춤을 겹쳐 곱한다 — 둘을 한 값에 섞으면 드라이버가 엉킨다 */}
-      {/* 칩+이름 두 줄이 서는 동안은 시계를 살짝 내린다 — 두 줄 이름과 겹치지 않게(시안의 clockShift) */}
-      <Animated.View
-        style={[
-          styles.clockWrap,
-          { opacity: textDim },
-          title.name != null && { transform: [{ translateY: 7 }] },
-        ]}
-        pointerEvents="none"
-      >
+      {/*
+        시계는 구간이 바뀌어도 늘 같은 자리다. 시안의 clockShift(14px)를 이름
+        있는 구간에만 옮겼더니 이름이 뜨는 순간 시계가 내려앉아 보였다 — 재 보니
+        두 줄 이름의 아랫변과 시계 윗변 사이가 안 내려도 11pt 남아서, 옮길 이유가
+        없다.
+      */}
+      <Animated.View style={[styles.clockWrap, { opacity: textDim }]} pointerEvents="none">
         <Animated.Text style={[styles.clock, TABULAR, { opacity: pulse }]}>{clock}</Animated.Text>
       </Animated.View>
 
