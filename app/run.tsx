@@ -678,10 +678,11 @@ const styles = StyleSheet.create({
   routineName: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: -0.2,
     color: '#FFFFFF',
-    opacity: 0.85,
+    opacity: 0.9,
   },
   /**
    * 머리줄 아래 한 줄 — 몇 번째 자리를 지나는지와 순서를 바꾸는 길.
