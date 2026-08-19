@@ -22,6 +22,7 @@ import {
 } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { selectionTick } from '../feedback';
+import type { RingTitle } from '../engine/labels';
 import { ABS, TABULAR } from '../theme';
 
 export const RING_SIZE = 330;
@@ -41,7 +42,7 @@ type Props = {
   ratio: number;
   remainSec: number;
   durSec: number;
-  title: string;
+  title: RingTitle;
   clock: string;
   sub: string;
   /** 마지막 3초 — 숫자가 맥동한다. 일시정지 중에는 맥동하지 않는다 */
@@ -72,6 +73,7 @@ export function Ring({
   const pulse = useRef(new Animated.Value(1)).current;
   const prog = useRef(new Animated.Value(ratio)).current;
   const [scrubbing, setScrubbing] = useState(false);
+
 
   /**
    * 멈춤의 정도 — 0이면 돌고 있고 1이면 멈춰 있다. 톡 꺼지지 않고 건너간다.
@@ -316,26 +318,45 @@ export function Ring({
       </Svg>
 
       {/*
-        긴 종목 이름은 잘라내기 전에 **줄여서** 한 줄을 지킨다.
+        링 안쪽 위 — 시안 「링 라벨 1a 칩 분리」.
 
-        제목 자리는 링 폭에서 좌우 36씩 뺀 258pt뿐인데 글자가 23pt Bold라 한글
-        10~11자에서 끊긴다. "{{이름}} · 운동" 형식이라 " · 운동" 넉 자가 이미
-        고정으로 먹으니 이름에 남는 자리는 예닐곱 자다 — 「케틀벨 스윙」쯤만 돼도
-        말줄임이 시작된다. 컨트롤 라벨이 쓰는 것과 같은 처방이다.
+        종목이 있는 자리(운동·세트 휴식)는 두 줄이다: 위에 반투명 단계 칩, 아래에
+        종목 이름. 한 줄에 "이름 · 운동"으로 붙이면 이름이 길 때 단계까지 같이
+        밀려서 줄을 갈랐다. 긴 이름은 **두 줄까지 접히고 그다음 말줄임**이다 —
+        시안(-webkit-line-clamp:2)과 같다. adjustsFontSizeToFit는 못 쓴다: 이
+        RN(0.86, 새 아키텍처)에서는 그 속성이 붙는 순간 축소는커녕 말줄임까지
+        통째로 죽어 이름이 원 크기 그대로 링 밖까지 뻗는다.
 
-        위아래로는 늘릴 자리가 없다. 제목은 top 고정이고 그 아래 92pt 시계가 있다.
+        종목이 없는 자리(웜업·준비·쿨다운·전환·완료)는 칩 없이 단계말 한 줄,
+        이전과 같은 자리다.
       */}
-      <Animated.Text
-        numberOfLines={1}
-        adjustsFontSizeToFit
-        minimumFontScale={0.72}
-        style={[styles.title, { opacity: textDim }]}
-      >
-        {title}
-      </Animated.Text>
+      {title.name == null ? (
+        <Animated.View style={[styles.titleWrap, { opacity: textDim }]} pointerEvents="none">
+          <Text numberOfLines={1} style={styles.title}>
+            {title.rest}
+          </Text>
+        </Animated.View>
+      ) : (
+        <Animated.View style={[styles.nameWrap, { opacity: textDim }]} pointerEvents="none">
+          <View style={styles.chip}>
+            <Text style={styles.chipText}>{title.rest}</Text>
+          </View>
+          <Text numberOfLines={2} style={styles.name}>
+            {title.name}
+          </Text>
+        </Animated.View>
+      )}
 
       {/* 맥동과 멈춤을 겹쳐 곱한다 — 둘을 한 값에 섞으면 드라이버가 엉킨다 */}
-      <Animated.View style={[styles.clockWrap, { opacity: textDim }]} pointerEvents="none">
+      {/* 칩+이름 두 줄이 서는 동안은 시계를 살짝 내린다 — 두 줄 이름과 겹치지 않게(시안의 clockShift) */}
+      <Animated.View
+        style={[
+          styles.clockWrap,
+          { opacity: textDim },
+          title.name != null && { transform: [{ translateY: 7 }] },
+        ]}
+        pointerEvents="none"
+      >
         <Animated.Text style={[styles.clock, TABULAR, { opacity: pulse }]}>{clock}</Animated.Text>
       </Animated.View>
 
@@ -365,15 +386,61 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.18)',
   },
-  title: {
+  /**
+   * 단계말 한 줄(종목 없는 자리)의 자리 — 예전 제목 자리 그대로.
+   *
+   * 좌우 56은 링과의 숨 자리다. 제목 높이(top 80)에서 흰 테 안쪽까지의 현의
+   * 반폭이 약 122라 좌우 36(폭 258)이면 글자가 테에 닿았다. 폭 218이면 양쪽에
+   * 12쯤 남는다.
+   */
+  titleWrap: {
     position: 'absolute',
     top: 80,
-    left: 36,
-    right: 36,
+    left: 56,
+    right: 56,
+  },
+  title: {
     textAlign: 'center',
     fontSize: 23,
     fontWeight: '700',
     letterSpacing: -0.35,
+    color: '#FFFFFF',
+  },
+  /** 칩+이름 두 줄(종목 있는 자리)의 자리 — 시안: top 48 · 좌우 52 · 사이 8 */
+  nameWrap: {
+    position: 'absolute',
+    top: 48,
+    left: 52,
+    right: 52,
+    alignItems: 'center',
+    gap: 8,
+  },
+  /** 단계 칩 — 반투명 흰 알약에 흰 글자. 시안의 rgba(255,255,255,.22)+테두리 그대로 */
+  chip: {
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 3.5,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  chipText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    letterSpacing: 0.4, // 시안의 .03em
+    color: '#FFFFFF',
+  },
+  /** 칩 아래 종목 이름 — 19.5pt, 두 줄까지 */
+  name: {
+    textAlign: 'center',
+    fontSize: 19.5,
+    fontWeight: '700',
+    letterSpacing: -0.29, // 시안의 -.015em
+    lineHeight: 24, // 시안의 1.24
     color: '#FFFFFF',
   },
   clockWrap: {

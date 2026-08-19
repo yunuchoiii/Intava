@@ -172,12 +172,23 @@ export function titleLabel(seg: Segment | null, paused: boolean): string {
  * 가리면, 다시 시작할 때 화면을 다시 읽어야 한다. (미니 바는 다르다 — 거기는
  * 글자 한 줄이 전부라 titleLabel이 "일시정지"를 그대로 든다.)
  */
-export function ringTitle(seg: Segment | null, _paused: boolean, preset: Preset): string {
-  if (!seg) return t('phase.DONE');
+export type RingTitle = {
+  /**
+   * 종목 이름 — 있으면 링은 두 줄로 그린다: 위에 단계 칩(rest), 아래에 이 이름.
+   * 길면 줄이고, 바닥까지 줄여도 안 들어가면 이름에 말줄임이 붙는다.
+   * 이름이 안 붙는 자리(웜업·준비·쿨다운·전환·완료)에서는 null.
+   */
+  name: string | null;
+  /** 이름이 있으면 칩에 서는 단계말("운동"), 없으면 홀로 서는 온말("준비") */
+  rest: string;
+};
+
+export function ringTitle(seg: Segment | null, _paused: boolean, preset: Preset): RingTitle {
+  if (!seg) return { name: null, rest: t('phase.DONE') };
   const phase = phaseLabel(seg.phase);
   const named = seg.phase === 'WORK' || seg.phase === 'SET_REST';
-  if (!named || !seg.name || isSimple(preset)) return phase;
-  return t('run.titleWithName', { name: seg.name, phase });
+  if (!named || !seg.name || isSimple(preset)) return { name: null, rest: phase };
+  return { name: seg.name, rest: phase };
 }
 
 /** 홈 목록 요약 줄 */
