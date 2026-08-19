@@ -155,6 +155,27 @@ export type Session = RunSnapshot & {
   commitScrub: () => void;
 };
 
+/**
+ * 구간의 정체 — 계획이 다시 펴져도 "같은 자리"인지 알아보는 열쇠.
+ *
+ * 번호(idx·start)는 앞이 바뀌면 같이 밀리므로 못 쓴다. 종목에 속한 구간은
+ * 페이즈·라운드·종목 id·세트로, 종목 전환 휴식은 세트 없이(마지막 세트 번호가
+ * 세트 수 편집에 따라 변한다), 웜업·준비·쿨다운은 하나뿐이라 페이즈만으로 가린다.
+ */
+function segIdentity(x: Segment): string {
+  switch (x.phase) {
+    case 'WORK':
+    case 'SET_REST':
+      return `${x.phase}:${x.round}:${x.blockId}:${x.set}`;
+    case 'BLOCK_REST':
+      return `${x.phase}:${x.round}:${x.blockId}`;
+    case 'ROUND_REST':
+      return `${x.phase}:${x.round}`;
+    default:
+      return x.phase;
+  }
+}
+
 const EMPTY: RunSnapshot = {
   elapsed: 0,
   seg: null,
@@ -385,12 +406,58 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     return clearTimer;
   }, [sessionId, hasPlan, tick, reschedule, elapsedNow, snapshotAt]);
 
-  /** 프리셋 내용이 바뀌면(실행 중 편집) 구간만 다시 계산해 그린다 — 안내음은 다시 울리지 않는다 */
+  /**
+   * 직전 계획 — 실행 중 편집으로 계획이 바뀔 때 "지금 있던 자리"를 되찾는 기준.
+   * 세션이 다르면 이어진 계획이 아니므로 세션 id를 같이 들고 다닌다.
+   */
+  const prevPlan = useRef<{ sessionId: string; plan: Plan } | null>(null);
+
+  /**
+   * 프리셋 내용이 바뀌면(실행 중 편집) 구간만 다시 계산해 그린다 — 안내음은 다시 울리지 않는다.
+   *
+   * 그리기 전에 **시간을 새 계획에 맞춰 옮긴다.** 경과 시간(zeroAt)은 편집과 무관하게
+   * 그대로인데 구간 배치가 바뀌므로, 같은 경과가 엉뚱한 구간을 가리킨다 — 웜업을
+   * 늘리거나 앞 종목의 세트를 고치면 지금 하던 종목이 갑자기 넘어가던 원인.
+   * 옛 계획에서 지금 있던 구간을 정체(페이즈·라운드·종목·세트)로 새 계획에서 되찾아,
+   * 구간 안 지나온 몫까지 그대로 이어지게 기준 시각을 민다.
+   */
   useEffect(() => {
-    if (!sessionId) return;
+    if (!sessionId || !plan) {
+      prevPlan.current = null;
+      return;
+    }
+    const prev = prevPlan.current;
+    prevPlan.current = { sessionId, plan };
+    // 첫 계획이거나 새 세션이면 옮길 것이 없다 — 위의 세션 effect가 다 한다
+    if (!prev || prev.sessionId !== sessionId || prev.plan === plan) return;
+
+    const s = storedRef.current;
+    if (s) {
+      const at = s.pausedAt ?? Date.now();
+      const oldElapsed = Math.max(0, Math.min(prev.plan.total, (at - s.zeroAt) / 1000));
+      const found = segmentAt(prev.plan, oldElapsed);
+      if (found) {
+        const match = plan.segs.find((x) => segIdentity(x) === segIdentity(found.seg));
+        if (match) {
+          // 새 길이가 지나온 몫보다 짧으면 끝자락에 붙인다 — 곧장 다음 구간으로 넘어간다
+          const offset = Math.min(oldElapsed - found.seg.start, Math.max(0, match.dur - 0.05));
+          const next = match.start + offset;
+          if (Math.abs(next - oldElapsed) >= 0.01) {
+            persist({ ...s, zeroAt: at - next * 1000 });
+            setSyncId((n) => n + 1);
+          }
+        }
+        // 못 찾으면(지금 종목을 지웠다 등) 시간을 그대로 둔다 — 어차피 기준이 없다
+      }
+    }
+
+    // 배치가 밀려 구간의 번호가 바뀌어도 같은 구간이다 — 시작음을 또 울리지 않는다
+    const shot = snapshotAt(elapsedNow());
+    lastIdx.current = shot.idx;
+    lastTick.current = '';
     tick();
     void reschedule();
-  }, [plan, sessionId, tick, reschedule]);
+  }, [plan, sessionId, tick, reschedule, persist, elapsedNow, snapshotAt]);
 
   /** 세션이 끝나면 오디오 세션을 놓아준다 */
   useEffect(() => {
