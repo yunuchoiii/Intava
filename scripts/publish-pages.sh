@@ -27,6 +27,10 @@ FILES=(
   shot-switch.webp
   shot-cooldown.webp
   shot-records.webp
+  robots.txt
+  sitemap.xml
+  # 구글 서치 콘솔 소유권 인증 — 지우면 인증이 풀린다
+  google23287721c10b569f.html
 )
 
 if [ ! -d "$PAGES_DIR/.git" ]; then
