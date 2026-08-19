@@ -38,8 +38,13 @@ const DECIDE_PX = 6;
 const NAME_SIZE = 23;
 /** 이름 줄의 행높이(배율 1 기준) — 두 줄로 접힐 때만 실제로 쓰인다 */
 const NAME_LINE_H = 28;
-/** 종목 이름이 설 수 있는 폭 — nameWrap의 좌우 52를 뺀 자리 */
-const NAME_MAX_W = RING_SIZE - 104;
+/**
+ * 종목 이름이 설 수 있는 폭 — nameWrap의 좌우 64를 뺀 자리.
+ *
+ * 이름 줄 높이에서 흰 테 안쪽까지의 현이 242쯤이라, 시안값(52)대로면 테까지
+ * 8pt밖에 안 남아 글자가 링에 바짝 붙어 보였다. 64면 20pt쯤 숨이 생긴다.
+ */
+const NAME_MAX_W = RING_SIZE - 128;
 /** 여기까지 줄여도 안 들어가면 두 줄로 접는다 */
 const NAME_MIN_SCALE = 0.72;
 
@@ -460,12 +465,12 @@ const styles = StyleSheet.create({
     letterSpacing: -0.35,
     color: '#FFFFFF',
   },
-  /** 칩+이름 두 줄(종목 있는 자리)의 자리 — 시안: top 48 · 좌우 52 · 사이 8 */
+  /** 칩+이름 두 줄(종목 있는 자리)의 자리 — 시안(top 48·사이 8)에서 좌우만 64로 넓혔다 */
   nameWrap: {
     position: 'absolute',
     top: 48,
-    left: 52,
-    right: 52,
+    left: 64,
+    right: 64,
     alignItems: 'center',
     gap: 8,
   },
