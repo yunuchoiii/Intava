@@ -25,7 +25,7 @@ import { ClearButton } from '../src/components/ClearButton';
 import { BlockPickerSheet } from '../src/components/BlockPickerSheet';
 import { BlockSheet } from '../src/components/BlockSheet';
 import { useMiniTimerSpace, useTimerRunning } from '../src/components/MiniTimer';
-import { SurfaceButton } from '../src/components/Buttons';
+import { SurfaceButton, WhiteButton } from '../src/components/Buttons';
 import { Surface } from '../src/components/Surface';
 import { PressBox } from '../src/components/PressBox';
 import { BackIcon, PlayIcon } from '../src/components/Icons';
@@ -508,12 +508,25 @@ export default function Edit() {
             <Text style={[styles.totalText, TABULAR]}>{t('edit.totalTime', { time: durationLong(total) })}</Text>
             <Text style={[styles.totalText, TABULAR]}>{t('edit.workTime', { time: durationLong(pure) })}</Text>
           </View>
-          <SurfaceButton
-            label={t('common.save')}
-            onPress={save}
-            height={58}
-            radius={ACTION_RADIUS}
-          />
+          {/*
+            고친 것이 있으면 흰 버튼으로 도드라진다 — "저장할 것이 생겼다"는 신호다.
+            깨끗할 때는 표면 톤 그대로 둔다. 흰 버튼이 늘 켜져 있으면 신호가 아니다.
+          */}
+          {dirty ? (
+            <WhiteButton
+              label={t('common.save')}
+              onPress={save}
+              height={58}
+              radius={ACTION_RADIUS}
+            />
+          ) : (
+            <SurfaceButton
+              label={t('common.save')}
+              onPress={save}
+              height={58}
+              radius={ACTION_RADIUS}
+            />
+          )}
         </View>
       </View>
 
