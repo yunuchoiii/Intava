@@ -6,7 +6,7 @@
  */
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { usePreventRemove } from 'expo-router/react-navigation';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Pressable,
@@ -25,7 +25,7 @@ import { ClearButton } from '../src/components/ClearButton';
 import { BlockPickerSheet } from '../src/components/BlockPickerSheet';
 import { BlockSheet } from '../src/components/BlockSheet';
 import { useMiniTimerSpace, useTimerRunning } from '../src/components/MiniTimer';
-import { SurfaceButton, WhiteButton } from '../src/components/Buttons';
+import { WhiteButton } from '../src/components/Buttons';
 import { Surface } from '../src/components/Surface';
 import { PressBox } from '../src/components/PressBox';
 import { BackIcon, PlayIcon } from '../src/components/Icons';
@@ -55,12 +55,20 @@ function fingerprint(p: Preset): string {
     p.name.trim(),
     p.warmupSec,
     p.prepareSec,
-    p.blockRestSec,
     p.rounds,
     p.roundRestSec,
     p.cooldownSec,
-    p.blocks.map((b) => [b.id, b.name.trim(), b.workSec, b.restSec, b.sets]),
+    p.blocks.map((b) => [b.id, b.name.trim(), b.workSec, b.restSec, b.sets, (b.memo ?? '').trim()]),
   ]);
+}
+
+/** 저장할 모양으로 다듬는다 — 빈 이름은 기본 이름으로 메운다 */
+function normalizedOf(p: Preset, simple: boolean): Preset {
+  return {
+    ...p,
+    name: p.name.trim() || t(simple ? 'defaults.timerName' : 'defaults.routineName'),
+    blocks: p.blocks.map((b) => ({ ...b, name: b.name.trim() || t('defaults.block') })),
+  };
 }
 
 export default function Edit() {
@@ -78,6 +86,12 @@ export default function Edit() {
     () => getPreset(id) ?? emptyPreset(kind === 'timer' ? 'timer' : 'routine'),
     [] // eslint-disable-line react-hooks/exhaustive-deps
   );
+  /**
+   * 처음 만드는 중인지 — **문 앞에서 한 번 정한다.** 기존 것은 고치는 족족
+   * 저장되고, 새것은 「만들기」를 눌러야 생긴다. 렌더마다 다시 재면 시작하기가
+   * 저장하는 순간 기존 편집으로 둔갑해 버튼이 사라진다.
+   */
+  const isNew = useMemo(() => getPreset(id) == null, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [draft, setDraft] = useState<Preset>(initial);
   const [open, setOpen] = useState<string | null>(null);
   const [tip, setTip] = useState<string | null>(null);
@@ -99,8 +113,37 @@ export default function Edit() {
   );
   const total = totalSec(draft);
   const pure = workSec(draft);
-  /** 저장하지 않은 편집이 남아 있는지 — 나가기와 시작하기가 이걸 보고 묻는다 */
+  /** 만들다 만 것이 있는지 — **새것에만** 쓴다. 기존 것은 고치는 족족 저장돼 물을 것이 없다 */
   const dirty = useMemo(() => fingerprint(draft) !== fingerprint(initial), [draft, initial]);
+
+  /**
+   * 기존 것은 저장 버튼 없이 **고치는 족족 저장한다.**
+   *
+   * 타자 한 자마다 쓰면 저장이 너무 잦아 400ms 숨을 두고, 화면을 떠나는 순간과
+   * 실행으로 넘어가는 순간에는 기다리지 않고 바로 확정한다(flush). 지문이 같으면
+   * 쓰지 않으므로 몇 번을 불려도 한 번만 저장된다. 실행 중인 루틴이면 저장마다
+   * 세션이 계획을 다시 펴는데, 지금 하던 자리는 세션이 정체로 되찾아 이어 준다.
+   */
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+  const lastSaved = useRef(fingerprint(initial));
+  const commit = useCallback(() => {
+    const d = draftRef.current;
+    const fp = fingerprint(d);
+    if (fp === lastSaved.current) return;
+    lastSaved.current = fp;
+    savePreset(normalizedOf(d, kindOf(d) === 'timer'));
+  }, [savePreset]);
+  useEffect(() => {
+    if (isNew) return;
+    const timer = setTimeout(commit, 400);
+    return () => clearTimeout(timer);
+  }, [draft, isNew, commit]);
+  /** 화면이 사라질 때 마지막 편집이 숨(400ms) 속에 남아 있으면 여기서 확정된다 */
+  useEffect(() => {
+    if (isNew) return;
+    return commit;
+  }, [isNew, commit]);
 
   /**
    * 우리 손으로 떠나는 길 — 저장·시작처럼 이미 결론이 난 것들이다.
@@ -122,7 +165,7 @@ export default function Edit() {
    * 직접 듣고 막아도 이미 늦은 이유다. usePreventRemove는 막고 있다는 사실을
    * 화면까지(preventNativeDismiss) 내려보내서 벗겨지는 것 자체를 붙든다.
    */
-  usePreventRemove(dirty && leaving == null, ({ data }) => {
+  usePreventRemove(isNew && dirty && leaving == null, ({ data }) => {
     Alert.alert(t('edit.discardTitle'), t('edit.discardBody'), [
       { text: t('edit.discardStay'), style: 'cancel' },
       {
@@ -166,23 +209,20 @@ export default function Edit() {
     sets: 3,
   });
 
-  const normalized = (): Preset => ({
-    ...draft,
-    name: draft.name.trim() || t(simple ? 'defaults.timerName' : 'defaults.routineName'),
-    blocks: draft.blocks.map((b) => ({ ...b, name: b.name.trim() || t('defaults.block') })),
-  });
+  const normalized = (): Preset => normalizedOf(draft, simple);
 
-  /** 이미 있던 것을 고친 것인지, 처음 만든 것인지 — 말이 달라야 한다 */
-  const isNew = getPreset(draft.id) == null;
-
+  /** 「만들기」 — 새것만 지나는 길이다. 기존 것은 이미 다 저장돼 있다 */
   const save = () => {
     savePreset(normalized());
-    toast(t(isNew ? 'toast.saved' : 'toast.updated'));
+    toast(t('toast.saved'));
     exit(() => router.back());
   };
 
-  /** 나간다 — 고친 것이 남아 있으면 문지기가 묻는다 */
-  const leave = () => router.back();
+  /** 나간다 — 새것은 만들다 만 것이 있으면 문지기가 묻고, 기존 것은 확정하고 떠난다 */
+  const leave = () => {
+    if (!isNew) commit();
+    router.back();
+  };
 
   /**
    * 편집 화면은 스택에서 걷어내고 홈 위에 실행 화면을 올린다. 실행 화면을 접었을 때
@@ -203,24 +243,16 @@ export default function Edit() {
   const startNow = () => {
     const p = normalized();
     savePreset(p);
+    // 숨 속에 남은 자동 저장이 뒤따라 또 쓰지 않게 지문을 맞춰 둔다
+    lastSaved.current = fingerprint(p);
     session.start(p.id);
     exit(goRun);
   };
 
-  /**
-   * 도는 것을 보러 간다 — 고치던 것을 두고 떠나는 셈이라 남아 있으면 묻는다.
-   * 문지기에게 맡기지 않고 여기서 묻는다 — goRun은 홈까지 걷어내고 실행 화면을
-   * 얹는 두 걸음이라, 첫 걸음만 붙잡히면 두 번째가 엉뚱한 자리에 쌓인다.
-   */
+  /** 도는 것을 보러 간다 — 남은 편집을 확정하고 떠난다(기존 것은 늘 저장되는 세상이다) */
   const openRunning = () => {
-    if (!dirty) {
-      goRun();
-      return;
-    }
-    Alert.alert(t('edit.discardTitle'), t('edit.discardBody'), [
-      { text: t('edit.discardStay'), style: 'cancel' },
-      { text: t('edit.discardLeave'), style: 'destructive', onPress: () => exit(goRun) },
-    ]);
+    if (!isNew) commit();
+    exit(goRun);
   };
 
   /**
@@ -254,15 +286,8 @@ export default function Edit() {
       return;
     }
 
-    /** 저장을 겸하는 버튼이라, 고친 것이 있으면 말없이 덮어쓰지 않는다 */
-    if (!dirty) {
-      startNow();
-      return;
-    }
-    Alert.alert(t('edit.startSaveTitle'), t('edit.startSaveBody'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('edit.startSaveConfirm'), onPress: startNow },
-    ]);
+    // 기존 것은 이미 저장돼 있고, 새것은 ▶가 곧 만들기다 — 물을 것이 없다
+    startNow();
   };
 
   const startEndSummary = () => {
@@ -469,17 +494,11 @@ export default function Edit() {
                 valueSize={21}
                 chevron
               />
-              <ValueRow
-                title={t('edit.blockRest')}
-                display={durationShort(draft.blockRestSec) || t('common.none')}
-                open={open === 'blockRest'}
-                onToggle={() => toggleRow('blockRest')}
-                wheel="time"
-                value={draft.blockRestSec}
-                onChange={(blockRestSec) => patch({ blockRestSec })}
-                valueSize={21}
-                chevron
-              />
+              {/*
+                종목 사이 휴식 줄은 없다 — 종목 전환 구간이 사라지고 마지막 세트
+                뒤에도 그 종목의 휴식이 돌게 바뀌었다(segments.ts). blockRestSec은
+                옛 데이터 호환으로 타입에만 남는다.
+              */}
               <ValueRow
                 title={t('edit.roundRest')}
                 display={durationShort(draft.roundRestSec) || t('common.none')}
@@ -509,19 +528,12 @@ export default function Edit() {
             <Text style={[styles.totalText, TABULAR]}>{t('edit.workTime', { time: durationLong(pure) })}</Text>
           </View>
           {/*
-            고친 것이 있으면 흰 버튼으로 도드라진다 — "저장할 것이 생겼다"는 신호다.
-            깨끗할 때는 표면 톤 그대로 둔다. 흰 버튼이 늘 켜져 있으면 신호가 아니다.
+            버튼은 **새것에만** 선다 — 「만들기」. 기존 것은 고치는 족족 저장되므로
+            저장 버튼 자체가 없다(있으면 "안 누르면 안 저장되나"로 읽힌다).
           */}
-          {dirty ? (
+          {isNew && (
             <WhiteButton
-              label={t('common.save')}
-              onPress={save}
-              height={58}
-              radius={ACTION_RADIUS}
-            />
-          ) : (
-            <SurfaceButton
-              label={t('common.save')}
+              label={t('edit.create')}
               onPress={save}
               height={58}
               radius={ACTION_RADIUS}
