@@ -113,9 +113,12 @@ export function BlockSheet({ block, canDelete, isNew, onClose, onSave, onDelete 
             unit={t('sheet.sets')}
           />
 
-          {/* 무게·자세 같은 한 줄 메모 — 실행 화면에서 이름 밑에 선다 */}
+          {/*
+            무게·자세 같은 한 줄 메모 — 실행 화면에서 이름 밑에 선다.
+            라벨은 위의 운동·세트 줄과 같은 옷(18/600/흰색), 입력은 그 아래 줄이다.
+          */}
           <View style={styles.memoRow}>
-            <Text style={styles.nameLabel}>{t('sheet.memo')}</Text>
+            <Text style={styles.memoLabel}>{t('sheet.memo')}</Text>
             <TextInput
               value={draft.memo ?? ''}
               onChangeText={(memo) => patch({ memo })}
@@ -176,6 +179,7 @@ const styles = StyleSheet.create({
   saveAsTimerLabel: { fontSize: 15, color: C.textSecondary },
   nameRow: { paddingTop: 12, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: C.divider },
   memoRow: { paddingTop: 14, paddingBottom: 6 },
+  memoLabel: { fontSize: 18, lineHeight: 24, fontWeight: '600', color: C.textPrimary },
   memoInput: {
     marginTop: 8,
     fontSize: 17,
