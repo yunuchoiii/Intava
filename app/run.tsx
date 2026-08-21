@@ -290,6 +290,8 @@ export default function Run() {
   const phase = run.seg?.phase ?? 'DONE';
   const color = PHASE_COLOR[phase];
   const simple = isSimple(preset);
+  /** 링 밖(이름·메모)과 링 안(단계말)이 나눠 쓴다 */
+  const title = ringTitle(run.seg, run.paused, preset);
 
   /**
    * 편집으로 간다 — 실행 화면 **위에** 올리지 않고, 먼저 미니 바로 접은 뒤에 연다.
@@ -404,16 +406,36 @@ export default function Run() {
         </View>
 
         {/*
-          종목 줄 — 이전 · 지금 · 다음 셋만. 종목이 여덟이면 이름이 두 줄로 접히면서
-          링이 밀려 내려갔고, 그 여덟 개가 다 필요한 순간도 없었다. 전체 차례와
-          순서 바꾸기는 오른쪽 목록 버튼 뒤에 둔다.
+          시안 「링 위 5a: 이름이 주인공」 — 종목 이름(두 줄까지)과 메모는 머리줄
+          바로 아래, 링 밖에 선다. "뭘 하는지"를 먼저 읽고 시선이 타이머로
+          내려가는 순서다. 링 안에는 단계말 하나만 남는다.
+
+          이 블록은 **높이가 고정**이다. 이름 없는 단계(웜업·준비·쿨다운·라운드
+          휴식·완료)에서 블록이 접히면 링이 단계마다 오르내린다 — 링 자리는 모든
+          단계에서 같아야 한다. 두 줄 이름+메모가 서는 최악 높이로 잡되, 그 이상
+          키우지 않아 이름 없는 단계의 위쪽이 휑해 보이지 않게 한다.
         */}
+        <View style={styles.nameBlock}>
+          {title.name != null && (
+            <>
+              <Text numberOfLines={2} style={styles.exName}>
+                {title.name}
+              </Text>
+              {title.memo != null && (
+                <Text numberOfLines={1} style={styles.exMemo}>
+                  “{title.memo}”
+                </Text>
+              )}
+            </>
+          )}
+        </View>
+
         <View style={styles.ringWrap}>
           <Ring
             ratio={run.ratio}
             remainSec={run.remain}
             durSec={run.seg?.dur ?? 0}
-            title={ringTitle(run.seg, run.paused, preset)}
+            title={title.rest}
             clock={clock(run.remain)}
             sub={subLabel(run.seg, preset)}
             warn={!run.done && run.remain <= 3 && !run.paused}
@@ -695,6 +717,34 @@ const styles = StyleSheet.create({
   stageRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   stageCount: { fontSize: BAR_LABEL, fontWeight: '600', color: '#FFFFFF', opacity: 0.88 },
   stageLink: { fontSize: BAR_LABEL, fontWeight: '600', color: '#FFFFFF', opacity: 0.78 },
+  /**
+   * 머리줄 아래 종목 이름·메모의 자리 — **높이 고정.** 내용이 이름 두 줄+메모까지
+   * 서면 딱 차고, 이름 없는 단계에서는 빈 채로 같은 높이를 지켜 링이 안 움직인다.
+   * 28+5+18에 위 여백 12를 더한 한 줄 기준이 아니라 두 줄(56) 기준으로 91이다.
+   */
+  nameBlock: {
+    height: 91,
+    paddingTop: 12,
+    paddingHorizontal: 28,
+    alignItems: 'center',
+  },
+  exName: {
+    textAlign: 'center',
+    fontSize: 23,
+    fontWeight: '700',
+    letterSpacing: -0.35,
+    lineHeight: 28,
+    color: '#FFFFFF',
+  },
+  /** 이름 밑 메모 — 따옴표로 감싼 곁말. 시안의 "팔꿈치 45도…" 줄이다 */
+  exMemo: {
+    marginTop: 5,
+    textAlign: 'center',
+    fontSize: 13.5,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    opacity: 0.78,
+  },
   ringWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 0 },
   controls: {
     flexDirection: 'row',

@@ -22,7 +22,6 @@ import {
 } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { selectionTick } from '../feedback';
-import type { RingTitle } from '../engine/labels';
 import { ABS, TABULAR } from '../theme';
 
 export const RING_SIZE = 330;
@@ -34,19 +33,6 @@ const GRAB_MIN = 93;
 const GRAB_MAX = 181;
 /** 이만큼은 움직여야 손짓의 방향을 판단한다 */
 const DECIDE_PX = 6;
-/** 종목 이름 기본 크기 — 이름 없는 구간의 단계 글자(title)와 같다 */
-const NAME_SIZE = 23;
-/** 이름 줄의 행높이(배율 1 기준) — 두 줄로 접힐 때만 실제로 쓰인다 */
-const NAME_LINE_H = 28;
-/**
- * 종목 이름이 설 수 있는 폭 — nameWrap의 좌우 64를 뺀 자리.
- *
- * 이름 줄 높이에서 흰 테 안쪽까지의 현이 242쯤이라, 시안값(52)대로면 테까지
- * 8pt밖에 안 남아 글자가 링에 바짝 붙어 보였다. 64면 20pt쯤 숨이 생긴다.
- */
-const NAME_MAX_W = RING_SIZE - 128;
-/** 여기까지 줄여도 안 들어가면 두 줄로 접는다 */
-const NAME_MIN_SCALE = 0.72;
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -55,7 +41,8 @@ type Props = {
   ratio: number;
   remainSec: number;
   durSec: number;
-  title: RingTitle;
+  /** 링 안 시계 위의 단계말("운동"·"휴식"·"웜업") — 종목 이름은 링 밖(실행 화면 머리 아래)이다 */
+  title: string;
   clock: string;
   sub: string;
   /** 마지막 3초 — 숫자가 맥동한다. 일시정지 중에는 맥동하지 않는다 */
@@ -86,14 +73,6 @@ export function Ring({
   const pulse = useRef(new Animated.Value(1)).current;
   const prog = useRef(new Animated.Value(ratio)).current;
   const [scrubbing, setScrubbing] = useState(false);
-
-  /**
-   * 이름 축소 배율 — 어느 이름을 잰 것인지 같이 든다. 이름이 막 바뀐 프레임에는
-   * 아직 옛 이름의 배율뿐이라, 그때는 원 크기로 그려 둔다(두 줄 제약이 있어
-   * 넘쳐도 접힐 뿐이다). 복제의 onLayout이 곧바로 새 배율을 가져온다.
-   */
-  const [nameFit, setNameFit] = useState({ name: '', scale: 1 });
-  const nameScale = nameFit.name === title.name ? nameFit.scale : 1;
 
   /**
    * 멈춤의 정도 — 0이면 돌고 있고 1이면 멈춰 있다. 톡 꺼지지 않고 건너간다.
@@ -338,89 +317,20 @@ export function Ring({
       </Svg>
 
       {/*
-        링 안쪽 위 — 시안 「링 라벨 1a 칩 분리」.
+        링 안쪽 위 — 시안 「링 위 5a: 이름이 주인공」.
 
-        종목이 있는 자리(운동·세트 휴식)는 두 줄이다: 위에 반투명 단계 칩, 아래에
-        종목 이름. 한 줄에 "이름 · 운동"으로 붙이면 이름이 길 때 단계까지 같이
-        밀려서 줄을 갈랐다. 종목이 없는 자리(웜업·준비·쿨다운·전환·완료)는 칩
-        없이 단계말 한 줄, 이전과 같은 자리다.
-
-        이름의 기본 크기는 단계 글자와 같은 23이고, 길면 **동적으로 줄인다** —
-        바닥(0.72)까지 줄여도 안 들어가면 그때 두 줄로 접히고 그다음 말줄임이다.
-        adjustsFontSizeToFit는 못 쓴다: 이 RN(0.86, 새 아키텍처)에서는 그 속성이
-        붙는 순간 축소는커녕 말줄임까지 통째로 죽어 이름이 원 크기 그대로 링
-        밖까지 뻗는다. 그래서 보이지 않는 복제에 제약 없는 폭(2000)을 주고
-        onLayout으로 본디 폭을 읽어 배율을 직접 계산한다. 복제의 글자 크기는 늘
-        원 크기라 배율이 바뀌어도 다시 재지 않는다 — 순환이 없다.
+        링 안에는 **어느 단계든 단계말 하나만** 선다("운동"·"휴식"·"웜업"…).
+        종목 이름과 메모는 링 밖, 실행 화면 머리줄 바로 아래로 나갔다 — "뭘
+        하는지"를 먼저 읽고 시선이 타이머로 내려가는 순서다. 덕분에 링 안 글자는
+        길이가 뻔해 축소·말줄임 장치가 통째로 필요 없어졌다.
       */}
-      {title.name == null ? (
-        <Animated.View style={[styles.titleWrap, { opacity: textDim }]} pointerEvents="none">
-          <Text numberOfLines={1} style={styles.title}>
-            {title.rest}
-          </Text>
-        </Animated.View>
-      ) : (
-        <Animated.View style={[styles.nameWrap, { opacity: textDim }]} pointerEvents="none">
-          <View style={styles.chip}>
-            <Text style={styles.chipText}>{title.rest}</Text>
-          </View>
-          {/* 메모가 서는 날은 이름을 한 줄로 잡는다 — 두 줄 이름 + 메모는 시계를 침범한다 */}
-          <Text
-            numberOfLines={title.memo ? 1 : 2}
-            style={[
-              styles.name,
-              nameScale < 1 && {
-                fontSize: NAME_SIZE * nameScale,
-                letterSpacing: -0.35 * nameScale,
-                lineHeight: NAME_LINE_H * nameScale,
-              },
-            ]}
-          >
-            {title.name}
-          </Text>
-          {title.memo != null && (
-            <Text numberOfLines={1} style={styles.memo}>
-              {title.memo}
-            </Text>
-          )}
-          {/*
-            재기용 복제 — 제약 없는 폭(2000)의 행 안에서 제 크기대로 펼쳐지므로
-            onLayout의 프레임 폭이 곧 본디 폭이다. onTextLayout은 이 RN에서 오지
-            않을 때가 있어 쓰지 않는다. key로 이름마다 새로 세운다 — 폭이 우연히
-            같으면 onLayout이 다시 오지 않아 배율이 옛 이름 것에 묶인다.
-          */}
-          <View style={styles.ghostRow} pointerEvents="none">
-            <Text
-              key={title.name}
-              style={styles.name}
-              onLayout={(e) => {
-                const w = e.nativeEvent.layout.width;
-                /*
-                 * 여유를 6pt나 두는 이유: 딱 맞춘 배율은 프레임이 픽셀(1/3pt)로
-                 * 반올림되며 1pt 못 미치게 좁아질 수 있고, 그 순간 iOS는 넘친
-                 * 만큼이 아니라 **글리프 하나를 통째로** 걷어내 두 줄로 접거나
-                 * 말줄임표를 얹는다 — 줄여 놓고도 접히던 원인이다.
-                 */
-                const next =
-                  w <= NAME_MAX_W
-                    ? 1
-                    : Math.max(NAME_MIN_SCALE, (NAME_MAX_W - 6) / w);
-                setNameFit({ name: title.name!, scale: next });
-              }}
-            >
-              {title.name}
-            </Text>
-          </View>
-        </Animated.View>
-      )}
+      <Animated.View style={[styles.titleWrap, { opacity: textDim }]} pointerEvents="none">
+        <Text numberOfLines={1} style={styles.title}>
+          {title}
+        </Text>
+      </Animated.View>
 
       {/* 맥동과 멈춤을 겹쳐 곱한다 — 둘을 한 값에 섞으면 드라이버가 엉킨다 */}
-      {/*
-        시계는 구간이 바뀌어도 늘 같은 자리다. 시안의 clockShift(14px)를 이름
-        있는 구간에만 옮겼더니 이름이 뜨는 순간 시계가 내려앉아 보였다 — 재 보니
-        두 줄 이름의 아랫변과 시계 윗변 사이가 안 내려도 11pt 남아서, 옮길 이유가
-        없다.
-      */}
       <Animated.View style={[styles.clockWrap, { opacity: textDim }]} pointerEvents="none">
         <Animated.Text style={[styles.clock, TABULAR, { opacity: pulse }]}>{clock}</Animated.Text>
       </Animated.View>
@@ -451,85 +361,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.18)',
   },
-  /**
-   * 단계말 한 줄(종목 없는 자리)의 자리 — 예전 제목 자리 그대로.
-   *
-   * 좌우 56은 링과의 숨 자리다. 제목 높이(top 80)에서 흰 테 안쪽까지의 현의
-   * 반폭이 약 122라 좌우 36(폭 258)이면 글자가 테에 닿았다. 폭 218이면 양쪽에
-   * 12쯤 남는다.
-   */
+  /** 단계말의 자리 — 시안 5a: top 86, 16pt. 어느 단계든 이 하나다 */
   titleWrap: {
     position: 'absolute',
-    top: 80,
+    top: 86,
     left: 56,
     right: 56,
   },
   title: {
     textAlign: 'center',
-    fontSize: 23,
-    fontWeight: '700',
-    letterSpacing: -0.35,
-    color: '#FFFFFF',
-  },
-  /** 칩+이름 두 줄(종목 있는 자리)의 자리 — 시안(top 48·사이 8)에서 좌우만 64로 넓혔다 */
-  nameWrap: {
-    position: 'absolute',
-    top: 48,
-    left: 64,
-    right: 64,
-    alignItems: 'center',
-    gap: 8,
-  },
-  /** 단계 칩 — 반투명 흰 알약에 흰 글자. 시안의 rgba(255,255,255,.22)+테두리 그대로 */
-  chip: {
-    backgroundColor: 'rgba(255,255,255,0.22)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 3.5,
-    shadowColor: '#000',
-    /*
-      시안은 0 2px 8px rgba(0,0,0,.12)인데, iOS는 도형의 알파만큼 그림자를 다시
-      깎는다 — 배경이 0.22라 0.12를 그대로 주면 실효 0.03으로 안 보인다.
-      0.12/0.22를 미리 곱해 화면에서 시안의 짙기가 나오게 한다.
-    */
-    shadowOpacity: 0.55,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  chipText: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    letterSpacing: 0.4, // 시안의 .03em
-    color: '#FFFFFF',
-  },
-  /** 칩 아래 종목 이름 — 기본은 단계 글자(title)와 같은 크기, 길면 배율이 얹힌다 */
-  name: {
-    textAlign: 'center',
-    fontSize: NAME_SIZE,
-    fontWeight: '700',
-    letterSpacing: -0.35,
-    lineHeight: NAME_LINE_H,
-    color: '#FFFFFF',
-  },
-  /** 이름 밑 종목 메모 — 곁말이라 작고 옅다. gap이 크면 딴 줄처럼 읽혀 이름에 붙인다 */
-  memo: {
-    marginTop: -3,
-    textAlign: 'center',
-    fontSize: 13,
+    fontSize: 16,
     fontWeight: '600',
+    letterSpacing: -0.1,
     color: '#FFFFFF',
-    opacity: 0.72,
-  },
-  /** 재기용 복제가 사는 행 — 폭 제약을 없애 안의 글자가 본디 폭으로 선다 */
-  ghostRow: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: 2000,
-    flexDirection: 'row',
-    opacity: 0,
+    opacity: 0.85,
   },
   clockWrap: {
     ...ABS,
