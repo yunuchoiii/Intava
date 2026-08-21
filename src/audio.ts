@@ -13,6 +13,19 @@
  */
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
 
+/**
+ * **모든 플레이어에 keepAudioSessionActive를 켠다.**
+ *
+ * expo-audio는 이 값이 꺼진 플레이어의 재생이 끝날 때마다 공유 오디오 세션을
+ * 통째로 비활성화한다(AudioModule.onPlaybackComplete → deactivateSession).
+ * 알림음 하나가 끝나는 순간 무음 루프까지 같이 죽는 구조라,
+ *   - 백그라운드에서 첫 알림음이 끝나자마자 앱이 정지해 그 뒤 알림음이 안 나오고
+ *   - 앱을 다시 열면 밀린 안내음 하나만 울리고
+ *   - 세션이 소리마다 켜졌다 꺼지니 duckOthers가 알림음마다 음악을 잠깐씩만 눌렀다.
+ * 기본값이 false라 옵션을 빼먹으면 그대로 재발한다.
+ */
+const KEEP_SESSION = { keepAudioSessionActive: true };
+
 export type Cue =
   | 'cue' // 웜업/준비 시작 — 짧은 안내음
   | 'tick' // 카운트다운 3·2·1
@@ -94,7 +107,7 @@ function duckAround(): void {
 export async function startSession(volume: number): Promise<void> {
   await applyMode(false);
   if (!keepAlive) {
-    keepAlive = createAudioPlayer(SILENCE);
+    keepAlive = createAudioPlayer(SILENCE, KEEP_SESSION);
     keepAlive.loop = true;
     // 파일 자체가 디지털 무음이다. 볼륨을 0으로 낮추면 세션이 유휴로 판정될 수 있어
     // 볼륨은 그대로 두고 소리 없는 트랙을 계속 돌린다.
@@ -103,7 +116,7 @@ export async function startSession(volume: number): Promise<void> {
   keepAlive.play();
 
   for (const name of Object.keys(SOURCES) as Cue[]) {
-    if (!players[name]) players[name] = createAudioPlayer(SOURCES[name]);
+    if (!players[name]) players[name] = createAudioPlayer(SOURCES[name], KEEP_SESSION);
     players[name]!.volume = volume;
   }
 }
@@ -119,7 +132,9 @@ export async function startSession(volume: number): Promise<void> {
 export function resumeSession(): void {
   if (!keepAlive) return;
   try {
-    if (!keepAlive.playing) keepAlive.play();
+    // playing 판정을 믿지 않는다 — 시스템이 멈춘 직후에는 참으로 남아 있을 수 있고,
+    // 이미 도는 플레이어에 play()를 다시 불러도 아무 해가 없다.
+    keepAlive.play();
   } catch {
     // 정리 직후 등 — 소리 하나 살리자고 앱이 멈추면 안 된다
   }
@@ -155,7 +170,8 @@ export function setCueVolume(volume: number): void {
 /** 설정 화면의 볼륨 미리듣기 — 세션을 잡지 않고 한 번만 울린다 */
 export async function preview(volume: number): Promise<void> {
   await applyMode(appliedDuck ?? false);
-  const p = createAudioPlayer(SOURCES.work);
+  // 미리듣기도 세션을 쥔 채 둔다 — 세션 중에 부르면 완료 순간 무음 루프까지 끊긴다
+  const p = createAudioPlayer(SOURCES.work, KEEP_SESSION);
   p.volume = volume;
   p.play();
   setTimeout(() => p.remove(), 1500);
