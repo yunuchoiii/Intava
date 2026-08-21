@@ -406,32 +406,43 @@ export default function Run() {
         </View>
 
         {/*
-          시안 「링 위 5a: 이름이 주인공」 — 종목 이름(두 줄까지)과 메모는 머리줄
-          바로 아래, 링 밖에 선다. "뭘 하는지"를 먼저 읽고 시선이 타이머로
-          내려가는 순서다. 링 안에는 단계말 하나만 남는다.
+          시안 「링 위 5a: 이름이 주인공」 — 종목 이름과 메모는 링 밖, **링 바로
+          위에** 선다. 머리줄에 붙이지 않고 링에 붙인다 — "뭘 하는지"를 읽고
+          시선이 그대로 타이머로 떨어지는 거리다. 링 안에는 단계말 하나만 남는다.
 
-          이 블록은 **높이가 고정**이다. 이름 없는 단계(웜업·준비·쿨다운·라운드
-          휴식·완료)에서 블록이 접히면 링이 단계마다 오르내린다 — 링 자리는 모든
-          단계에서 같아야 한다. 두 줄 이름+메모가 서는 최악 높이로 잡되, 그 이상
-          키우지 않아 이름 없는 단계의 위쪽이 휑해 보이지 않게 한다.
+          링 상자에 절대배치로 얹고 바닥을 링 위 12pt에 맞춘다. 흐름 밖이라
+          이름이 있든 없든 링 자리는 모든 단계에서 같고, 메모가 없으면 이름이
+          곧장 링 위에 온다. 메모가 서는 날은 이름을 한 줄로 잡아 위로 머리줄을
+          침범하지 않게 한다.
         */}
-        <View style={styles.nameBlock}>
-          {title.name != null && (
-            <>
-              <Text numberOfLines={2} style={styles.exName}>
-                {title.name}
-              </Text>
-              {title.memo != null && (
-                <Text numberOfLines={1} style={styles.exMemo}>
-                  “{title.memo}”
+        {/*
+          링의 중심을 **화면 세로 중앙보다 26pt 위**에 못박는다. flex 가운데
+          정렬은 머리줄과 컨트롤 사이의 남는 공간 가운데라 화면 중심과 어긋나고,
+          정중앙은 이름이 없는 단계에서 아래로 처져 보인다는 피드백이었다.
+          링 위(머리줄까지)의 높이는 고정(insets.top+6 + 손잡이 22 + 머리줄 48)이라
+          paddingTop 하나로 정확히 잡힌다. 작은 화면에서 자리가 모자라면 0으로
+          눌러 겹침만 피한다.
+        */}
+        <View
+          style={[
+            styles.ringWrap,
+            { paddingTop: Math.max(0, screenH / 2 - 26 - 165 - (insets.top + 76)) },
+          ]}
+        >
+          <View>
+            {title.name != null && (
+              <View style={styles.nameAbove} pointerEvents="none">
+                <Text numberOfLines={title.memo ? 1 : 2} style={styles.exName}>
+                  {title.name}
                 </Text>
-              )}
-            </>
-          )}
-        </View>
-
-        <View style={styles.ringWrap}>
-          <Ring
+                {title.memo != null && (
+                  <Text numberOfLines={1} style={styles.exMemo}>
+                    {title.memo}
+                  </Text>
+                )}
+              </View>
+            )}
+            <Ring
             ratio={run.ratio}
             remainSec={run.remain}
             durSec={run.seg?.dur ?? 0}
@@ -444,7 +455,8 @@ export default function Run() {
             onScrubStart={run.beginScrub}
             onScrub={run.done ? undefined : run.scrubRemain}
             onScrubEnd={run.commitScrub}
-          />
+            />
+          </View>
         </View>
 
         {/* 여기부터 아래는 버튼의 자리 — 끌어내려 닫기를 받지 않는다 */}
@@ -718,18 +730,16 @@ const styles = StyleSheet.create({
   stageCount: { fontSize: BAR_LABEL, fontWeight: '600', color: '#FFFFFF', opacity: 0.88 },
   stageLink: { fontSize: BAR_LABEL, fontWeight: '600', color: '#FFFFFF', opacity: 0.78 },
   /**
-   * 머리줄 아래 종목 이름·메모의 자리 — **높이 고정.** 이름 없는 단계에서도 같은
-   * 높이를 지켜 링이 단계마다 오르내리지 않는다.
-   *
-   * 예약은 **한 줄 이름 + 메모**(12+28+5+18=63) 기준이다. 두 줄 기준(91)으로
-   * 잡았더니 링이 너무 내려간다는 피드백 — 링 위쪽에는 어차피 유동 여백이
-   * 있어서, 드문 두 줄 이름이 아래로 살짝 넘쳐도 링을 밀지 않고 그 여백을
-   * 먹을 뿐이다(상자는 자르지 않는다).
+   * 링 위에 얹히는 종목 이름·메모 — 링 상자 기준 절대배치라 흐름을 차지하지
+   * 않고, 바닥이 링 위 12pt에 붙는다. 좌우로 링보다 28씩 넓게 펼친다(화면
+   * 양끝 8pt만 남는 폭).
    */
-  nameBlock: {
-    height: 63,
-    paddingTop: 12,
-    paddingHorizontal: 28,
+  nameAbove: {
+    position: 'absolute',
+    bottom: '100%',
+    left: -28,
+    right: -28,
+    marginBottom: 12,
     alignItems: 'center',
   },
   exName: {
@@ -740,16 +750,17 @@ const styles = StyleSheet.create({
     lineHeight: 28,
     color: '#FFFFFF',
   },
-  /** 이름 밑 메모 — 따옴표로 감싼 곁말. 시안의 "팔꿈치 45도…" 줄이다 */
+  /** 이름 밑 메모 — 시안의 따옴표는 실기기에서 군더더기라는 피드백으로 뺐다 */
   exMemo: {
     marginTop: 5,
     textAlign: 'center',
-    fontSize: 13.5,
+    fontSize: 15,
     fontWeight: '600',
     color: '#FFFFFF',
     opacity: 0.78,
   },
-  ringWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 0 },
+  /** 세로는 위에서 계산한 paddingTop이 정한다 — justifyContent를 쓰면 화면 중심과 어긋난다 */
+  ringWrap: { flex: 1, alignItems: 'center', justifyContent: 'flex-start', minHeight: 0 },
   controls: {
     flexDirection: 'row',
     gap: 26,
