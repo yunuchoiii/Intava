@@ -361,20 +361,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.18)',
   },
-  /** 단계말의 자리 — 시안 5a: top 86, 16pt. 어느 단계든 이 하나다 */
+  /**
+   * 단계말의 자리 — 어느 단계든 이 하나다. 시안 5a의 16pt는 실기기에서 너무
+   * 작다는 피드백이라, 예전 제목과 같은 23pt로 되돌렸다(자리도 그때의 top 80).
+   */
   titleWrap: {
     position: 'absolute',
-    top: 86,
+    top: 80,
     left: 56,
     right: 56,
   },
   title: {
     textAlign: 'center',
-    fontSize: 16,
-    fontWeight: '600',
-    letterSpacing: -0.1,
+    fontSize: 23,
+    fontWeight: '700',
+    letterSpacing: -0.35,
     color: '#FFFFFF',
-    opacity: 0.85,
   },
   clockWrap: {
     ...ABS,

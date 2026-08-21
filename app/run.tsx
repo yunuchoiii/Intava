@@ -718,12 +718,16 @@ const styles = StyleSheet.create({
   stageCount: { fontSize: BAR_LABEL, fontWeight: '600', color: '#FFFFFF', opacity: 0.88 },
   stageLink: { fontSize: BAR_LABEL, fontWeight: '600', color: '#FFFFFF', opacity: 0.78 },
   /**
-   * 머리줄 아래 종목 이름·메모의 자리 — **높이 고정.** 내용이 이름 두 줄+메모까지
-   * 서면 딱 차고, 이름 없는 단계에서는 빈 채로 같은 높이를 지켜 링이 안 움직인다.
-   * 28+5+18에 위 여백 12를 더한 한 줄 기준이 아니라 두 줄(56) 기준으로 91이다.
+   * 머리줄 아래 종목 이름·메모의 자리 — **높이 고정.** 이름 없는 단계에서도 같은
+   * 높이를 지켜 링이 단계마다 오르내리지 않는다.
+   *
+   * 예약은 **한 줄 이름 + 메모**(12+28+5+18=63) 기준이다. 두 줄 기준(91)으로
+   * 잡았더니 링이 너무 내려간다는 피드백 — 링 위쪽에는 어차피 유동 여백이
+   * 있어서, 드문 두 줄 이름이 아래로 살짝 넘쳐도 링을 밀지 않고 그 여백을
+   * 먹을 뿐이다(상자는 자르지 않는다).
    */
   nameBlock: {
-    height: 91,
+    height: 63,
     paddingTop: 12,
     paddingHorizontal: 28,
     alignItems: 'center',
