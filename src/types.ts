@@ -7,6 +7,8 @@ export type Block = {
   workSec: number;
   restSec: number;
   sets: number;
+  /** 무게·자세 같은 한 줄 메모 — 실행 화면에서 이름 밑에 선다. 없으면 아무것도 안 뜬다 */
+  memo?: string;
 };
 
 /** 루틴 / 타이머 */

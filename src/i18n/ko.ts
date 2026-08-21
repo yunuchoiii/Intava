@@ -63,6 +63,7 @@ export const ko = {
   edit: {
     titleRoutine: '루틴 편집',
     titleTimer: '타이머 편집',
+    create: '만들기',
     name: '이름',
     addBlock: '＋ 종목 추가',
     a11yAddBlock: '종목 추가',
@@ -114,6 +115,8 @@ export const ko = {
     setRest: '세트 사이 휴식',
     sets: '세트',
     alsoSaveAsTimer: '내 타이머로도 저장',
+    memo: '메모',
+    memoPlaceholder: '무게·자세 같은 한 줄 (선택)',
     a11yDelete: '종목 삭제',
   },
 

@@ -176,11 +176,13 @@ export type RingTitle = {
   /**
    * 종목 이름 — 있으면 링은 두 줄로 그린다: 위에 단계 칩(rest), 아래에 이 이름.
    * 길면 줄이고, 바닥까지 줄여도 안 들어가면 이름에 말줄임이 붙는다.
-   * 이름이 안 붙는 자리(웜업·준비·쿨다운·전환·완료)에서는 null.
+   * 이름이 안 붙는 자리(웜업·준비·쿨다운·완료)에서는 null.
    */
   name: string | null;
   /** 이름이 있으면 칩에 서는 단계말("운동"), 없으면 홀로 서는 온말("준비") */
   rest: string;
+  /** 종목 메모 — 이름 밑 한 줄. 이름이 없거나 메모가 비어 있으면 없다 */
+  memo?: string;
 };
 
 export function ringTitle(seg: Segment | null, _paused: boolean, preset: Preset): RingTitle {
@@ -188,7 +190,8 @@ export function ringTitle(seg: Segment | null, _paused: boolean, preset: Preset)
   const phase = phaseLabel(seg.phase);
   const named = seg.phase === 'WORK' || seg.phase === 'SET_REST';
   if (!named || !seg.name || isSimple(preset)) return { name: null, rest: phase };
-  return { name: seg.name, rest: phase };
+  const memo = preset.blocks.find((b) => b.id === seg.blockId)?.memo?.trim();
+  return { name: seg.name, rest: phase, memo: memo || undefined };
 }
 
 /** 홈 목록 요약 줄 */

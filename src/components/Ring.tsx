@@ -364,8 +364,9 @@ export function Ring({
           <View style={styles.chip}>
             <Text style={styles.chipText}>{title.rest}</Text>
           </View>
+          {/* 메모가 서는 날은 이름을 한 줄로 잡는다 — 두 줄 이름 + 메모는 시계를 침범한다 */}
           <Text
-            numberOfLines={2}
+            numberOfLines={title.memo ? 1 : 2}
             style={[
               styles.name,
               nameScale < 1 && {
@@ -377,6 +378,11 @@ export function Ring({
           >
             {title.name}
           </Text>
+          {title.memo != null && (
+            <Text numberOfLines={1} style={styles.memo}>
+              {title.memo}
+            </Text>
+          )}
           {/*
             재기용 복제 — 제약 없는 폭(2000)의 행 안에서 제 크기대로 펼쳐지므로
             onLayout의 프레임 폭이 곧 본디 폭이다. onTextLayout은 이 RN에서 오지
@@ -506,6 +512,15 @@ const styles = StyleSheet.create({
     letterSpacing: -0.35,
     lineHeight: NAME_LINE_H,
     color: '#FFFFFF',
+  },
+  /** 이름 밑 종목 메모 — 곁말이라 작고 옅다. gap이 크면 딴 줄처럼 읽혀 이름에 붙인다 */
+  memo: {
+    marginTop: -3,
+    textAlign: 'center',
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    opacity: 0.72,
   },
   /** 재기용 복제가 사는 행 — 폭 제약을 없애 안의 글자가 본디 폭으로 선다 */
   ghostRow: {

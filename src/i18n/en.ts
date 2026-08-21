@@ -59,6 +59,7 @@ export const en: Catalog = {
   edit: {
     titleRoutine: 'Edit routine',
     titleTimer: 'Edit timer',
+    create: 'Create',
     name: 'Name',
     addBlock: '＋ Add exercise',
     a11yAddBlock: 'Add exercise',
@@ -105,6 +106,8 @@ export const en: Catalog = {
     setRest: 'Rest between sets',
     sets: 'Sets',
     alsoSaveAsTimer: 'Also save as a timer',
+    memo: 'Note',
+    memoPlaceholder: 'Weight, form cue… (optional)',
     a11yDelete: 'Delete exercise',
   },
 

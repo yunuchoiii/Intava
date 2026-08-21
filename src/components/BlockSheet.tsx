@@ -111,8 +111,22 @@ export function BlockSheet({ block, canDelete, isNew, onClose, onSave, onDelete 
             min={1}
             max={50}
             unit={t('sheet.sets')}
-            divider={false}
           />
+
+          {/* 무게·자세 같은 한 줄 메모 — 실행 화면에서 이름 밑에 선다 */}
+          <View style={styles.memoRow}>
+            <Text style={styles.nameLabel}>{t('sheet.memo')}</Text>
+            <TextInput
+              value={draft.memo ?? ''}
+              onChangeText={(memo) => patch({ memo })}
+              style={styles.memoInput}
+              placeholder={t('sheet.memoPlaceholder')}
+              placeholderTextColor={C.textTertiary}
+              selectionColor={C.textPrimary}
+              maxLength={60}
+              returnKeyType="done"
+            />
+          </View>
         </View>
       </ScrollView>
 
@@ -161,6 +175,13 @@ const styles = StyleSheet.create({
   },
   saveAsTimerLabel: { fontSize: 15, color: C.textSecondary },
   nameRow: { paddingTop: 12, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: C.divider },
+  memoRow: { paddingTop: 14, paddingBottom: 6 },
+  memoInput: {
+    marginTop: 8,
+    fontSize: 17,
+    color: C.textPrimary,
+    padding: 0,
+  },
   nameLabel: { fontSize: 15, color: C.textTertiary },
   nameInputRow: { flexDirection: 'row', alignItems: 'center' },
   nameInput: {

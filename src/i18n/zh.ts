@@ -52,6 +52,7 @@ export const zh: Catalog = {
   edit: {
     titleRoutine: '编辑循环',
     titleTimer: '编辑计时器',
+    create: '创建',
     name: '名称',
     addBlock: '＋ 添加动作',
     a11yAddBlock: '添加动作',
@@ -98,6 +99,8 @@ export const zh: Catalog = {
     setRest: '组间休息',
     sets: '组数',
     alsoSaveAsTimer: '同时保存为计时器',
+    memo: '备注',
+    memoPlaceholder: '重量、要点等（可选）',
     a11yDelete: '删除动作',
   },
 

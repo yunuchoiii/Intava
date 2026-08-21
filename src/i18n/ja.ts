@@ -52,6 +52,7 @@ export const ja: Catalog = {
   edit: {
     titleRoutine: 'ルーティンを編集',
     titleTimer: 'タイマーを編集',
+    create: '作成',
     name: '名前',
     addBlock: '＋ 種目を追加',
     a11yAddBlock: '種目を追加',
@@ -98,6 +99,8 @@ export const ja: Catalog = {
     setRest: 'セット間の休憩',
     sets: 'セット',
     alsoSaveAsTimer: 'タイマーとしても保存',
+    memo: 'メモ',
+    memoPlaceholder: '重量やフォームなど（任意）',
     a11yDelete: '種目を削除',
   },
 
