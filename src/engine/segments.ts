@@ -91,8 +91,16 @@ export function buildPlan(p: Preset, orders?: RoundOrders, skips?: RoundSkips): 
           segs.push({ phase: 'ROUND_REST', ...meta, start: t, dur: p.roundRestSec });
           t += p.roundRestSec;
         } else {
-          segs.push({ phase: 'BLOCK_REST', ...meta, start: t, dur: p.blockRestSec });
-          t += p.blockRestSec;
+          /*
+            마지막 세트 뒤에도 그 종목의 휴식이 돈다 — 이것이 다음 종목까지의 간격이다.
+
+            예전에는 여기서 별도의 종목 전환(BLOCK_REST, blockRestSec)을 끼웠는데,
+            "마지막 세트만 휴식이 다르다"는 것이 체감상 어긋났다. 전환이라는 별도
+            구간 없이 종목의 휴식 리듬이 끝까지 이어지고, 프리셋의 blockRestSec은
+            더 이상 계획에 쓰이지 않는다(타입에는 옛 데이터 호환으로 남는다).
+          */
+          segs.push({ phase: 'SET_REST', ...meta, start: t, dur: bl.restSec });
+          t += bl.restSec;
         }
       }
     }

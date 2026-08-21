@@ -715,17 +715,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         seekTo(nextSeg ? nextSeg.start + 0.01 : p.total, storedRef.current?.pausedAt == null);
       },
       /**
-       * 지금 하는 종목을 통째로 넘긴다.
+       * 지금 하는 종목을 통째로 넘긴다 — 남은 세트를 건너뛰고 **그 종목의 마지막
+       * 휴식**에 내려앉는다(시트의 "다음 휴식으로 갑니다"가 그 말이다).
        *
-       * `buildPlan`은 한 종목의 세그먼트를 연속으로 펼치고, 뒤따르는 휴식들이 방금
-       * 끝낸 세트의 meta(round·blockId)를 그대로 물려받는다. 그래서 규칙 하나로
-       * 족하다 — **같은 종목의 운동·세트휴식인 동안 건너뛰고, 처음 만나는 그 밖의
-       * 자리가 도착점이다.** 이 한 줄이 경계를 전부 흡수한다:
-       *
-       *   보통                     → 그 종목의 BLOCK_REST
-       *   라운드의 마지막 종목      → ROUND_REST
-       *   마지막 라운드의 마지막    → COOLDOWN, 없으면 완료
-       *   종목 사이 휴식이 0초     → BLOCK_REST 자체가 없으니 다음 종목의 첫 WORK
+       * `buildPlan`은 한 종목의 세그먼트를 연속으로 펼치므로, 같은 종목의
+       * 운동·휴식이 이어지는 동안 걸어가 그 끝을 본다. 끝이 휴식이면 거기가
+       * 도착점이고(마지막 세트 뒤에도 제 휴식이 돈다), 휴식이 0초라 없거나
+       * 이미 그 휴식 안에 있으면 종목 다음 자리(다음 종목·라운드 휴식·쿨다운,
+       * 없으면 완료)로 간다.
        */
       skipBlock: () => {
         const p = planRef.current;
@@ -733,7 +730,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         const found = segmentAt(p, elapsedNow());
         if (!found) return;
         const { seg, idx } = found;
-        // 웜업·준비·쿨다운에는 넘길 종목이 없고, 휴식은 이미 그 종목을 지난 뒤다
+        // 웜업·준비·쿨다운에는 넘길 종목이 없다
         if (!seg.blockId || (seg.phase !== 'WORK' && seg.phase !== 'SET_REST')) return;
 
         let i = idx;
@@ -746,7 +743,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           if (!mine) break;
           i += 1;
         }
-        const target = p.segs[i];
+        const tail = p.segs[i - 1];
+        const target =
+          tail && tail.phase === 'SET_REST' && i - 1 > idx ? tail : p.segs[i];
         seekTo(target ? target.start + 0.01 : p.total, storedRef.current?.pausedAt == null);
       },
       skipPrev: () => {
