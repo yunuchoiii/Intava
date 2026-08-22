@@ -38,6 +38,7 @@ export function BlockSheet({ block, canDelete, isNew, onClose, onSave, onDelete 
   const [open, setOpen] = useState<Field>(null);
   const [alsoTimer, setAlsoTimer] = useState(false);
   const [nameFocused, setNameFocused] = useState(false);
+  const [memoFocused, setMemoFocused] = useState(false);
   /**
    * 닫히는 동안 보여줄 값 — 부모가 block을 비워도 여기서는 붙잡고 있는다.
    *
@@ -64,6 +65,8 @@ export function BlockSheet({ block, canDelete, isNew, onClose, onSave, onDelete 
     setHeld({ isNew, canDelete, origin: block });
     setOpen(null);
     setAlsoTimer(false);
+    setNameFocused(false);
+    setMemoFocused(false);
   }, [block, isNew, canDelete]);
 
   if (!draft) return null;
@@ -157,16 +160,24 @@ export function BlockSheet({ block, canDelete, isNew, onClose, onSave, onDelete 
           */}
           <View style={styles.memoRow}>
             <Text style={styles.memoLabel}>{t('sheet.memo')}</Text>
-            <TextInput
-              value={draft.memo ?? ''}
-              onChangeText={(memo) => patch({ memo })}
-              style={styles.memoInput}
-              placeholder={t('sheet.memoPlaceholder')}
-              placeholderTextColor={C.textTertiary}
-              selectionColor={C.textPrimary}
-              maxLength={60}
-              returnKeyType="done"
-            />
+            {/* 이름칸과 같은 규칙 — 쓰는 중이면서 글자가 있을 때만 ✕가 선다 */}
+            <View style={styles.memoInputRow}>
+              <TextInput
+                value={draft.memo ?? ''}
+                onChangeText={(memo) => patch({ memo })}
+                style={[styles.memoInput, { flex: 1 }]}
+                placeholder={t('sheet.memoPlaceholder')}
+                placeholderTextColor={C.textTertiary}
+                selectionColor={C.textPrimary}
+                maxLength={60}
+                returnKeyType="done"
+                onFocus={() => setMemoFocused(true)}
+                onBlur={() => setMemoFocused(false)}
+              />
+              {memoFocused && (draft.memo ?? '').length > 0 && (
+                <ClearButton onPress={() => patch({ memo: '' })} />
+              )}
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -219,8 +230,9 @@ const styles = StyleSheet.create({
   nameRow: { paddingTop: 12, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: C.divider },
   memoRow: { paddingTop: 14, paddingBottom: 6 },
   memoLabel: { fontSize: 18, lineHeight: 24, fontWeight: '600', color: C.textPrimary },
+  /** ✕가 붙어도 글자 자리는 그대로 — 여백은 입력칸이 아니라 이 줄이 든다 */
+  memoInputRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
   memoInput: {
-    marginTop: 8,
     fontSize: 17,
     color: C.textPrimary,
     padding: 0,
