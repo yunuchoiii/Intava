@@ -60,6 +60,21 @@ const CHANNELS: Record<Phase, ChannelSpec> = {
 let handlerSet = false;
 let channelsReady = false;
 
+/**
+ * 지금 예약돼 있는 안전망이 **소리를 낼 수 있는가**.
+ *
+ * 백그라운드에서 소리를 두 번 내지 않으려고 앱 쪽이 물어보는 값이다. 앱이 살아
+ * 있어도 백그라운드에서는 iOS가 알림을 그냥 울려버린다(포그라운드에서만
+ * setNotificationHandler를 거친다) — 그래서 백그라운드에서는 알림에게 소리를
+ * 맡기고 앱은 입을 다문다. 다만 알림이 꺼져 있거나 권한이 없으면 맡길 데가
+ * 없으니, 그때는 앱이 낸다.
+ */
+let armed = false;
+
+export function safetyNetArmed(): boolean {
+  return armed;
+}
+
 export function installHandler(): void {
   if (handlerSet) return;
   Notifications.setNotificationHandler({
@@ -103,6 +118,7 @@ async function ensureChannels(): Promise<void> {
 }
 
 export async function cancelAll(): Promise<void> {
+  armed = false;
   await Notifications.cancelAllScheduledNotificationsAsync();
 }
 
@@ -150,6 +166,8 @@ export async function scheduleUpcoming(args: ScheduleArgs): Promise<void> {
     const { title, body } = notificationText(seg, plan.segs[i + 1], preset);
     await schedule(seg.phase, title, body, at, sound);
     count++;
+    // 한 건이라도 들어간 순간부터 안전망은 소리를 낼 수 있다
+    if (sound) armed = true;
   }
 
   // 마지막 — 전체 완료
@@ -157,6 +175,7 @@ export async function scheduleUpcoming(args: ScheduleArgs): Promise<void> {
     const end = zeroAt + plan.total * 1000;
     if (end > now + 500) {
       await schedule('DONE', t('notify.doneTitle'), t('notify.doneBody', { name: preset.name }), end, sound);
+      if (sound) armed = true;
     }
   }
 }

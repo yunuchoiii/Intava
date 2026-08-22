@@ -200,3 +200,23 @@ export function play(name: Cue): void {
     // 플레이어가 정리된 직후 등 — 소리 하나 빠지는 것으로 앱이 멈추면 안 된다
   }
 }
+
+/**
+ * 무음 루프가 멎었으면 다시 켠다 — 매 초 tick에서 부른다.
+ *
+ * iOS가 백그라운드에서 앱을 살려두는 조건은 **오디오가 실제로 나가고 있는 것**
+ * 하나다. 루프가 한 번 멎으면 그 순간 앱이 정지하고, 정지한 뒤에는 되살릴 코드
+ * 자체가 돌지 않는다 — 다시 열 때까지 조용하다. AppState 'active'에서만 확인하던
+ * 것으로는 늦다. 멎기 전에, 살아 있는 동안 계속 확인해야 한다.
+ *
+ * resumeSession과 달리 여기서는 playing을 본다. 매 초 무조건 play()를 부르면
+ * 네이티브가 재생 끝 알림과 시간 관찰자를 초마다 다시 단다.
+ */
+export function keepSessionAlive(): void {
+  if (!keepAlive) return;
+  try {
+    if (!keepAlive.playing) keepAlive.play();
+  } catch {
+    // 정리 직후 등
+  }
+}

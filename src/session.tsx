@@ -23,7 +23,14 @@ import React, {
   useState,
 } from 'react';
 import { AppState } from 'react-native';
-import { endSession, resumeSession, setCueVolume, setDuckMusic, startSession } from './audio';
+import {
+  endSession,
+  keepSessionAlive,
+  resumeSession,
+  setCueVolume,
+  setDuckMusic,
+  startSession,
+} from './audio';
 import {
   advanceLived,
   buildPlan,
@@ -340,6 +347,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
     if (s.pausedAt != null) return;
 
+    /*
+      무음 루프가 아직 도는지 매 초 확인한다. 이 루프가 iOS에게 "나는 오디오를
+      내보내는 중"이라고 말해 주는 유일한 근거이고, 한 번 멎으면 그 순간 앱이
+      정지해 되살릴 코드조차 돌지 않는다. AppState 'active'에서만 보던 것으로는
+      이미 늦다 — 살아 있는 동안 계속 봐야 한다.
+    */
+    keepSessionAlive();
+
     if (shot.done) {
       if (!doneFired.current) {
         doneFired.current = true;
@@ -484,9 +499,21 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         setSyncId((n) => n + 1);
         tick();
         void reschedule();
-      } else if (state === 'background') {
-        void reschedule();
       }
+      /*
+        백그라운드로 **들어갈 때는 아무것도 다시 예약하지 않는다.**
+
+        예전에는 여기서도 reschedule()을 불렀다. 그런데 그것은 "전부 취소한 뒤
+        최대 61건을 하나씩 다시 넣기"라, 취소가 끝나고 재예약이 도는 그 사이가
+        **안전망이 통째로 비어 있는 구간**이다. 하필 iOS가 JS를 정지시키기 가장
+        쉬운 순간이 바로 그때라, 정지되면 취소만 되고 재예약은 반쪽인 채로 굳는다
+        — 백그라운드에 잠깐만 다녀와도 그 뒤로 알림이 아예 안 오던 원인.
+        (docs/notification-timing.md의 「곁가지」가 이것이다.)
+
+        게다가 다시 넣을 이유도 없다. 앞에 서 있을 때 예약해 둔 것과 계획도
+        기준 시각도 똑같다. 64개 상한을 채워 넣는 일은 돌아왔을 때('active') 하면
+        된다 — 그때는 정지될 걱정이 없다.
+      */
     });
     return () => sub.remove();
   }, [tick, reschedule]);

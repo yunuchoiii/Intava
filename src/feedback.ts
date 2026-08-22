@@ -3,7 +3,9 @@
  * 포그라운드에서는 여기서, 백그라운드에서 앱이 정지되면 알림 채널이 대신한다.
  */
 import * as Haptics from 'expo-haptics';
+import { AppState } from 'react-native';
 import { play, type Cue } from './audio';
+import { safetyNetArmed } from './notify';
 import type { Phase, Settings } from './types';
 
 const CUE_OF: Record<Phase, Cue> = {
@@ -50,8 +52,33 @@ function hapticFor(phase: Phase): void {
   }
 }
 
-/** 구간이 바뀌는 순간 */
+/**
+ * 구간이 바뀌는 순간.
+ *
+ * **백그라운드에서는 예약된 알림에게 맡기고 입을 다문다.**
+ *
+ * 포그라운드의 알림은 setNotificationHandler를 거치므로 조용히 지나가지만,
+ * 백그라운드에서는 그 손을 거치지 않는다(iOS는 앱이 앞에 서 있을 때만 물어본다).
+ * 그래서 앱이 살아 있는 채로 백그라운드에 있으면 **같은 전환에 소리가 두 번**
+ * 났다 — 앱이 제때 한 번, 알림이 조금 뒤에 한 번. 실기기에서 "알림이 늦게 온다"로
+ * 보고된 것이 이 겹침이었다(docs/notification-timing.md).
+ *
+ * 어느 한쪽만 말하게 한다. 상태마다 화자가 갈린다.
+ *   앞에 서 있으면      → 앱이 낸다(정확하다). 알림은 핸들러가 삼킨다
+ *   뒤에 있고 앱이 살면 → 알림이 낸다. 여기서 앱은 조용하다
+ *   뒤에 있고 앱이 죽으면 → 알림이 낸다. 어차피 앱은 아무것도 못 한다
+ *
+ * 'inactive'(제어센터를 내렸거나 앱 전환기에 있는 동안)는 아직 앞이다 — iOS가
+ * 핸들러를 거치므로 알림은 조용하다. 그때까지 입을 다물면 아무 소리도 안 난다.
+ *
+ * 맡길 알림이 없으면(설정에서 껐거나 권한이 없다) 앱이 그대로 낸다 — 조용한
+ * 것보다는 낫다.
+ *
+ * 카운트다운 3·2·1은 이 규칙에서 뺀다(countdownFeedback). 예약된 알림에 짝이
+ * 없어서, 입을 다물면 백그라운드에서 통째로 사라진다.
+ */
 export function segmentFeedback(phase: Phase, s: Settings): void {
+  if (AppState.currentState === 'background' && safetyNetArmed()) return;
   if (s.sound) play(CUE_OF[phase]);
   if (s.vibration) hapticFor(phase);
 }
