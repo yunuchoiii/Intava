@@ -11,7 +11,10 @@ type Props = {
   height?: number;
   radius?: number;
   style?: StyleProp<ViewStyle>;
-  /** 흰 버튼 위 글자색 — 실행 화면에서는 페이즈 색을 쓴다 */
+  /**
+   * 글자색. 흰 버튼에서는 실행 화면의 페이즈 색을 얹을 때 쓰고,
+   * 표면 버튼에서는 「지금은 저장할 것이 없다」를 흐린 회색으로 말할 때 쓴다.
+   */
   color?: string;
   /**
    * 이 두 버튼은 늘 확정 동작이다 — 저장하기 · 다시 하기 · 시트의 저장.
@@ -28,6 +31,8 @@ export function SurfaceButton({
   height = 68,
   radius = RADIUS.button,
   style,
+  /** 글자색 — 기본은 또렷한 흰색. 「저장할 것이 없다」를 말할 때는 한 단계 흐리게 준다 */
+  color = C.textPrimary,
   haptic = 'commit',
 }: Props) {
   return (
@@ -43,9 +48,7 @@ export function SurfaceButton({
       style={[{ height, borderRadius: radius, backgroundColor: C.surface }, E2]}
     >
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ fontSize: 18, fontWeight: '700', color: C.textPrimary, letterSpacing: -0.2 }}>
-          {label}
-        </Text>
+        <Text style={{ fontSize: 18, fontWeight: '700', color, letterSpacing: -0.2 }}>{label}</Text>
       </View>
     </PressBox>
   );

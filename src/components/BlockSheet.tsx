@@ -18,7 +18,7 @@ import { ClearButton } from './ClearButton';
 import { PressBox } from './PressBox';
 import { Sheet } from './Sheet';
 import { ValueRow } from './ValueRow';
-import { WhiteButton } from './Buttons';
+import { SurfaceButton, WhiteButton } from './Buttons';
 
 type Props = {
   block: Block | null;
@@ -51,16 +51,17 @@ export function BlockSheet({ block, canDelete, isNew, onClose, onSave, onDelete 
    * Modal을 걷는다. 내려가는 0.3초 동안에도 안에 그릴 것이 있어야 하므로
    * 마지막 값과 그때의 곁값(새것인지·지울 수 있는지)을 같이 붙잡아 둔다.
    */
-  const [held, setHeld] = useState<{ isNew?: boolean; canDelete: boolean }>({
+  const [held, setHeld] = useState<{ isNew?: boolean; canDelete: boolean; origin: Block | null }>({
     isNew,
     canDelete,
+    origin: block,
   });
 
   useEffect(() => {
     // 열릴 때만 갈아끼운다. 닫히는 중에 비우면 빈 시트가 내려간다
     if (!block) return;
     setDraft(block);
-    setHeld({ isNew, canDelete });
+    setHeld({ isNew, canDelete, origin: block });
     setOpen(null);
     setAlsoTimer(false);
   }, [block, isNew, canDelete]);
@@ -68,6 +69,23 @@ export function BlockSheet({ block, canDelete, isNew, onClose, onSave, onDelete 
   if (!draft) return null;
   const patch = (p: Partial<Block>) => setDraft({ ...draft, ...p });
   const toggle = (f: Exclude<Field, null>) => setOpen(open === f ? null : f);
+
+  /**
+   * 저장할 것이 생겼는가 — 편집 화면의 저장 버튼과 같은 신호다(e86d845).
+   *
+   * 깨끗할 때 흰 버튼을 켜 두면 그건 신호가 아니라 배경이다. 고친 것이 있을 때만
+   * 도드라지게 하고, 그전에는 표면 톤에 흐린 글자로 물러나 있는다. 누르는 것은
+   * 어느 쪽이든 된다 — 「완료」는 나가는 길이기도 하다.
+   *
+   * 새로 만드는 종목은 늘 도드라진다. 기본값 그대로 눌러도 **없던 종목이 하나
+   * 생기는** 일이라, 고친 것이 없다고 물러나 있으면 안 된다.
+   *
+   * 이름 뒤 공백 같은 것은 편집으로 치지 않는다(fingerprint와 같은 규칙).
+   */
+  const mark = (b: Block) =>
+    JSON.stringify([b.name.trim(), b.workSec, b.restSec, b.sets, (b.memo ?? '').trim()]);
+  const dirty = held.isNew || !held.origin || mark(draft) !== mark(held.origin);
+  const Done = dirty ? WhiteButton : SurfaceButton;
 
   return (
     <Sheet visible={block != null} onClose={onClose}>
@@ -174,10 +192,11 @@ export function BlockSheet({ block, canDelete, isNew, onClose, onSave, onDelete 
             <Text style={styles.deleteLabel}>{t('common.delete')}</Text>
           </PressBox>
         )}
-        <WhiteButton
+        <Done
           label={t('common.done')}
           height={64}
           style={{ flex: 1 }}
+          color={dirty ? undefined : C.textSecondary}
           onPress={() =>
             onSave({ ...draft, name: draft.name.trim() || t('defaults.block') }, alsoTimer)
           }
