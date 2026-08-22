@@ -108,6 +108,12 @@ export function Sheet({ visible, onClose, onClosed, children, style }: Props) {
         // 그 사이 다시 열렸으면 내리지 않는다
         if (done || visibleRef.current) return;
         done = true;
+        /*
+          다음에 열릴 때를 위해 빗장을 푼다. 여는 쪽(visible=true)에서도 풀지만,
+          거기까지 못 가는 길이 있다 — 부모가 열지 않은 채로 두면 closing이 참으로
+          굳어 backdrop을 눌러도 onClose가 다시 불리지 않는다.
+        */
+        closing.current = false;
         setMounted(false);
         onClosed?.();
       };
@@ -120,6 +126,12 @@ export function Sheet({ visible, onClose, onClosed, children, style }: Props) {
   const close = useCallback(() => {
     if (closing.current) return;
     closing.current = true;
+    /*
+      키보드를 먼저 내린다. 글쓰기 칸에 초점이 남은 채로 Modal이 걷히면
+      first responder가 사라진 뷰를 가리킨 채 남아, 키보드만 떠 있거나 그 자리가
+      안 눌리는 상태가 된다.
+    */
+    Keyboard.dismiss();
     onClose();
   }, [onClose]);
 

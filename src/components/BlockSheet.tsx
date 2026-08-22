@@ -38,19 +38,39 @@ export function BlockSheet({ block, canDelete, isNew, onClose, onSave, onDelete 
   const [open, setOpen] = useState<Field>(null);
   const [alsoTimer, setAlsoTimer] = useState(false);
   const [nameFocused, setNameFocused] = useState(false);
+  /**
+   * 닫히는 동안 보여줄 값 — 부모가 block을 비워도 여기서는 붙잡고 있는다.
+   *
+   * 예전에는 block이 null이 되는 순간 이 컴포넌트가 통째로 `null`을 반환했다.
+   * 그러면 시트가 **내려가는 몸짓 없이 트리에서 뜯겨 나간다** — 네이티브
+   * Modal이 표시 중인 채로 사라지는 것이라, iOS가 그 창을 미처 걷지 못하면
+   * 보이지 않는 겹이 화면에 남아 아무것도 눌리지 않는다. 시트를 닫았는데
+   * 화면이 먹통이 되던 것이 이것이다.
+   *
+   * 이제 visible만 false로 내려보내고, Sheet가 제 몸짓을 마친 뒤 스스로
+   * Modal을 걷는다. 내려가는 0.3초 동안에도 안에 그릴 것이 있어야 하므로
+   * 마지막 값과 그때의 곁값(새것인지·지울 수 있는지)을 같이 붙잡아 둔다.
+   */
+  const [held, setHeld] = useState<{ isNew?: boolean; canDelete: boolean }>({
+    isNew,
+    canDelete,
+  });
 
   useEffect(() => {
+    // 열릴 때만 갈아끼운다. 닫히는 중에 비우면 빈 시트가 내려간다
+    if (!block) return;
     setDraft(block);
+    setHeld({ isNew, canDelete });
     setOpen(null);
     setAlsoTimer(false);
-  }, [block]);
+  }, [block, isNew, canDelete]);
 
   if (!draft) return null;
   const patch = (p: Partial<Block>) => setDraft({ ...draft, ...p });
   const toggle = (f: Exclude<Field, null>) => setOpen(open === f ? null : f);
 
   return (
-    <Sheet visible onClose={onClose}>
+    <Sheet visible={block != null} onClose={onClose}>
       {/* 키보드가 올라오면 시트가 짧아진다 — 그때 줄어드는 쪽은 이 목록이다 */}
       <ScrollView
         style={{ maxHeight: 560, flexShrink: 1 }}
@@ -134,7 +154,7 @@ export function BlockSheet({ block, canDelete, isNew, onClose, onSave, onDelete 
       </ScrollView>
 
       {/* 새로 만드는 종목은 타이머로도 남길 수 있다 — 다음 루틴에서 그대로 가져다 쓴다 */}
-      {isNew && (
+      {held.isNew && (
         <Pressable style={styles.saveAsTimer} onPress={() => setAlsoTimer((v) => !v)}>
           <Checkbox on={alsoTimer} />
           <Text style={styles.saveAsTimerLabel}>{t('sheet.alsoSaveAsTimer')}</Text>
@@ -142,7 +162,7 @@ export function BlockSheet({ block, canDelete, isNew, onClose, onSave, onDelete 
       )}
 
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-        {canDelete && (
+        {held.canDelete && (
           <PressBox
             onPress={() => onDelete(draft.id)}
             radius={RADIUS.button}
