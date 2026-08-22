@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FloodTile } from '../src/components/Surface';
 import { PressBox } from '../src/components/PressBox';
 import { NextIcon, PauseIcon, PencilIcon, PlayIcon, PrevIcon } from '../src/components/Icons';
+import { MemoSheet } from '../src/components/MemoSheet';
 import { OrderSheet } from '../src/components/OrderSheet';
 import { RunMoreSheet } from '../src/components/RunMoreSheet';
 import { PhaseFlood } from '../src/components/PhaseFlood';
@@ -65,11 +66,13 @@ export default function Run() {
   }, []);
   /** 손가락이 처음 닿은 높이 — gestureState.y0는 붙잡은 뒤에야 채워져서 판단에 쓸 수 없다 */
   const grabY = useRef(0);
-  const { settings } = useStore();
+  const { settings, savePreset } = useStore();
   const run = useSession();
   const preset = run.preset;
   const [ordering, setOrdering] = useState(false);
   const [more, setMore] = useState(false);
+  /** 메모를 고치는 중인 종목 — 링 위의 이름·메모를 누르면 열린다 */
+  const [memoOf, setMemoOf] = useState<string | null>(null);
   /** 「더보기」에서 고른 것 — 시트가 다 내려간 뒤에 실행한다 */
   const pending = useRef<'order' | 'skip' | null>(null);
   /**
@@ -84,7 +87,7 @@ export default function Run() {
    * PanResponder가 새로 만들어져 쥐고 있던 손짓이 끊긴다.
    */
   const sheetUp = useRef(false);
-  sheetUp.current = ordering || more;
+  sheetUp.current = ordering || more || memoOf != null;
   useEffect(() => {
     void ensurePermission();
   }, []);
@@ -431,15 +434,32 @@ export default function Run() {
         >
           <View>
             {title.name != null && (
-              <View style={styles.nameAbove} pointerEvents="none">
-                <Text numberOfLines={title.memo ? 1 : 2} style={styles.exName}>
-                  {title.name}
-                </Text>
-                {title.memo != null && (
-                  <Text numberOfLines={1} style={styles.exMemo}>
-                    {title.memo}
+              /*
+                이름과 메모를 누르면 **그 종목의 메모만** 고친다. 운동 중에 떠오르는
+                것("다음엔 22.5kg")을 적으려고 편집 화면까지 들어갔다 나올 수는 없다.
+                누르는 자리는 글자 덩이 그대로다 — 링 위 좁은 띠라 여기가 눌린다는
+                티를 따로 내면 이름이 버튼처럼 보인다. 메모가 없는 종목에서도 열려서,
+                이름을 누르는 것이 곧 "여기에 한 줄 적기"가 된다.
+              */
+              <View style={styles.nameAbove}>
+                <PressBox
+                  onPress={() => run.seg?.blockId && setMemoOf(run.seg.blockId)}
+                  haptic="tap"
+                  scaleTo={0.96}
+                  dim={0}
+                  hitSlop={12}
+                  style={styles.namePress}
+                  accessibilityLabel={t('run.a11yMemo', { name: title.name })}
+                >
+                  <Text numberOfLines={title.memo ? 1 : 2} style={styles.exName}>
+                    {title.name}
                   </Text>
-                )}
+                  {title.memo != null && (
+                    <Text numberOfLines={1} style={styles.exMemo}>
+                      {title.memo}
+                    </Text>
+                  )}
+                </PressBox>
               </View>
             )}
             <Ring
@@ -588,6 +608,24 @@ export default function Run() {
           if (what === 'order') setOrdering(true);
           else if (what === 'skip') run.skipBlock();
         }}
+      />
+
+      {/*
+        메모 시트. 다른 시트와 같은 자리에 둔다 — 끌어내리기를 받는 겹 바깥이라
+        시트 안의 손짓이 실행 화면까지 올라가지 않는다.
+      */}
+      <MemoSheet
+        blockId={memoOf}
+        name={title.name ?? ''}
+        memo={preset.blocks.find((b) => b.id === memoOf)?.memo ?? ''}
+        onClose={() => setMemoOf(null)}
+        onSave={(blockId, memo) =>
+          savePreset({
+            ...preset,
+            blocks: preset.blocks.map((b) => (b.id === blockId ? { ...b, memo } : b)),
+            updatedAt: Date.now(),
+          })
+        }
       />
 
       <OrderSheet
@@ -742,6 +780,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     alignItems: 'center',
   },
+  /**
+   * 누르는 칸 — 여백을 0으로 둔다.
+   *
+   * 이름이 쓸 수 있는 폭은 시안대로 못 박혀 있다(nameAbove가 링보다 좌우 28씩
+   * 넓고, 그 바깥은 화면 끝까지 8pt뿐이다). 여기에 안쪽 여백을 주면 그만큼 글자
+   * 폭이 줄어 한 줄에 들어가던 이름이 두 줄로 넘어간다. 손가락 자리는 여백이
+   * 아니라 hitSlop으로 넓힌다 — 그쪽은 배치를 건드리지 않는다.
+   */
+  namePress: { alignItems: 'center', alignSelf: 'stretch' },
   exName: {
     textAlign: 'center',
     fontSize: 23,
