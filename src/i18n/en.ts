@@ -166,7 +166,6 @@ export const en: Catalog = {
     a11yBack: 'Back',
     a11yExit: 'End workout',
     a11yEdit: 'Edit routine',
-    a11yMemo: 'Edit note for {{name}}',
     a11ySound: 'Sound and vibration settings',
     pause: 'Pause',
     resume: 'Resume',

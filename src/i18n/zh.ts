@@ -158,7 +158,6 @@ export const zh: Catalog = {
     a11yBack: '返回',
     a11yExit: '结束训练',
     a11yEdit: '编辑循环',
-    a11yMemo: '编辑 {{name}} 的备注',
     a11ySound: '声音与振动设置',
     pause: '暂停',
     resume: '继续',

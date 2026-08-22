@@ -16,7 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FloodTile } from '../src/components/Surface';
 import { PressBox } from '../src/components/PressBox';
 import { NextIcon, PauseIcon, PencilIcon, PlayIcon, PrevIcon } from '../src/components/Icons';
-import { MemoSheet } from '../src/components/MemoSheet';
+import { BlockSheet } from '../src/components/BlockSheet';
 import { OrderSheet } from '../src/components/OrderSheet';
 import { RunMoreSheet } from '../src/components/RunMoreSheet';
 import { PhaseFlood } from '../src/components/PhaseFlood';
@@ -27,6 +27,7 @@ import { ensurePermission } from '../src/notify';
 import { useSession } from '../src/session';
 import { useStore } from '../src/store';
 import { t } from '../src/i18n';
+import type { Block } from '../src/types';
 import { C, GUTTER, PHASE_COLOR, TABULAR } from '../src/theme';
 
 /**
@@ -71,8 +72,14 @@ export default function Run() {
   const preset = run.preset;
   const [ordering, setOrdering] = useState(false);
   const [more, setMore] = useState(false);
-  /** 메모를 고치는 중인 종목 — 링 위의 이름·메모를 누르면 열린다 */
-  const [memoOf, setMemoOf] = useState<string | null>(null);
+  /**
+   * 고치는 중인 종목 — 링 위의 이름·메모를 누르면 열린다.
+   *
+   * id가 아니라 **그때의 종목 자체**를 들고 있는다(편집 화면도 같은 방식이다).
+   * 매번 프리셋에서 찾아 넘기면, 시트를 열어둔 사이에 프리셋이 한 번이라도 다시
+   * 저장될 때 넘어가는 객체가 갈리고 시트가 고치던 값을 처음으로 되돌린다.
+   */
+  const [editing, setEditing] = useState<Block | null>(null);
   /** 「더보기」에서 고른 것 — 시트가 다 내려간 뒤에 실행한다 */
   const pending = useRef<'order' | 'skip' | null>(null);
   /**
@@ -87,7 +94,7 @@ export default function Run() {
    * PanResponder가 새로 만들어져 쥐고 있던 손짓이 끊긴다.
    */
   const sheetUp = useRef(false);
-  sheetUp.current = ordering || more || memoOf != null;
+  sheetUp.current = ordering || more || editing != null;
   useEffect(() => {
     void ensurePermission();
   }, []);
@@ -435,21 +442,24 @@ export default function Run() {
           <View>
             {title.name != null && (
               /*
-                이름과 메모를 누르면 **그 종목의 메모만** 고친다. 운동 중에 떠오르는
-                것("다음엔 22.5kg")을 적으려고 편집 화면까지 들어갔다 나올 수는 없다.
+                이름과 메모를 누르면 **그 종목을 여기서 고친다** — 편집 화면에서
+                종목 행을 누를 때와 똑같은 시트가 뜬다. 운동 중에 떠오르는 것이
+                메모만은 아니다("휴식 30초는 짧다", "다음엔 22.5kg"). 그걸 고치려고
+                타이머 화면을 떠나 편집 화면까지 들어갔다 나올 수는 없다.
+
                 누르는 자리는 글자 덩이 그대로다 — 링 위 좁은 띠라 여기가 눌린다는
-                티를 따로 내면 이름이 버튼처럼 보인다. 메모가 없는 종목에서도 열려서,
-                이름을 누르는 것이 곧 "여기에 한 줄 적기"가 된다.
+                티를 따로 내면 이름이 버튼처럼 보이고, 시안 5a에서 이름이 주인공인
+                이유가 사라진다.
               */
               <View style={styles.nameAbove}>
                 <PressBox
-                  onPress={() => run.seg?.blockId && setMemoOf(run.seg.blockId)}
+                  onPress={() => setEditing(preset.blocks.find((b) => b.id === run.seg?.blockId) ?? null)}
                   haptic="tap"
                   scaleTo={0.96}
                   dim={0}
                   hitSlop={12}
                   style={styles.namePress}
-                  accessibilityLabel={t('run.a11yMemo', { name: title.name })}
+                  accessibilityLabel={t('edit.a11yEditBlock', { name: title.name })}
                 >
                   <Text numberOfLines={title.memo ? 1 : 2} style={styles.exName}>
                     {title.name}
@@ -611,21 +621,29 @@ export default function Run() {
       />
 
       {/*
-        메모 시트. 다른 시트와 같은 자리에 둔다 — 끌어내리기를 받는 겹 바깥이라
-        시트 안의 손짓이 실행 화면까지 올라가지 않는다.
+        종목 편집 시트 — 편집 화면과 **같은 컴포넌트**다. 두 벌을 두면 한쪽만
+        고쳐지고 다른 쪽이 뒤처진다. 다른 시트와 같은 자리에 둔다(끌어내리기를
+        받는 겹 바깥이라 시트 안의 손짓이 실행 화면까지 올라가지 않는다).
+
+        지우기는 여기서 막는다. 지금 **하고 있는** 종목을 목록에서 빼면 흐른
+        시간이 가리킬 자리가 사라져서, 계획을 다시 편 순간 엉뚱한 구간 한가운데
+        떨어진다(session.tsx의 정체 되찾기가 못 찾는 경우가 이것이다). 이번
+        판에서만 빼려면 「더보기 → 종목 넘기기」가 있고, 루틴에서 아주 지우는
+        것은 편집 화면(연필)의 일이다.
       */}
-      <MemoSheet
-        blockId={memoOf}
-        name={title.name ?? ''}
-        memo={preset.blocks.find((b) => b.id === memoOf)?.memo ?? ''}
-        onClose={() => setMemoOf(null)}
-        onSave={(blockId, memo) =>
+      <BlockSheet
+        block={editing}
+        canDelete={false}
+        onClose={() => setEditing(null)}
+        onSave={(b) => {
           savePreset({
             ...preset,
-            blocks: preset.blocks.map((b) => (b.id === blockId ? { ...b, memo } : b)),
+            blocks: preset.blocks.map((x) => (x.id === b.id ? b : x)),
             updatedAt: Date.now(),
-          })
-        }
+          });
+          setEditing(null);
+        }}
+        onDelete={() => setEditing(null)}
       />
 
       <OrderSheet

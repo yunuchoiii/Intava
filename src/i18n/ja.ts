@@ -158,7 +158,6 @@ export const ja: Catalog = {
     a11yBack: '戻る',
     a11yExit: 'ワークアウトを終了',
     a11yEdit: 'ルーティンを編集',
-    a11yMemo: '{{name}} のメモを編集',
     a11ySound: '音・振動の設定',
     pause: '一時停止',
     resume: '再開',

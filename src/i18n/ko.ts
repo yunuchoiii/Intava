@@ -176,7 +176,6 @@ export const ko = {
     a11yBack: '뒤로',
     a11yExit: '운동 종료',
     a11yEdit: '루틴 편집',
-    a11yMemo: '{{name}} 메모 고치기',
     a11ySound: '소리 · 진동 설정',
     pause: '일시정지',
     resume: '재개',
