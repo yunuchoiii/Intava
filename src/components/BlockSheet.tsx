@@ -14,7 +14,7 @@ import { t } from '../i18n';
 import { C, GUTTER, RADIUS } from '../theme';
 import type { Block } from '../types';
 import { Checkbox } from './Checkbox';
-import { ClearButton } from './ClearButton';
+import { CLEAR_SIZE, ClearButton } from './ClearButton';
 import { PressBox } from './PressBox';
 import { Sheet } from './Sheet';
 import { ValueRow } from './ValueRow';
@@ -230,8 +230,16 @@ const styles = StyleSheet.create({
   nameRow: { paddingTop: 12, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: C.divider },
   memoRow: { paddingTop: 14, paddingBottom: 6 },
   memoLabel: { fontSize: 18, lineHeight: 24, fontWeight: '600', color: C.textPrimary },
-  /** ✕가 붙어도 글자 자리는 그대로 — 여백은 입력칸이 아니라 이 줄이 든다 */
-  memoInputRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
+  /**
+   * ✕가 나타나도 글자가 움직이지 않게 **줄 높이를 ✕에 못 박는다.**
+   *
+   * 메모는 17pt라 줄 높이가 20pt 남짓인데 ✕는 26pt다. 높이를 내용에 맡기면
+   * ✕가 붙는 순간 줄이 6pt 자라고, 가운데 정렬이라 글자가 3pt 위로 튄다.
+   * 이름칸에 이 문제가 없던 것은 글자가 28pt라 줄이 이미 ✕보다 높아서다.
+   *
+   * 여백도 입력칸이 아니라 이 줄이 든다 — 입력칸에 남겨두면 ✕만 그만큼 처진다.
+   */
+  memoInputRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8, height: CLEAR_SIZE },
   memoInput: {
     fontSize: 17,
     color: C.textPrimary,

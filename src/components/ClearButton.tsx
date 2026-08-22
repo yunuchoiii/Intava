@@ -12,6 +12,12 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 import { t } from '../i18n';
 import { C } from '../theme';
 
+/**
+ * 지름. 부르는 쪽이 줄 높이를 여기에 맞춰야 할 때가 있다 —
+ * 글자가 이보다 작은 줄에 붙이면 ✕가 나타나는 순간 줄이 커지면서 글자가 밀린다.
+ */
+export const CLEAR_SIZE = 26;
+
 export function ClearButton({ onPress }: { onPress: () => void }) {
   return (
     <Pressable
@@ -28,9 +34,9 @@ export function ClearButton({ onPress }: { onPress: () => void }) {
 
 const styles = StyleSheet.create({
   button: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: CLEAR_SIZE,
+    height: CLEAR_SIZE,
+    borderRadius: CLEAR_SIZE / 2,
     marginLeft: 10,
     alignItems: 'center',
     justifyContent: 'center',
