@@ -499,6 +499,18 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         setSyncId((n) => n + 1);
         tick();
         void reschedule();
+      } else {
+        /*
+          **앞을 떠나는 순간이 가장 위험하다.**
+
+          이때 무음 루프가 멎어 있으면 iOS는 "재생을 멈춘 앱"으로 보고 그대로
+          정지시킨다. 정지한 뒤에는 되살릴 코드조차 돌지 않으므로, 다시 열
+          때까지 알림 예약도 소리도 통째로 멈춘다.
+
+          매 초 tick에서도 보고 있지만(keepSessionAlive) 마지막 tick과
+          백그라운드 진입 사이의 1초가 비어 있다. 그 틈을 여기서 메운다.
+        */
+        keepSessionAlive();
       }
       /*
         백그라운드로 **들어갈 때는 아무것도 다시 예약하지 않는다.**
