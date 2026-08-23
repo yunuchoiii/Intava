@@ -143,7 +143,7 @@ export const en: Catalog = {
     countdown: 'Final 3-second countdown',
     countdownNote: 'Short ticks for the last three seconds of every segment.',
     push: 'Notifications',
-    pushNote: 'Announces segment changes while the screen is off or you are in another app. Turn it off and those alerts may go silent.',
+    pushNote: 'Tells you about segment changes even if the app is fully stopped.',
     app: 'App',
     version: 'Version',
     privacy: 'Privacy Policy',

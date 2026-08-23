@@ -153,7 +153,7 @@ export const ko = {
     countdown: '마지막 3초 카운트다운',
     countdownNote: '각 구간이 끝나기 3초 전부터 짧은 틱이 울립니다.',
     push: '푸시 알림',
-    pushNote: '화면을 끄거나 다른 앱을 쓰는 동안 구간 전환을 알려줍니다. 끄면 그때 소리가 안 날 수 있습니다.',
+    pushNote: '앱이 완전히 멈춰도 구간 전환을 알려줍니다.',
     app: '앱',
     version: '버전',
     privacy: '개인정보 처리방침',

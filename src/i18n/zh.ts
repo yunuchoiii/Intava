@@ -135,7 +135,7 @@ export const zh: Catalog = {
     countdown: '最后3秒倒计时',
     countdownNote: '每个区间结束前3秒发出短促提示。',
     push: '通知',
-    pushNote: '息屏或使用其他应用时也会提示区间切换。关闭后，那时可能听不到提示音。',
+    pushNote: '即使应用被完全停止，也会提示区间切换。',
     app: '应用',
     version: '版本',
     privacy: '隐私政策',
