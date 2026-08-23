@@ -252,6 +252,7 @@ export const zh: Catalog = {
     channelCooldown: '放松',
     channelDone: '训练完成',
     workTitle: '运动 {{dur}}',
+    named: '{{name}} · {{what}}',
     bodySets: '第{{set}} / {{sets}}组',
     bodySetsRounds: '第{{set}} / {{sets}}组 · 第{{round}} / {{rounds}}轮',
     bodyNext: '下一个 · {{what}}',

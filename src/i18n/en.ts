@@ -261,6 +261,7 @@ export const en: Catalog = {
     channelCooldown: 'Cool-down',
     channelDone: 'Workout complete',
     workTitle: 'Work {{dur}}',
+    named: '{{name}} · {{what}}',
     bodySets: 'Set {{set}} of {{sets}}',
     bodySetsRounds: 'Set {{set}} of {{sets}} · round {{round}} of {{rounds}}',
     bodyNext: 'Next · {{what}}',

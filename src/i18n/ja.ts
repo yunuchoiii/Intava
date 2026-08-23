@@ -253,6 +253,7 @@ export const ja: Catalog = {
     channelCooldown: 'クールダウン',
     channelDone: 'ワークアウト完了',
     workTitle: '運動 {{dur}}',
+    named: '{{name}} · {{what}}',
     bodySets: '{{set}} / {{sets}}セット',
     bodySetsRounds: '{{set}} / {{sets}}セット · {{round}} / {{rounds}}ラウンド',
     bodyNext: '次 · {{what}}',

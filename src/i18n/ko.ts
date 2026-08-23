@@ -282,6 +282,8 @@ export const ko = {
     channelCooldown: '쿨다운',
     channelDone: '운동 완료',
     workTitle: '운동 {{dur}}',
+    /** 잠금화면 알림 제목 — 종목 이름을 앞에 세운다. 뒤가 잘려도 이름은 남는다 */
+    named: '{{name}} · {{what}}',
     bodySets: '{{set}} / {{sets}}세트',
     bodySetsRounds: '{{set}} / {{sets}}세트 · {{round}} / {{rounds}}라운드',
     bodyNext: '다음 · {{what}}',

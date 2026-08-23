@@ -234,6 +234,24 @@ export function notificationText(
   next: Segment | undefined,
   preset: Preset
 ): { title: string; body: string } {
+  /**
+   * 「운동 30초」 앞에 종목 이름을 붙인다 — 「인클라인 덤벨 프레스 · 운동 30초」.
+   *
+   * 잠금화면에서는 이 한 줄이 전부다. 화면을 켜지 않고 알림만 보는 자리라
+   * 「운동 30초」만 있으면 **무엇을** 30초 하는지가 빠진다. 이름을 앞에 두는
+   * 것은 알림 목록에서 뒤가 잘려도 이름은 남기 때문이다.
+   *
+   * 종목에 속한 자리(운동·그 사이 휴식)에만 붙는다. 웜업·준비·라운드 휴식·
+   * 쿨다운은 어느 종목의 것도 아니다. 타이머(종목 하나짜리)에도 안 붙인다 —
+   * 고를 종목이 없어서 이름이 아무것도 가르지 않는다. 실행 화면의 링이
+   * 이름을 감추는 규칙(ringTitle)과 같다.
+   */
+  const named = (what: string): string => {
+    const inBlock = seg.phase === 'WORK' || seg.phase === 'SET_REST';
+    const name = inBlock && !isSimple(preset) ? seg.name?.trim() : undefined;
+    return name ? t('notify.named', { name, what }) : what;
+  };
+
   if (seg.phase === 'WORK') {
     const body = isSimple(preset)
       ? t('notify.bodySets', { set: seg.set, sets: seg.sets })
@@ -243,10 +261,10 @@ export function notificationText(
           round: seg.round,
           rounds: preset.rounds,
         });
-    return { title: t('notify.workTitle', { dur: durationShort(seg.dur) }), body };
+    return { title: named(t('notify.workTitle', { dur: durationShort(seg.dur) })), body };
   }
   return {
-    title: describeSegment(seg),
+    title: named(describeSegment(seg)),
     body: t('notify.bodyNext', { what: next ? nextName(next) : t('phase.DONE') }),
   };
 }
