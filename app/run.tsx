@@ -77,6 +77,15 @@ export default function Run() {
   const preset = run.preset;
   const [ordering, setOrdering] = useState(false);
   const [more, setMore] = useState(false);
+  /**
+   * 「완료할까요?」를 묻는 중 — run.done과 따로 든다.
+   *
+   * done을 그대로 visible에 걸면 **시트를 닫을 방법이 없다.** 닫으려면 done이
+   * 거짓이 되어야 하는데 그건 종목을 붙인 뒤에나 일어난다. 그래서 「더 할게요」를
+   * 눌러도 아무 일이 없었다 — 시트가 그대로 서 있으니 다 내려간 뒤에 도는
+   * onClosed가 영영 오지 않았다.
+   */
+  const [asking, setAsking] = useState(false);
   /** 「운동 더 하기」로 종목을 고르는 중 */
   const [addingExtra, setAddingExtra] = useState(false);
   /**
@@ -88,7 +97,7 @@ export default function Run() {
    */
   const [editing, setEditing] = useState<Block | null>(null);
   /** 「더보기」에서 고른 것 — 시트가 다 내려간 뒤에 실행한다 */
-  const pending = useRef<'order' | 'skip' | 'extra' | null>(null);
+  const pending = useRef<'order' | 'skip' | 'extra' | 'finish' | null>(null);
   /**
    * 시트가 떠 있는가 — 아래 화면의 끌어내리기가 이걸 보고 비켜선다.
    *
@@ -101,7 +110,7 @@ export default function Run() {
    * PanResponder가 새로 만들어져 쥐고 있던 손짓이 끊긴다.
    */
   const sheetUp = useRef(false);
-  sheetUp.current = ordering || more || editing != null || run.done || addingExtra;
+  sheetUp.current = ordering || more || editing != null || asking || addingExtra;
   useEffect(() => {
     void ensurePermission();
   }, []);
@@ -208,6 +217,10 @@ export default function Run() {
     if (!preset) return;
     router.replace({ pathname: '/done', params: doneParams() });
   };
+
+  useEffect(() => {
+    if (run.done) setAsking(true);
+  }, [run.done]);
 
   const dismiss = useCallback(() => {
     if (router.canGoBack()) router.back();
@@ -665,18 +678,28 @@ export default function Run() {
         종목 고르기를 연다 — 두 시트가 같은 프레임에 겹치면 뒤엣것이 안 뜬다.
       */}
       <FinishSheet
-        visible={run.done && !addingExtra}
+        visible={asking}
         onFinish={() => {
-          pending.current = null;
-          finish();
+          pending.current = 'finish';
+          setAsking(false);
         }}
         onMore={() => {
           pending.current = 'extra';
+          setAsking(false);
         }}
         onClosed={() => {
-          if (pending.current !== 'extra') return;
+          const what = pending.current;
           pending.current = null;
-          setAddingExtra(true);
+          /*
+            고른 것은 시트가 **다 내려간 뒤에** 실행한다. 종목 고르기도 Modal이라
+            닫는 것과 여는 것이 같은 프레임에 겹치면 뒤엣것이 안 뜨고 앞엣것의
+            투명한 껍데기만 남는다. 완료도 마찬가지로 여기서 — 모달이 걷히는
+            동안 라우팅하면 잔여 레이어가 창에 남는다(goEdit의 주석).
+
+            **기본은 완료다.** 쓸어내려 닫아도, 바깥을 눌러도 여기로 온다.
+          */
+          if (what === 'extra') setAddingExtra(true);
+          else finish();
         }}
       />
 

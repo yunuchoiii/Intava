@@ -500,6 +500,17 @@ export default function Edit() {
                 valueSize={21}
                 chevron
               />
+              <ValueRow
+                title={t('edit.roundRest')}
+                display={durationShort(draft.roundRestSec) || t('common.none')}
+                open={open === 'roundRest'}
+                onToggle={() => toggleRow('roundRest')}
+                wheel="time"
+                value={draft.roundRestSec}
+                onChange={(roundRestSec) => patch({ roundRestSec })}
+                valueSize={21}
+                chevron
+              />
               {/*
                 종목과 종목 사이 — 자리를 옮기고 무게를 갈아 끼우는 시간.
 
@@ -537,17 +548,6 @@ export default function Edit() {
                   </Pressable>
                 </>
               )}
-              <ValueRow
-                title={t('edit.roundRest')}
-                display={durationShort(draft.roundRestSec) || t('common.none')}
-                open={open === 'roundRest'}
-                onToggle={() => toggleRow('roundRest')}
-                wheel="time"
-                value={draft.roundRestSec}
-                onChange={(roundRestSec) => patch({ roundRestSec })}
-                valueSize={21}
-                chevron
-              />
 
               <View style={[styles.sectionRow, tip === 'startEnd' && styles.raised]}>
                 <Text style={[styles.section, { marginTop: 0, marginBottom: 0 }]}>{t('edit.startEnd')}</Text>
