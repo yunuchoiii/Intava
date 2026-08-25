@@ -9,6 +9,7 @@ import { usePreventRemove } from 'expo-router/react-navigation';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
+  Keyboard,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -378,7 +379,11 @@ export default function Edit() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           scrollEnabled={!reordering}
-          onScrollBeginDrag={() => setTip(null)}
+          onScrollBeginDrag={() => {
+            setTip(null);
+            // 목록을 훑기 시작하면 글쓰기는 끝난 것이다
+            Keyboard.dismiss();
+          }}
         >
           <View style={styles.nameRow}>
             <Text style={styles.nameLabel}>{t('edit.name')}</Text>

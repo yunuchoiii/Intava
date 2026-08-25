@@ -1,6 +1,7 @@
 /** 5.4 종목 편집 시트 — 하단 시트, 뒤 화면은 45% 어둡게 */
 import React, { useEffect, useState } from 'react';
 import {
+  Keyboard,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -97,6 +98,7 @@ export function BlockSheet({ block, canDelete, isNew, onClose, onSave, onDelete 
         style={{ maxHeight: 560, flexShrink: 1 }}
         contentContainerStyle={{ paddingHorizontal: GUTTER, paddingBottom: 8 }}
         keyboardShouldPersistTaps="handled"
+        onScrollBeginDrag={Keyboard.dismiss}
       >
         <View>
           <View style={styles.nameRow}>

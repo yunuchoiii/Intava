@@ -21,6 +21,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { dismissKeyboardOnEmptyTap } from './Screen';
 import { ABS, C, E3, RADIUS } from '../theme';
 
 /** 이만큼 끌어내리면 닫는다 */
@@ -172,7 +173,7 @@ export function Sheet({ visible, onClose, onClosed, children, style }: Props) {
         <Pressable style={[StyleSheet.absoluteFill, styles.backdrop]} onPress={close} />
       </Animated.View>
 
-      <View style={[styles.wrap, { paddingBottom: kb }]} pointerEvents="box-none">
+      <View style={[styles.wrap, { paddingBottom: kb }]} pointerEvents="box-none" {...dismissKeyboardOnEmptyTap()}>
         <Animated.View
           style={[
             styles.sheet,
