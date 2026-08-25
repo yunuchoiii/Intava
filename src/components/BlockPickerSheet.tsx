@@ -24,11 +24,50 @@ type Props = {
   onPickTimer: (block: Block) => void;
   /** 빈 종목부터 만들기 */
   onCreateNew: () => void;
+  /**
+   * 먼저 보여줄 종목들 — 실행 중 「운동 더 하기」에서 이 루틴의 종목을 세운다.
+   *
+   * 그 자리에서 제일 잦은 선택이 **방금 한 것을 한 번 더**다. 편집 화면에서
+   * 종목을 더할 때는 줄 것이 없으므로 비워 둔다.
+   */
+  blocks?: Block[];
+  /** 그 목록의 제목 — 부르는 쪽이 자리에 맞게 준다 */
+  blocksTitle?: string;
 };
 
-export function BlockPickerSheet({ visible, timers, onClose, onPickTimer, onCreateNew }: Props) {
+export function BlockPickerSheet({
+  visible,
+  timers,
+  onClose,
+  onPickTimer,
+  onCreateNew,
+  blocks,
+  blocksTitle,
+}: Props) {
   const insets = useSafeAreaInsets();
   if (!visible) return null;
+
+  const row = (key: string, name: string, b: Block, pick: () => void) => (
+    <PressBox
+      key={key}
+      onPress={pick}
+      radius={14}
+      scaleTo={0.98}
+      dim={0.22}
+      style={styles.timerRow}
+      accessibilityLabel={name}
+    >
+      <View style={{ flex: 1 }}>
+        <Text style={styles.timerName} numberOfLines={1}>
+          {name}
+        </Text>
+        <Text style={[styles.timerSummary, TABULAR]} numberOfLines={1}>
+          {blockSummary(b.workSec, b.restSec, b.sets)}
+        </Text>
+      </View>
+      <Text style={styles.chevron}>›</Text>
+    </PressBox>
+  );
 
   return (
     <Sheet visible={visible} onClose={onClose}>
@@ -49,6 +88,15 @@ export function BlockPickerSheet({ visible, timers, onClose, onPickTimer, onCrea
             </PressBox>
           </View>
 
+          {blocks && blocks.length > 0 && (
+            <>
+              <Text style={styles.section}>{blocksTitle}</Text>
+              <View style={{ paddingHorizontal: GUTTER - 12 }}>
+                {blocks.map((b) => row('b:' + b.id, b.name, b, () => onPickTimer(b)))}
+              </View>
+            </>
+          )}
+
           <Text style={styles.section}>{t('pickBlock.fromTimer')}</Text>
 
           {timers.length === 0 ? (
@@ -62,26 +110,8 @@ export function BlockPickerSheet({ visible, timers, onClose, onPickTimer, onCrea
               {timers.map((timer) => {
                 const src = timer.blocks[0];
                 if (!src) return null;
-                return (
-                  <PressBox
-                    key={timer.id}
-                    onPress={() => onPickTimer({ ...src, name: timer.name })}
-                    radius={14}
-                    scaleTo={0.98}
-                    dim={0.22}
-                    style={styles.timerRow}
-                    accessibilityLabel={timer.name}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.timerName} numberOfLines={1}>
-                        {timer.name}
-                      </Text>
-                      <Text style={[styles.timerSummary, TABULAR]} numberOfLines={1}>
-                        {blockSummary(src.workSec, src.restSec, src.sets)}
-                      </Text>
-                    </View>
-                    <Text style={styles.chevron}>›</Text>
-                  </PressBox>
+                return row('t:' + timer.id, timer.name, src, () =>
+                  onPickTimer({ ...src, name: timer.name })
                 );
               })}
             </ScrollView>

@@ -153,6 +153,11 @@ export const zh: Catalog = {
   },
 
   run: {
+    finishTitle: '要结束这次训练吗？',
+    finishBody: '还想练的话，可以继续挑选动作。',
+    finishMore: '继续练',
+    moreFromRoutine: '本循环的动作',
+    finishDone: '结束',
     exitTitle: '要结束这次训练吗？',
     exitBody: '目前的进度不会被保存。',
     exitContinue: '继续',

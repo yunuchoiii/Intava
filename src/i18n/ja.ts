@@ -153,6 +153,11 @@ export const ja: Catalog = {
   },
 
   run: {
+    finishTitle: 'ワークアウトを終了しますか？',
+    finishBody: 'まだ続けるなら、種目を選んで足せます。',
+    finishMore: 'まだ続ける',
+    moreFromRoutine: 'このルーティンの種目',
+    finishDone: '終了',
     exitTitle: 'ワークアウトを終了しますか？',
     exitBody: 'ここまでの進行は保存されません。',
     exitContinue: '続ける',

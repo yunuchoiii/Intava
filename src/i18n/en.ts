@@ -161,6 +161,11 @@ export const en: Catalog = {
   },
 
   run: {
+    finishTitle: 'Finish this workout?',
+    finishBody: 'Want more? Pick another exercise to keep going.',
+    finishMore: 'Keep going',
+    moreFromRoutine: 'From this routine',
+    finishDone: 'Finish',
     exitTitle: 'End this workout?',
     exitBody: 'Your progress so far will not be saved.',
     exitContinue: 'Keep going',

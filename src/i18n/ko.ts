@@ -171,6 +171,11 @@ export const ko = {
   },
 
   run: {
+    finishTitle: '운동을 완료할까요?',
+    finishBody: '더 하시려면 종목을 이어서 고르세요.',
+    finishMore: '더 할게요',
+    moreFromRoutine: '이 루틴의 종목',
+    finishDone: '완료',
     exitTitle: '운동을 끝낼까요?',
     exitBody: '지금까지의 진행은 저장되지 않습니다.',
     exitContinue: '계속하기',
