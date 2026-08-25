@@ -147,8 +147,22 @@ export default function Run() {
       }
       // 종목·라운드 사이 휴식은 아직 만들어지지 않은 다음 자리를 가리킨다
       const ahead = s.phase === 'BLOCK_REST' || s.phase === 'ROUND_REST';
-      stageOf[i] = Math.min(stages.length - 1, ahead ? stages.length : stages.length - 1);
+      stageOf[i] = ahead ? stages.length : stages.length - 1;
     });
+
+    /*
+      **가리킬 자리가 안 생긴 휴식은 있던 자리로 되돌린다.**
+
+      위에서 종목·라운드 사이 휴식은 «아직 만들어지지 않은 다음 자리»를 가리키게
+      했는데, 그 뒤에 정말로 자리가 생겼는지는 다 훑고 나서야 안다 — 마지막
+      라운드 휴식이나 꼬리 끝의 전환처럼 뒤가 비는 경우가 있다.
+
+      한때 `Math.min(stages.length - 1, ...)`을 그 자리에서 걸었는데, 그러면
+      «다음»이 늘 «지금»으로 눌려서 앞을 가리키는 일 자체가 없었다 — 주석은
+      가리킨다고 적혀 있는데 코드는 안 가리키고 있었다.
+    */
+    const last = stages.length - 1;
+    for (let i = 0; i < stageOf.length; i++) stageOf[i] = Math.min(stageOf[i], last);
 
     /**
      * 자리마다 시간 폭을 매긴다 — 하단 눈금이 이 폭으로 나뉜다.

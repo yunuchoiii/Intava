@@ -150,7 +150,11 @@ export default function Done() {
           <Text style={styles.name} numberOfLines={2}>
             {preset.name}
           </Text>
-          {!!detailLine(preset) && <Text style={styles.detail}>{detailLine(preset)}</Text>}
+          {/* 종목 수는 기록에서 — 실행 중에 붙인 종목까지 세야 한다(detailLine) */}
+          {(() => {
+            const line = detailLine(preset, entry?.blocks.length);
+            return !!line && <Text style={styles.detail}>{line}</Text>;
+          })()}
           {/* 언제부터 언제까지 — 기록 화면이 카드 머리에 적는 것과 같은 사실이다 */}
           {!!entry && (
             <Text style={[styles.detail, TABULAR]}>
@@ -296,12 +300,17 @@ function parseRounds(raw?: string): string[][] | undefined {
  * 숫자가 있으면 둘이 다투고("0세트"인데 "3종목 2라운드"), 줄도 길어져 접힌다.
  * 타이머(종목 하나)는 적을 구성이 없어 웜업·쿨다운만 남는다.
  */
-function detailLine(p: Preset): string {
+function detailLine(p: Preset, blockCount = p.blocks.length): string {
   const parts = [
-    isSimple(p)
+    /*
+      종목 수는 **그날 실제로 한 것**으로 센다. 실행 중에 「운동 더 하기」로 붙인
+      종목은 프리셋에 없으므로, blocks.length만 보면 두 종목을 했는데 「1종목」이
+      된다. 부르는 쪽이 기록의 종목 수를 넘겨준다.
+    */
+    blockCount <= 1 && p.rounds <= 1
       ? null
       : t('doneScreen.composition', {
-          blocks: t('count.blocks', { count: p.blocks.length }),
+          blocks: t('count.blocks', { count: blockCount }),
           rounds: t('count.rounds', { count: p.rounds }),
         }),
     p.warmupSec > 0 || p.cooldownSec > 0

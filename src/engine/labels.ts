@@ -277,13 +277,19 @@ function nextName(seg: Segment): string {
  * 구성 한 줄 — "3종목 2라운드". 기록에 베껴 두는 문장이라 짧아야 한다.
  * 타이머(종목 1·라운드 1)는 종목이라는 말 자체를 쓰지 않으므로 세트 수로 대신한다.
  */
-export function shapeLabel(p: Preset): string {
-  if (isSimple(p)) {
+export function shapeLabel(p: Preset, extraBlocks = 0): string {
+  /*
+    실행 중에 「운동 더 하기」로 붙인 종목까지 센다. 프리셋의 blocks만 보면
+    두 종목을 했는데 기록에는 「1종목」으로 남는다 — 그 줄이 가리키는 것은
+    루틴의 설계가 아니라 **그날 한 운동**이다.
+  */
+  const blocks = p.blocks.length + extraBlocks;
+  if (isSimple(p) && extraBlocks === 0) {
     const b = p.blocks[0];
     return b ? t('count.sets', { count: b.sets }) : '';
   }
   return t('doneScreen.composition', {
-    blocks: t('count.blocks', { count: p.blocks.length }),
+    blocks: t('count.blocks', { count: blocks }),
     rounds: t('count.rounds', { count: p.rounds }),
   });
 }
