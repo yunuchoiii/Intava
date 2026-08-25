@@ -88,19 +88,26 @@ export function buildPlan(p: Preset, orders?: RoundOrders, skips?: RoundSkips): 
         } else if (lastBlk && lastRound) {
           // 다 끝났다 — 쉴 것이 없다. 뒤에 올 종목도 라운드도 없으므로 곧장 쿨다운으로 간다.
         } else if (lastBlk) {
+          // 라운드가 끝났다 — 라운드 휴식이 그 자리를 다 맡는다. 종목의 휴식은 겹치지 않는다.
           segs.push({ phase: 'ROUND_REST', ...meta, start: t, dur: p.roundRestSec });
           t += p.roundRestSec;
         } else {
           /*
-            마지막 세트 뒤에도 그 종목의 휴식이 돈다 — 이것이 다음 종목까지의 간격이다.
+            다음 종목으로 넘어가는 자리. 무엇이 서는지는 루틴이 고른다.
 
-            예전에는 여기서 별도의 종목 전환(BLOCK_REST, blockRestSec)을 끼웠는데,
-            "마지막 세트만 휴식이 다르다"는 것이 체감상 어긋났다. 전환이라는 별도
-            구간 없이 종목의 휴식 리듬이 끝까지 이어지고, 프리셋의 blockRestSec은
-            더 이상 계획에 쓰이지 않는다(타입에는 옛 데이터 호환으로 남는다).
+            · 마지막 휴식을 건너뛰지 않으면 → 그 종목의 휴식이 끝까지 이어진다
+            · 종목 전환이 0보다 크면 → 그 뒤에 전환 구간이 선다
+
+            둘 다 켜면 휴식 뒤에 전환이 잇달아 서므로, 보통은 하나만 쓴다.
+            편집 화면이 그 둘을 나란히 두고 서로를 설명한다.
           */
-          segs.push({ phase: 'SET_REST', ...meta, start: t, dur: bl.restSec });
-          t += bl.restSec;
+          // 없는 값은 「생략」이다 — 옛 루틴이 갑자기 길어지지 않게(types.ts)
+          if (p.skipLastSetRest === false) {
+            segs.push({ phase: 'SET_REST', ...meta, start: t, dur: bl.restSec });
+            t += bl.restSec;
+          }
+          segs.push({ phase: 'BLOCK_REST', ...meta, start: t, dur: p.blockRestSec });
+          t += p.blockRestSec;
         }
       }
     }

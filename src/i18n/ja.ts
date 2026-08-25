@@ -60,6 +60,8 @@ export const ja: Catalog = {
     rounds: 'ラウンド',
     blockRest: '種目間の休憩',
     roundRest: 'ラウンド間の休憩',
+    skipLastRest: '最終セット後の休憩を省く',
+    skipLastRestNote: '種目の最終セットが終わると、すぐ種目の切り替えに移ります。',
     startEnd: '開始 · 仕上げ',
     startEndRow: 'ウォームアップ · 準備 · クールダウン',
     warmup: 'ウォームアップ',

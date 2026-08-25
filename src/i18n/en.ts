@@ -67,6 +67,8 @@ export const en: Catalog = {
     rounds: 'Rounds',
     blockRest: 'Rest between exercises',
     roundRest: 'Rest between rounds',
+    skipLastRest: 'Skip rest after the last set',
+    skipLastRestNote: 'Go straight to the switch once an exercise\u2019s last set ends.',
     startEnd: 'Start · Finish',
     startEndRow: 'Warm-up · Prepare · Cool-down',
     warmup: 'Warm-up',

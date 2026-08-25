@@ -60,6 +60,8 @@ export const zh: Catalog = {
     rounds: '轮数',
     blockRest: '动作之间的休息',
     roundRest: '轮次之间的休息',
+    skipLastRest: '跳过最后一组后的休息',
+    skipLastRestNote: '动作的最后一组结束后，直接进入动作切换。',
     startEnd: '开始 · 结束',
     startEndRow: '热身 · 准备 · 放松',
     warmup: '热身',

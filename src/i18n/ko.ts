@@ -71,6 +71,8 @@ export const ko = {
     rounds: '라운드',
     blockRest: '종목 사이 휴식',
     roundRest: '라운드 사이 휴식',
+    skipLastRest: '마지막 세트 뒤 휴식 생략',
+    skipLastRestNote: '종목의 마지막 세트가 끝나면 바로 종목 전환으로 넘어갑니다.',
     startEnd: '시작 · 마무리',
     startEndRow: '웜업 · 준비 · 쿨다운',
     warmup: '웜업',

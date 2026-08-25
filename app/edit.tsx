@@ -22,6 +22,7 @@ import { BlockList } from '../src/components/BlockList';
 import { useDragAutoScroll } from '../src/components/useDragAutoScroll';
 import { useToast } from '../src/components/Toast';
 import { Chevron, Collapsible } from '../src/components/Collapsible';
+import { Checkbox } from '../src/components/Checkbox';
 import { ClearButton } from '../src/components/ClearButton';
 import { BlockPickerSheet } from '../src/components/BlockPickerSheet';
 import { BlockSheet } from '../src/components/BlockSheet';
@@ -500,10 +501,42 @@ export default function Edit() {
                 chevron
               />
               {/*
-                종목 사이 휴식 줄은 없다 — 종목 전환 구간이 사라지고 마지막 세트
-                뒤에도 그 종목의 휴식이 돌게 바뀌었다(segments.ts). blockRestSec은
-                옛 데이터 호환으로 타입에만 남는다.
+                종목과 종목 사이 — 자리를 옮기고 무게를 갈아 끼우는 시간.
+
+                바로 아래 체크박스와 한 쌍이다. 마지막 세트 뒤 휴식을 켜 둔 채
+                전환까지 주면 쉬는 구간이 잇달아 두 번 서므로, 둘을 붙여 놓고
+                한눈에 보이게 뒀다. 종목이 하나뿐이면(타이머) 이 줄은 안 보인다 —
+                옮겨 갈 다음 종목이 없다.
               */}
+              {draft.blocks.length > 1 && (
+                <>
+                  <ValueRow
+                    title={t('edit.blockRest')}
+                    display={durationShort(draft.blockRestSec) || t('common.none')}
+                    open={open === 'blockRest'}
+                    onToggle={() => toggleRow('blockRest')}
+                    wheel="time"
+                    value={draft.blockRestSec}
+                    onChange={(blockRestSec) => patch({ blockRestSec })}
+                    valueSize={21}
+                    chevron
+                  />
+                  <Pressable
+                    style={styles.skipRow}
+                    onPress={() =>
+                      patch({ skipLastSetRest: draft.skipLastSetRest === false })
+                    }
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: draft.skipLastSetRest !== false }}
+                  >
+                    <Checkbox on={draft.skipLastSetRest !== false} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.skipLabel}>{t('edit.skipLastRest')}</Text>
+                      <Text style={styles.skipNote}>{t('edit.skipLastRestNote')}</Text>
+                    </View>
+                  </Pressable>
+                </>
+              )}
               <ValueRow
                 title={t('edit.roundRest')}
                 display={durationShort(draft.roundRestSec) || t('common.none')}
@@ -627,6 +660,16 @@ const styles = StyleSheet.create({
     borderBottomColor: C.divider,
   },
   nameLabel: { fontSize: 13, color: C.textTertiary },
+  /** 종목 전환 줄 바로 아래 — 둘이 한 쌍이라 사이를 좁게 붙인다 */
+  skipRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  skipLabel: { fontSize: 16, fontWeight: '600', color: C.textPrimary },
+  skipNote: { marginTop: 3, fontSize: 13, lineHeight: 18, color: C.textTertiary },
   nameInputRow: { flexDirection: 'row', alignItems: 'center' },
   nameInput: {
     marginTop: 10,
