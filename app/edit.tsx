@@ -51,6 +51,11 @@ const ACTION_RADIUS = 16;
  * 두 프리셋을 통째로 JSON으로 견주면 키 순서와 시각 도장(updatedAt·lastRunAt)에
  * 걸려 아무것도 안 고쳤는데 고쳤다고 나온다. 저장할 값만 정한 순서로 늘어놓는다.
  * 이름은 다듬어서 본다 — 뒤에 공백 하나 붙인 것을 편집으로 치지 않는다.
+ *
+ * **여기 빠진 값은 저장되지 않는다.** 기존 루틴은 저장 버튼 없이 지문이 달라질
+ * 때만 쓰기 때문에, 편집 화면에 칸을 새로 놓으면 이 목록에도 같이 놓아야 한다 —
+ * 「종목 사이 휴식」과 「마지막 세트 뒤 휴식」을 여기 안 적어서 화면에서는 바뀌는데
+ * 나갔다 들어오면 되돌아가 있었다.
  */
 function fingerprint(p: Preset): string {
   return JSON.stringify([
@@ -59,6 +64,10 @@ function fingerprint(p: Preset): string {
     p.prepareSec,
     p.rounds,
     p.roundRestSec,
+    // 없는 값은 참이다(types.ts) — undefined와 true가 다른 지문이 되면 옛 루틴이
+    // 열자마자 바뀐 것으로 보인다
+    p.skipLastSetRest !== false,
+    p.blockRestSec,
     p.cooldownSec,
     p.blocks.map((b) => [b.id, b.name.trim(), b.workSec, b.restSec, b.sets, (b.memo ?? '').trim()]),
   ]);
