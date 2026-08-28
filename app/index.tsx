@@ -1,6 +1,4 @@
 /** 5.1 홈 — 운동 직전에 화면을 오래 붙들지 않게 한다. 실행까지 한 번의 탭. */
-import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -283,38 +281,18 @@ export default function Home() {
 }
 
 /**
- * 정렬 줄 뒤 — 흐린 판. 행이 이 아래로 미끄러져 들어가면서 흐려지다 사라진다.
+ * 정렬 줄 뒤 — 배경색 판. 행이 이 아래로 미끄러져 들어가면서 가려진다.
  *
- * 한때 흐림을 접고 배경을 복사해 깔았다. 흐림 재질은 뒤에 아무것도 없어도 제가
- * 덮은 사각형만큼 색을 얹는데, 그때 배경이 세로 그라디언트라 그 균일한 색이
- * 어디에 놓이든 배경과 어긋나 아랫변이 가로선으로 읽혔기 때문이다.
- *
- * **그 전제가 사라졌다.** 배경이 단색이 되면서, 위쪽을 배경색으로 꽉 채워도 밑에
- * 깔린 진짜 배경과 픽셀이 정확히 같다. 그래서 두 겹으로 끝낸다 —
- *
- *   1) BlurView가 판 전체를 흐린다.
- *   2) 그 위에 배경색 스크림을 얹되 아래로 갈수록 걷는다.
- *
- * 정렬 줄과 추가 버튼이 앉는 위쪽은 스크림이 꽉 차 배경 그대로이고, 아래로 가면서
- * 열려 흐림만 남는다. 판이 끝나는 자리에서 행은 흐림에서 또렷함으로 건너가지만
- * 그때 스크림은 이미 투명이라 **색 경계가 생기지 않는다** — 옛 주석이 빠져나갈
- * 데가 없다고 적은 자리가 여기다.
+ * 한때 흐림 + 아래로 걷히는 스크림 두 겹이었다. 배경이 단색이 된 뒤로는 그럴
+ * 이유가 없다 — 배경색으로 꽉 채우면 밑에 깔린 진짜 배경과 픽셀이 정확히 같아서
+ * 판의 아랫변이 아예 보이지 않는다. 흐림 재질 하나를 매 프레임 합성할 일도 없다.
  */
 function ToolRowBackdrop({ height }: { height: number }) {
   return (
-    <View style={[styles.backdrop, { height }]} pointerEvents="none">
-      {/*
-        안드로이드에서는 experimentalBlurMethod 없이 반투명 겹으로만 떨어진다.
-        Sheet도 그 프로프 없이 쓰고 있어 같은 수준으로 맞춘다 — 여기만 실험
-        옵션을 켜면 시트와 홈의 재질이 갈린다.
-      */}
-      <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
-      <LinearGradient
-        colors={[C.bgPlain, C.bgPlain, C.bgPlainClear]}
-        locations={[0, 0.55, 1]}
-        style={StyleSheet.absoluteFill}
-      />
-    </View>
+    <View
+      style={[styles.backdrop, { height, backgroundColor: C.bgPlain }]}
+      pointerEvents="none"
+    />
   );
 }
 
