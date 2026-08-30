@@ -18,10 +18,26 @@ Expo 서버에서 굽고 App Store Connect까지 올려준다.
 | ASC 앱 ID | `eas.json` → `submit.production.ios.ascAppId` = `6799622371` |
 | 애플 팀 ID | `eas.json` → `submit.production.ios.appleTeamId` = `9A66V5LDFK` |
 
-**`appVersionSource`는 `local`이다.** 버전·빌드 번호의 주인은 `app.json`이고
-EAS 서버가 아니다. `autoIncrement`도 꺼 뒀다 — 빌드 번호는 손으로 올린다.
-iOS가 부팅 화면을 앱 버전 단위로 캐시하기 때문에 이 숫자는 스플래시를 갈 때도
-함께 올려야 하는 값이라, 자동으로 움직이면 그 규칙이 어긋난다.
+**`appVersionSource`는 `remote`다** (`a31b416`에서 바뀌었다). `version`의 주인은
+`app.json`이지만 **빌드 번호의 주인은 EAS 서버**이고, `production` 프로파일은
+`autoIncrement: true`라 구울 때마다 알아서 1씩 오른다. 손으로 올리는 한 잊으면
+업로드가 거부되고 두 플랫폼이 어긋나기 때문이다 — 실제로 iOS는 2인데 안드로이드는
+1이었던 적이 있다.
+
+`app.json`의 `buildNumber` / `versionCode`는 이제 **최종 번호가 아니라 원격 카운터의
+출발점**이다. 최종 번호는 빌드 로그와 `eas build:version:get`에서 본다.
+
+> ⚠️ **원격 카운터가 저절로 초기화되지는 않았다.** 2026-08-30에 확인했더니
+> `build:version:get`이 *"No remote versions are configured"* 였다. 이 상태로 구우면
+> EAS가 초기값을 대화형으로 묻고, 답하지 않으면 빌드가 죽는다. 그러니 **처음 한
+> 번은 손으로 못박는다** — 이미 App Store에 build 2를 올렸으므로 2로 세워야
+> 다음 빌드가 3이 된다.
+>
+> ```bash
+> npx eas-cli build:version:set --platform ios   # 물으면 2
+> ```
+>
+> 이 명령은 값을 인자로 못 받는다(대화형 프롬프트뿐). 자동화 안에서는 못 돌린다.
 
 ## 처음 한 번만
 
@@ -38,8 +54,15 @@ npx eas-cli init
 
 ## 올릴 때마다
 
-**1. 빌드 번호를 올린다** (첫 업로드면 건너뛴다 — 지금은 `2`이고 아직 올린 것이
-없다). 같은 버전에 같은 빌드 번호를 두 번 올릴 수는 없다.
+**1. 버전을 올린다.** `app.json`의 `expo.version`. 빌드 번호는 **손대지 않는다** —
+EAS가 원격에서 올린다(위 표 참고). 굽고 나면 로그에 찍힌 번호를 눈으로 확인한다.
+
+올린 뒤 그 자리에 태그를 단다. 태그가 없으면 어떤 코드가 어느 빌드에 들어갔는지
+되짚을 방법이 없다.
+
+```bash
+git tag v1.2.0 && git push origin v1.2.0
+```
 
 **2. 굽는다.**
 
