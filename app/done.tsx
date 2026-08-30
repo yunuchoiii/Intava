@@ -10,6 +10,7 @@ import { PhaseFlood } from '../src/components/PhaseFlood';
 import { clock, isSimple } from '../src/engine/labels';
 import { clockTime } from '../src/engine/records';
 import { NO_LIVED, type Lived, type RoundOrders, type RoundSkips } from '../src/engine/segments';
+import { noteFinishedWorkout } from '../src/review';
 import { useSession } from '../src/session';
 import { useStore } from '../src/store';
 import { useToast } from '../src/components/Toast';
@@ -47,6 +48,18 @@ export default function Done() {
   useEffect(() => {
     session.stop();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /**
+   * 리뷰를 청할 자리 — **끝까지 간 실행에서만.**
+   *
+   * 도중에 껐다면 그 사람은 지금 만족한 상태가 아니다. 세지도 묻지도 않는다.
+   * 나머지 조건(세 번째부터, 생애 한 번, 물을 수 없는 자리면 침묵)은 review.ts에
+   * 있다. 화면을 먼저 떠나면 묻는 것만 취소된다.
+   */
+  useEffect(() => {
+    if (!full) return;
+    return noteFinishedWorkout();
+  }, [full]);
 
   /** 실행 중에 바꾼 차례 — 라운드별. 마지막 라운드의 것이 최종 차례다 */
   const rounds = useMemo<RoundOrders | undefined>(() => parseRounds(orders), [orders]);
