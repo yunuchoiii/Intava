@@ -247,12 +247,27 @@ export function notificationText(
   }
   return {
     title: describeSegment(seg),
-    body: t('notify.bodyNext', { what: next ? nextName(next) : t('phase.DONE') }),
+    body: t('notify.bodyNext', { what: next ? nextName(next, seg, preset) : t('phase.DONE') }),
   };
 }
 
-function nextName(seg: Segment): string {
-  return phaseLabel(seg.phase);
+/**
+ * 「다음 · …」의 뒷부분.
+ *
+ * **다른 종목으로 건너갈 때는 종목 이름을 붙인다.** 잠금화면에 "휴식 30초 /
+ * 다음 · 운동"만 뜨면 무엇을 하러 일어나야 하는지 알 수 없다 — 앱을 열어봐야
+ * 안다. 종목이 바뀌는 자리가 바로 그 이름이 가장 필요한 자리다.
+ *
+ * 기준은 실행 화면의 「다음」 버튼(segLabel)과 같다: **지금 있는 자리가 그
+ * 종목에 속하지 않을 때만** 붙인다. 같은 종목의 세트 사이 휴식은 돌아갈 곳이
+ * 그대로라 이름이 새 소식이 아니고, 타이머(종목 1·라운드 1)는 종목 이름이 곧
+ * 타이머 이름이라 어느 경우에도 붙이지 않는다.
+ */
+function nextName(seg: Segment, from: Segment, preset: Preset): string {
+  const phase = phaseLabel(seg.phase);
+  if (seg.phase !== 'WORK' || !seg.name || isSimple(preset)) return phase;
+  if (from.blockId === seg.blockId && from.round === seg.round) return phase;
+  return t('jump.block', { block: seg.name, name: phase });
 }
 
 /**
