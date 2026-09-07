@@ -33,6 +33,8 @@ type Props = {
   skipped: string[];
   onReorder: (ids: string[]) => void;
   onSkipped: (ids: string[]) => void;
+  /** 완전히 내려간 뒤 — 미뤄둔 일을 여기서 처리한다 (RunMoreSheet와 같은 규칙) */
+  onClosed?: () => void;
 };
 
 export function OrderSheet({
@@ -43,13 +45,19 @@ export function OrderSheet({
   skipped,
   onReorder,
   onSkipped,
+  onClosed,
 }: Props) {
   const insets = useSafeAreaInsets();
   // 끌고 있는 동안 목록이 같이 스크롤되면 손가락과 행이 서로 밀린다.
   // 손가락을 끝까지 밀었을 때 흐르는 것은 이것과 다르다 — 그건 아래 autoScroll이 한다.
   const [dragging, setDragging] = useState(false);
   const auto = useDragAutoScroll();
-  if (!visible) return null;
+  /*
+    `if (!visible) return null`을 두지 않는다. 그러면 Sheet가 그 자리에서 통째로
+    사라져 내려가는 애니메이션도, 다 내려갔다는 신호(onClosed)도 없다 — 이 시트가
+    내려간 뒤에 이어서 할 일(완료 화면으로 떠나기)이 영영 오지 않는다.
+    떠 있지 않을 때 Modal을 걷어내는 일은 Sheet가 스스로 한다.
+  */
 
   const remaining = blocks.filter((b) => !skipped.includes(b.id));
 
@@ -59,7 +67,7 @@ export function OrderSheet({
     );
 
   return (
-    <Sheet visible={visible} onClose={onClose}>
+    <Sheet visible={visible} onClose={onClose} onClosed={onClosed}>
       <Text style={styles.title}>{t('run.orderTitle')}</Text>
       <Text style={styles.note}>{t('run.orderNote')}</Text>
 

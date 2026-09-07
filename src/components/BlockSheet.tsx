@@ -28,11 +28,13 @@ type Props = {
   onClose: () => void;
   onSave: (b: Block, alsoSaveAsTimer: boolean) => void;
   onDelete: (id: string) => void;
+  /** 완전히 내려간 뒤 — 이어서 할 일이 있으면 여기서 받는다 (RunMoreSheet와 같은 규칙) */
+  onClosed?: () => void;
 };
 
 type Field = 'work' | 'rest' | 'sets' | null;
 
-export function BlockSheet({ block, canDelete, isNew, onClose, onSave, onDelete }: Props) {
+export function BlockSheet({ block, canDelete, isNew, onClose, onSave, onDelete, onClosed }: Props) {
   const insets = useSafeAreaInsets();
   const [draft, setDraft] = useState<Block | null>(block);
   const [open, setOpen] = useState<Field>(null);
@@ -91,7 +93,7 @@ export function BlockSheet({ block, canDelete, isNew, onClose, onSave, onDelete 
   const Done = dirty ? WhiteButton : SurfaceButton;
 
   return (
-    <Sheet visible={block != null} onClose={onClose}>
+    <Sheet visible={block != null} onClose={onClose} onClosed={onClosed}>
       {/* 키보드가 올라오면 시트가 짧아진다 — 그때 줄어드는 쪽은 이 목록이다 */}
       <ScrollView
         style={{ maxHeight: 560, flexShrink: 1 }}

@@ -81,7 +81,7 @@ export default function Run() {
    */
   const [editing, setEditing] = useState<Block | null>(null);
   /** 「더보기」에서 고른 것 — 시트가 다 내려간 뒤에 실행한다 */
-  const pending = useRef<'order' | 'skip' | null>(null);
+  const pending = useRef<'order' | 'skip' | 'done' | null>(null);
   /**
    * 시트가 떠 있는가 — 아래 화면의 끌어내리기가 이걸 보고 비켜선다.
    *
@@ -170,6 +170,16 @@ export default function Run() {
   }, [settings.keepScreenOn]);
 
   /**
+   * 늘 **지금** 세션을 보는 창구.
+   *
+   * 아래 doneParams는 시트가 다 내려간 뒤에야 불릴 수 있다. 렌더 시점의 run을
+   * 붙잡고 있으면 그때의 값이 그대로 굳어서, 끝까지 갔는데도 full이 비어
+   * 「운동 종료」로 뜬다 — 고치는 도중 실제로 그렇게 떴다.
+   */
+  const runRef = useRef(run);
+  runRef.current = run;
+
+  /**
    * 완료 화면으로 넘길 것 — 끝까지 갔든 도중에 껐든 같은 것을 넘긴다.
    *
    * 세션이 아니라 **파라미터로** 넘기는 이유: 완료 화면은 뜨자마자 세션을 비운다
@@ -177,24 +187,65 @@ export default function Run() {
    * 누를 때 루틴에 저장할 것이 남아 있지 않다.
    */
   const doneParams = () => {
-    const { lived, recordId } = run.settle();
+    const now = runRef.current;
+    const { lived, recordId } = now.settle();
     return {
-      id: preset!.id,
+      id: now.preset!.id,
       // 계획상의 위치가 아니라 실제로 지나온 몫 — 넘긴 구간은 빠져 있다
       lived: JSON.stringify(lived),
       // 종목별 몫과 구간 이력은 기록에 이미 들어 있다 — 열쇠만 넘긴다
       record: recordId ?? '',
-      full: run.done ? '1' : '',
-      orders: run.orders ? JSON.stringify(run.orders) : '',
-      skips: run.skips ? JSON.stringify(run.skips) : '',
+      full: now.done ? '1' : '',
+      orders: now.orders ? JSON.stringify(now.orders) : '',
+      skips: now.skips ? JSON.stringify(now.skips) : '',
     };
   };
 
-  // 전체가 끝나면 완료 화면으로 — 세션은 완료 화면에서 정리한다
-  useEffect(() => {
-    if (!run.done || !preset) return;
+  /**
+   * 완료 화면으로 떠난다 — 끝까지 갔든 ✕로 껐든 같은 길이다.
+   * 한 번만 떠난다. settle()이 두 번 불려도 기록은 한 건이지만, 라우팅이 겹치면
+   * 완료 화면이 두 겹 쌓인다.
+   */
+  const leaving = useRef(false);
+  const goDone = useCallback(() => {
+    if (leaving.current || !runRef.current.preset) return;
+    leaving.current = true;
     router.replace({ pathname: '/done', params: doneParams() });
-  }, [run.done, preset?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /**
+   * 전체가 끝나면 완료 화면으로 — 세션은 완료 화면에서 정리한다.
+   *
+   * ⚠️ 시트가 떠 있으면 **먼저 내리고, 다 내려간 뒤에** 떠난다. 이 화면 자체가
+   * 투명 모달 라우트라, 그 위의 모달(시트)을 해제하는 것과 이 라우트를
+   * 갈아끼우는 것이 한 프레임에 겹치면 iOS가 잔여 레이어를 남긴다 — 그려지는데
+   * 터치만 안 먹는 화면이 된다. 아래 「더보기」에서 순서 시트를 열 때 한 프레임을
+   * 띄우는 것과 같은 이유이고, 여기가 그 겹침이 실제로 일어나는 다른 자리다:
+   * 시트에서 손댄 것이 **그 자리에서 계획을 줄여** 곧장 완료가 되는 경우가 있다.
+   * 순서 시트에서 마지막 종목의 체크를 끄는 것, 종목 시트에서 세트·시간을 줄이는
+   * 것 둘 다 그렇다.
+   *
+   * 그렇게 굳으면 되돌릴 길이 없다. 이 effect는 run.done이 이미 참이라 다시
+   * 돌지 않고, 세션은 끝난 채로 남는다 — 앱을 껐다 켜야 완료 화면이 뜬다.
+   */
+  useEffect(() => {
+    if (!run.done || !preset || leaving.current) return;
+    if (more || ordering || editing) {
+      pending.current = 'done';
+      setMore(false);
+      setOrdering(false);
+      setEditing(null);
+      return;
+    }
+    goDone();
+  }, [run.done, preset?.id, more, ordering, editing, goDone]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** 이 시트가 내려가기를 기다리고 있었다면 이제 떠난다 */
+  const leaveIfPending = useCallback(() => {
+    if (pending.current !== 'done') return;
+    pending.current = null;
+    requestAnimationFrame(goDone);
+  }, [goDone]);
 
   const dismiss = useCallback(() => {
     if (router.canGoBack()) router.back();
@@ -341,14 +392,9 @@ export default function Run() {
       {
         text: t('run.exitConfirm'),
         style: 'destructive',
-        onPress: () => {
-          /*
-            도중에 끄더라도 완료 화면을 지난다 — 여기까지 얼마나 했는지 보여주고,
-            바꾼 종목 차례를 루틴에 남길지 묻는 자리가 거기다. 세션은 완료 화면이
-            정리한다(예전에는 여기서 stop()을 불렀다).
-          */
-          router.replace({ pathname: '/done', params: doneParams() });
-        },
+        // 도중에 끄더라도 완료 화면을 지난다 — 여기까지 얼마나 했는지 보여주고,
+        // 바꾼 종목 차례를 루틴에 남길지 묻는 자리가 거기다.
+        onPress: goDone,
       },
     ]);
   };
@@ -617,6 +663,8 @@ export default function Run() {
           pending.current = null;
           if (what === 'order') setOrdering(true);
           else if (what === 'skip') run.skipBlock();
+          // 시트가 다 내려간 다음 프레임에 떠난다 — 해제와 라우팅이 겹치지 않게
+          else if (what === 'done') requestAnimationFrame(goDone);
         }}
       />
 
@@ -644,11 +692,13 @@ export default function Run() {
           setEditing(null);
         }}
         onDelete={() => setEditing(null)}
+        onClosed={leaveIfPending}
       />
 
       <OrderSheet
         visible={ordering}
         onClose={() => setOrdering(false)}
+        onClosed={leaveIfPending}
         blocks={orderBlocks}
         lockedCount={run.lockedCount}
         skipped={run.roundSkips}
