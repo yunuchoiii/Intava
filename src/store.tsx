@@ -22,7 +22,12 @@ const KEY_RECORDS = 'intava:records';
 
 type Envelope<T> = { version: number; data: T };
 
-async function load<T>(key: string, fallback: T): Promise<T> {
+/**
+ * 봉투를 씌워 읽고 쓴다 — 이 파일 밖에서도 쓴다(`review.ts`).
+ * 저장소에 들어가는 것은 전부 같은 `{version, data}` 꼴이어야 나중에 한 자리에서
+ * 마이그레이션할 수 있다.
+ */
+export async function load<T>(key: string, fallback: T): Promise<T> {
   try {
     const raw = await AsyncStorage.getItem(key);
     if (!raw) return fallback;
@@ -35,7 +40,7 @@ async function load<T>(key: string, fallback: T): Promise<T> {
   }
 }
 
-async function save<T>(key: string, data: T): Promise<void> {
+export async function save<T>(key: string, data: T): Promise<void> {
   const env: Envelope<T> = { version: SCHEMA_VERSION, data };
   await AsyncStorage.setItem(key, JSON.stringify(env));
 }

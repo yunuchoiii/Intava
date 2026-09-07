@@ -71,6 +71,8 @@ export const ko = {
     rounds: '라운드',
     blockRest: '종목 사이 휴식',
     roundRest: '라운드 사이 휴식',
+    skipLastRest: '마지막 세트 뒤 휴식 생략',
+    skipLastRestNote: '종목의 마지막 세트가 끝나면 바로 종목 전환으로 넘어갑니다.',
     startEnd: '시작 · 마무리',
     startEndRow: '웜업 · 준비 · 쿨다운',
     warmup: '웜업',
@@ -153,7 +155,7 @@ export const ko = {
     countdown: '마지막 3초 카운트다운',
     countdownNote: '각 구간이 끝나기 3초 전부터 짧은 틱이 울립니다.',
     push: '푸시 알림',
-    pushNote: '화면을 끄거나 다른 앱을 쓰는 동안 구간 전환을 알려줍니다. 끄면 그때 소리가 안 날 수 있습니다.',
+    pushNote: '앱이 완전히 멈춰도 구간 전환을 알려줍니다.',
     app: '앱',
     version: '버전',
     privacy: '개인정보 처리방침',
@@ -169,6 +171,11 @@ export const ko = {
   },
 
   run: {
+    finishTitle: '운동을 완료할까요?',
+    finishBody: '더 하시려면 종목을 이어서 고르세요.',
+    finishMore: '더 할게요',
+    moreFromRoutine: '이 루틴의 종목',
+    finishDone: '완료',
     exitTitle: '운동을 끝낼까요?',
     exitBody: '지금까지의 진행은 저장되지 않습니다.',
     exitContinue: '계속하기',
@@ -282,6 +289,8 @@ export const ko = {
     channelCooldown: '쿨다운',
     channelDone: '운동 완료',
     workTitle: '운동 {{dur}}',
+    /** 잠금화면 알림 제목 — 종목 이름을 앞에 세운다. 뒤가 잘려도 이름은 남는다 */
+    named: '{{name}} · {{what}}',
     bodySets: '{{set}} / {{sets}}세트',
     bodySetsRounds: '{{set}} / {{sets}}세트 · {{round}} / {{rounds}}라운드',
     bodyNext: '다음 · {{what}}',

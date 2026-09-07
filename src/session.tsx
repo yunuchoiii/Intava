@@ -47,7 +47,7 @@ import { blockSummary, shapeLabel } from './engine/labels';
 import { countdownFeedback, segmentFeedback } from './feedback';
 import { cancelAll, scheduleUpcoming } from './notify';
 import { uid, useStore } from './store';
-import type { Preset, Segment } from './types';
+import type { Block, Preset, Segment } from './types';
 
 const KEY = 'intava:session';
 
@@ -79,6 +79,14 @@ type Stored = {
    * 이유이고, 그래서 시트도 굳은 행의 체크박스를 잠근다.
    */
   skips?: RoundSkips;
+  /**
+   * 「운동 더 하기」로 덧붙인 종목 — 라운드가 다 끝난 뒤 꼬리로 붙는다.
+   *
+   * 프리셋에는 넣지 않는다. blocks를 건드리면 이미 지나간 라운드까지 다시 펴져서
+   * 흐른 시간이 엉뚱한 구간을 가리킨다(orders를 프리셋에 안 쓰는 것과 같은 이유).
+   * 이 실행에만 살고, 루틴에 남기고 싶으면 편집 화면에서 따로 넣는다.
+   */
+  extras?: Block[];
   /** 실제로 지나온 몫 — 넘긴 구간은 빠진다 */
   lived?: Lived;
 };
@@ -154,6 +162,13 @@ export type Session = RunSnapshot & {
   skipBlock: () => void;
   /** 지금 종목을 넘길 수 있는 자리인가 — 버튼을 흐리게 둘지 정한다 */
   canSkipBlock: boolean;
+  /**
+   * 운동을 더 한다 — 고른 종목을 계획 **꼬리에** 붙인다.
+   *
+   * 다 끝난 자리(elapsed = total)에서 부른다. 꼬리가 붙으면 총 시간이 늘어나
+   * 그 자리가 곧 꼬리의 시작이 되므로, 시간축을 손댈 것이 없다.
+   */
+  addExtra: (block: Block) => void;
   restart: () => void;
   stop: () => void;
   /** 링을 잡는 순간 — 값을 맞추는 동안 시간이 흐르면 손가락과 숫자가 서로 밀린다 */
@@ -212,8 +227,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   );
   /** 프리셋 내용이 바뀌면 구간을 다시 편다 — 실행 중 편집을 위해 updatedAt까지 본다 */
   const plan = useMemo(
-    () => (preset ? buildPlan(preset, stored?.orders, stored?.skips) : null),
-    [preset, stored?.orders, stored?.skips]
+    () => (preset ? buildPlan(preset, stored?.orders, stored?.skips, stored?.extras) : null),
+    [preset, stored?.orders, stored?.skips, stored?.extras]
   );
   const planRef = useRef(plan);
   planRef.current = plan;
@@ -499,6 +514,18 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         setSyncId((n) => n + 1);
         tick();
         void reschedule();
+      } else {
+        /*
+          **앞을 떠나는 순간이 가장 위험하다.**
+
+          이때 무음 루프가 멎어 있으면 iOS는 "재생을 멈춘 앱"으로 보고 그대로
+          정지시킨다. 정지한 뒤에는 되살릴 코드조차 돌지 않으므로, 다시 열
+          때까지 알림 예약도 소리도 통째로 멈춘다.
+
+          매 초 tick에서도 보고 있지만(keepSessionAlive) 마지막 tick과
+          백그라운드 진입 사이의 1초가 비어 있다. 그 틈을 여기서 메운다.
+        */
+        keepSessionAlive();
       }
       /*
         백그라운드로 **들어갈 때는 아무것도 다시 예약하지 않는다.**
@@ -693,8 +720,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           recordedId.current = recordId;
           // at 하나가 아니라 실제로 지나온 구간들로 센다 — 넘긴 종목은 여기서 빠진다
           const { blocks, segs } = summarizeLived(p, livedSpans(lived));
+          // 덧붙인 종목도 기록에 이름·구성이 남아야 한다
           const specOf = new Map(
-            preset.blocks.map((b) => [b.id, blockSummary(b.workSec, b.restSec, b.sets)])
+            [...preset.blocks, ...(s.extras ?? [])].map((b) => [
+              b.id,
+              blockSummary(b.workSec, b.restSec, b.sets),
+            ])
           );
           addRecord({
             id: recordId,
@@ -706,7 +737,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
             workSec: Math.round(lived.work),
             completedSets: lived.sets,
             completed: lived.at >= p.total - 0.01,
-            shape: shapeLabel(preset),
+            // 붙인 종목까지 센다 — 두 종목을 했는데 「1종목」으로 남으면 안 된다
+            shape: shapeLabel(preset, (s.extras ?? []).length),
             blocks: blocks.map((b) => ({
               name: b.name,
               spec: specOf.get(b.blockId) ?? '',
@@ -791,6 +823,34 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         }
         const prev = p.segs[found.idx - 1];
         seekTo(prev ? prev.start : 0, false);
+      },
+      addExtra: (block: Block) => {
+        const s = storedRef.current;
+        const p = planRef.current;
+        if (!s || !p) return;
+        /*
+          **기준 시각을 지금 끝난 자리에 다시 못박는다.**
+
+          「완료할까요?」를 보는 동안에도 벽시계는 흐른다. 그대로 꼬리를 붙이면
+          망설인 시간만큼 흐른 것으로 쳐서, 30초를 고민했으면 꼬리의 앞 30초가
+          이미 지나간 것이 된다 — 종목 전환을 건너뛰고 첫 세트 한가운데서 시작한다.
+          지금 계획의 끝(= 꼬리가 시작될 자리)을 이 순간으로 맞춘다.
+        */
+        const at = s.pausedAt ?? Date.now();
+        persist({
+          ...s,
+          zeroAt: at - p.total * 1000,
+          extras: [...(s.extras ?? []), block],
+        });
+        /*
+          완료음은 이미 울렸다. 다시 끝까지 갔을 때 한 번 더 울려야 하므로 되돌린다.
+          지금 구간(lastIdx)은 건드리지 않는다 — 꼬리의 첫 구간에 새로 들어서는
+          것이라 그 구간의 시작음이 제대로 울려야 한다.
+        */
+        doneFired.current = false;
+        setSyncId((n) => n + 1);
+        tick();
+        void reschedule();
       },
       restart: () => {
         doneFired.current = false;

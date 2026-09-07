@@ -6,8 +6,29 @@
  * 바뀌어 행 자체의 톤이 변하는 것처럼 읽혔다. 배경과 표면의 대비를 한 값으로 못 박는다.
  */
 import React from 'react';
-import { View, type StyleProp, type ViewStyle } from 'react-native';
+import { Keyboard, View, type StyleProp, type ViewStyle } from 'react-native';
 import { C } from '../theme';
+
+/**
+ * 글자를 쓰는 중에 **입력칸 바깥을 누르면 키보드를 내린다.**
+ *
+ * 손짓의 주인을 정하는 협상은 가장 깊은 곳부터 물어보고 위로 올라온다. 입력칸이나
+ * 버튼이 그 손짓을 가져가면 여기까지 오지 않으므로, 여기 닿았다는 것은 곧
+ * **아무것도 없는 자리를 눌렀다**는 뜻이다. 그때만 내린다.
+ *
+ * `false`를 돌려주어 손짓 자체는 가져가지 않는다 — 가져가면 그 아래 스크롤이나
+ * 버튼이 먹통이 된다.
+ *
+ * 버튼을 누를 때는 여기까지 안 오므로 PressBox가 따로 내린다.
+ */
+export function dismissKeyboardOnEmptyTap() {
+  return {
+    onStartShouldSetResponder: () => {
+      Keyboard.dismiss();
+      return false;
+    },
+  };
+}
 
 export function Screen({
   children,
@@ -16,5 +37,12 @@ export function Screen({
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
 }) {
-  return <View style={[{ flex: 1, backgroundColor: C.bgPlain }, style]}>{children}</View>;
+  return (
+    <View
+      style={[{ flex: 1, backgroundColor: C.bgPlain }, style]}
+      {...dismissKeyboardOnEmptyTap()}
+    >
+      {children}
+    </View>
+  );
 }

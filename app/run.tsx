@@ -16,7 +16,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FloodTile } from '../src/components/Surface';
 import { PressBox } from '../src/components/PressBox';
 import { NextIcon, PauseIcon, PencilIcon, PlayIcon, PrevIcon } from '../src/components/Icons';
+import { BlockPickerSheet } from '../src/components/BlockPickerSheet';
 import { BlockSheet } from '../src/components/BlockSheet';
+import { FinishSheet } from '../src/components/FinishSheet';
 import { OrderSheet } from '../src/components/OrderSheet';
 import { RunMoreSheet } from '../src/components/RunMoreSheet';
 import { PhaseFlood } from '../src/components/PhaseFlood';
@@ -25,7 +27,7 @@ import { clock, isSimple, phaseLabel, ringTitle, segLabel, subLabel } from '../s
 import { useMorph } from '../src/morph';
 import { ensurePermission } from '../src/notify';
 import { useSession } from '../src/session';
-import { useStore } from '../src/store';
+import { uid, useStore } from '../src/store';
 import { t } from '../src/i18n';
 import type { Block } from '../src/types';
 import { C, GUTTER, PHASE_COLOR, TABULAR } from '../src/theme';
@@ -50,6 +52,9 @@ const BAR_GAP = 11;
  */
 const CONTROLS_GAP = 42;
 
+/** 「새로 만들기」로 붙이는 빈 종목 — 편집 화면의 기본값과 같다 */
+const NEW_EXTRA = { id: '', name: '', workSec: 30, restSec: 60, sets: 3 };
+
 export default function Run() {
   const router = useRouter();
   /** 미니 바와 공유하는 값 — 0은 가득 찬 상태, 1은 접힌 상태 */
@@ -67,11 +72,22 @@ export default function Run() {
   }, []);
   /** 손가락이 처음 닿은 높이 — gestureState.y0는 붙잡은 뒤에야 채워져서 판단에 쓸 수 없다 */
   const grabY = useRef(0);
-  const { settings, savePreset } = useStore();
+  const { settings, savePreset, presets } = useStore();
   const run = useSession();
   const preset = run.preset;
   const [ordering, setOrdering] = useState(false);
   const [more, setMore] = useState(false);
+  /**
+   * 「완료할까요?」를 묻는 중 — run.done과 따로 든다.
+   *
+   * done을 그대로 visible에 걸면 **시트를 닫을 방법이 없다.** 닫으려면 done이
+   * 거짓이 되어야 하는데 그건 종목을 붙인 뒤에나 일어난다. 그래서 「더 할게요」를
+   * 눌러도 아무 일이 없었다 — 시트가 그대로 서 있으니 다 내려간 뒤에 도는
+   * onClosed가 영영 오지 않았다.
+   */
+  const [asking, setAsking] = useState(false);
+  /** 「운동 더 하기」로 종목을 고르는 중 */
+  const [addingExtra, setAddingExtra] = useState(false);
   /**
    * 고치는 중인 종목 — 링 위의 이름·메모를 누르면 열린다.
    *
@@ -81,7 +97,7 @@ export default function Run() {
    */
   const [editing, setEditing] = useState<Block | null>(null);
   /** 「더보기」에서 고른 것 — 시트가 다 내려간 뒤에 실행한다 */
-  const pending = useRef<'order' | 'skip' | null>(null);
+  const pending = useRef<'order' | 'skip' | 'extra' | 'finish' | null>(null);
   /**
    * 시트가 떠 있는가 — 아래 화면의 끌어내리기가 이걸 보고 비켜선다.
    *
@@ -94,7 +110,7 @@ export default function Run() {
    * PanResponder가 새로 만들어져 쥐고 있던 손짓이 끊긴다.
    */
   const sheetUp = useRef(false);
-  sheetUp.current = ordering || more || editing != null;
+  sheetUp.current = ordering || more || editing != null || asking || addingExtra;
   useEffect(() => {
     void ensurePermission();
   }, []);
@@ -131,8 +147,22 @@ export default function Run() {
       }
       // 종목·라운드 사이 휴식은 아직 만들어지지 않은 다음 자리를 가리킨다
       const ahead = s.phase === 'BLOCK_REST' || s.phase === 'ROUND_REST';
-      stageOf[i] = Math.min(stages.length - 1, ahead ? stages.length : stages.length - 1);
+      stageOf[i] = ahead ? stages.length : stages.length - 1;
     });
+
+    /*
+      **가리킬 자리가 안 생긴 휴식은 있던 자리로 되돌린다.**
+
+      위에서 종목·라운드 사이 휴식은 «아직 만들어지지 않은 다음 자리»를 가리키게
+      했는데, 그 뒤에 정말로 자리가 생겼는지는 다 훑고 나서야 안다 — 마지막
+      라운드 휴식이나 꼬리 끝의 전환처럼 뒤가 비는 경우가 있다.
+
+      한때 `Math.min(stages.length - 1, ...)`을 그 자리에서 걸었는데, 그러면
+      «다음»이 늘 «지금»으로 눌려서 앞을 가리키는 일 자체가 없었다 — 주석은
+      가리킨다고 적혀 있는데 코드는 안 가리키고 있었다.
+    */
+    const last = stages.length - 1;
+    for (let i = 0; i < stageOf.length; i++) stageOf[i] = Math.min(stageOf[i], last);
 
     /**
      * 자리마다 시간 폭을 매긴다 — 하단 눈금이 이 폭으로 나뉜다.
@@ -190,11 +220,21 @@ export default function Run() {
     };
   };
 
-  // 전체가 끝나면 완료 화면으로 — 세션은 완료 화면에서 정리한다
-  useEffect(() => {
-    if (!run.done || !preset) return;
+  /*
+    전체가 끝나도 **바로 넘어가지 않는다** — 「운동을 완료할까요?」를 먼저 묻는다.
+
+    계획이 끝났다고 운동이 끝난 것은 아니다. 한 종목 더 하고 싶은 날이 있는데,
+    예전에는 끝나는 즉시 완료 화면이 기록을 남겨버려서 이어 붙일 자리가 없었다.
+    완료 화면으로 가는 것은 FinishSheet가 「완료」를 받았을 때다.
+  */
+  const finish = () => {
+    if (!preset) return;
     router.replace({ pathname: '/done', params: doneParams() });
-  }, [run.done, preset?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  };
+
+  useEffect(() => {
+    if (run.done) setAsking(true);
+  }, [run.done]);
 
   const dismiss = useCallback(() => {
     if (router.canGoBack()) router.back();
@@ -644,6 +684,55 @@ export default function Run() {
           setEditing(null);
         }}
         onDelete={() => setEditing(null)}
+      />
+
+      {/*
+        마지막 구간 끝 — 완료할지 더 할지 묻는다. 기본은 완료라서 쓸어내려 닫아도
+        완료로 간다(FinishSheet의 주석). 「더 할게요」는 시트가 다 내려간 뒤에
+        종목 고르기를 연다 — 두 시트가 같은 프레임에 겹치면 뒤엣것이 안 뜬다.
+      */}
+      <FinishSheet
+        visible={asking}
+        onFinish={() => {
+          pending.current = 'finish';
+          setAsking(false);
+        }}
+        onMore={() => {
+          pending.current = 'extra';
+          setAsking(false);
+        }}
+        onClosed={() => {
+          const what = pending.current;
+          pending.current = null;
+          /*
+            고른 것은 시트가 **다 내려간 뒤에** 실행한다. 종목 고르기도 Modal이라
+            닫는 것과 여는 것이 같은 프레임에 겹치면 뒤엣것이 안 뜨고 앞엣것의
+            투명한 껍데기만 남는다. 완료도 마찬가지로 여기서 — 모달이 걷히는
+            동안 라우팅하면 잔여 레이어가 창에 남는다(goEdit의 주석).
+
+            **기본은 완료다.** 쓸어내려 닫아도, 바깥을 눌러도 여기로 온다.
+          */
+          if (what === 'extra') setAddingExtra(true);
+          else finish();
+        }}
+      />
+
+      <BlockPickerSheet
+        visible={addingExtra}
+        timers={presets.filter((p) => isSimple(p))}
+        blocks={preset.blocks}
+        blocksTitle={t('run.moreFromRoutine')}
+        onClose={() => setAddingExtra(false)}
+        onCreateNew={() => {
+          setAddingExtra(false);
+          // 빈 종목을 붙이고, 값은 붙인 뒤 링 위의 이름을 눌러 고친다
+          run.addExtra({ ...NEW_EXTRA, id: uid(), name: t('defaults.block') });
+        }}
+        onPickTimer={(block) => {
+          setAddingExtra(false);
+          // 새 id를 준다 — 같은 종목을 다시 붙여도 앞의 것과 구간이 겹치지 않는다
+          run.addExtra({ ...block, id: uid() });
+        }}
       />
 
       <OrderSheet

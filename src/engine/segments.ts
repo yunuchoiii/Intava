@@ -4,7 +4,7 @@
  * `LiveFlat.dc.html`의 build() 를 그대로 옮긴 것이다. 이 배열이 실행 화면,
  * 알림 예약, 완료 화면 통계, 편집 화면 합계의 유일한 출처다.
  */
-import type { Phase, Preset, Segment } from '../types';
+import type { Phase, Preset, Segment, Block } from '../types';
 
 export type Plan = {
   segs: Segment[];
@@ -49,7 +49,20 @@ function roundBlocks(p: Preset, ids: string[] | undefined, skip: string[] | unde
   return kept.length ? kept : list;
 }
 
-export function buildPlan(p: Preset, orders?: RoundOrders, skips?: RoundSkips): Plan {
+export function buildPlan(
+  p: Preset,
+  orders?: RoundOrders,
+  skips?: RoundSkips,
+  /**
+   * 「운동 더 하기」로 덧붙인 종목 — 라운드가 다 끝난 뒤에 이어 붙는다.
+   *
+   * 프리셋의 blocks에 넣지 않는 이유: blocks를 건드리면 **이미 지나간 라운드까지**
+   * 다시 펴져서 흐른 시간이 엉뚱한 구간을 가리킨다. 이것은 꼬리에만 붙으므로
+   * 앞의 시간축이 그대로다 — 덧붙이는 순간 사용자는 계획의 끝에 서 있고,
+   * 그 자리가 곧 이 꼬리의 시작이 된다.
+   */
+  extras?: Block[]
+): Plan {
   const segs: Segment[] = [];
   let t = 0;
 
@@ -88,22 +101,67 @@ export function buildPlan(p: Preset, orders?: RoundOrders, skips?: RoundSkips): 
         } else if (lastBlk && lastRound) {
           // 다 끝났다 — 쉴 것이 없다. 뒤에 올 종목도 라운드도 없으므로 곧장 쿨다운으로 간다.
         } else if (lastBlk) {
+          // 라운드가 끝났다 — 라운드 휴식이 그 자리를 다 맡는다. 종목의 휴식은 겹치지 않는다.
           segs.push({ phase: 'ROUND_REST', ...meta, start: t, dur: p.roundRestSec });
           t += p.roundRestSec;
         } else {
           /*
-            마지막 세트 뒤에도 그 종목의 휴식이 돈다 — 이것이 다음 종목까지의 간격이다.
+            다음 종목으로 넘어가는 자리. 무엇이 서는지는 루틴이 고른다.
 
-            예전에는 여기서 별도의 종목 전환(BLOCK_REST, blockRestSec)을 끼웠는데,
-            "마지막 세트만 휴식이 다르다"는 것이 체감상 어긋났다. 전환이라는 별도
-            구간 없이 종목의 휴식 리듬이 끝까지 이어지고, 프리셋의 blockRestSec은
-            더 이상 계획에 쓰이지 않는다(타입에는 옛 데이터 호환으로 남는다).
+            · 마지막 휴식을 건너뛰지 않으면 → 그 종목의 휴식이 끝까지 이어진다
+            · 종목 전환이 0보다 크면 → 그 뒤에 전환 구간이 선다
+
+            둘 다 켜면 휴식 뒤에 전환이 잇달아 서므로, 보통은 하나만 쓴다.
+            편집 화면이 그 둘을 나란히 두고 서로를 설명한다.
           */
+          // 없는 값은 「생략」이다 — 옛 루틴이 갑자기 길어지지 않게(types.ts)
+          if (p.skipLastSetRest === false) {
+            segs.push({ phase: 'SET_REST', ...meta, start: t, dur: bl.restSec });
+            t += bl.restSec;
+          }
+          segs.push({ phase: 'BLOCK_REST', ...meta, start: t, dur: p.blockRestSec });
+          t += p.blockRestSec;
+        }
+      }
+    }
+  }
+
+  /*
+    덧붙인 종목들 — 쿨다운 **앞에** 선다. 쿨다운은 운동 전체를 마무리하는 것이라
+    맨 뒤가 제자리다.
+
+    라운드와 섞이지 않게 마지막 라운드의 뒤 번호를 이어 쓴다. 구간의 정체를
+    가리는 것은 blockId이고 덧붙일 때 새 id를 받으므로(run.tsx), 같은 종목을
+    다시 붙여도 앞의 것과 겹치지 않는다.
+  */
+  const tail = extras ?? [];
+  if (tail.length > 0) {
+    const lastRoundBlocks = roundBlocks(p, orders?.[p.rounds - 1], skips?.[p.rounds - 1]).length;
+    tail.forEach((bl, i) => {
+      // 앞엣것과의 사이 — 라운드에서 종목이 바뀔 때와 같은 간격이다
+      segs.push({ phase: 'BLOCK_REST', round: p.rounds, blk: lastRoundBlocks + i, set: 1, sets: bl.sets, name: bl.name, blockId: bl.id, start: t, dur: p.blockRestSec });
+      t += p.blockRestSec;
+
+      for (let s = 1; s <= bl.sets; s++) {
+        const meta = {
+          round: p.rounds,
+          blk: lastRoundBlocks + i,
+          set: s,
+          sets: bl.sets,
+          name: bl.name,
+          blockId: bl.id,
+        };
+        segs.push({ phase: 'WORK', ...meta, start: t, dur: bl.workSec });
+        t += bl.workSec;
+        const lastSet = s === bl.sets;
+        const lastTail = i === tail.length - 1;
+        // 마지막 세트 뒤 휴식은 루틴의 규칙을 그대로 따른다. 꼬리의 끝에는 쉴 것이 없다
+        if (!lastSet || (p.skipLastSetRest === false && !lastTail)) {
           segs.push({ phase: 'SET_REST', ...meta, start: t, dur: bl.restSec });
           t += bl.restSec;
         }
       }
-    }
+    });
   }
 
   if (p.cooldownSec > 0) {

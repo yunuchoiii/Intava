@@ -11,7 +11,6 @@ import {
   Animated,
   Keyboard,
   Modal,
-  PanResponder,
   Platform,
   Pressable,
   StyleSheet,
@@ -20,12 +19,17 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { dismissKeyboardOnEmptyTap } from './Screen';
 import { ABS, C, E3, RADIUS } from '../theme';
 
 /** 이만큼 끌어내리면 닫는다 */
 const DISMISS_DISTANCE = 110;
-const DISMISS_VELOCITY = 0.7;
+/** 손을 떼는 순간의 속도(px/초) — 짧게 툭 쳐도 닫힌다 */
+const DISMISS_VELOCITY = 700;
+/** 세로로 이만큼 움직여야 「끌어내리는 중」으로 친다 */
+const DRAG_SLOP = 8;
 
 type Props = {
   visible: boolean;
@@ -135,14 +139,28 @@ export function Sheet({ visible, onClose, onClosed, children, style }: Props) {
     onClose();
   }, [onClose]);
 
-  /** 손잡이 부근을 잡고 아래로 끌면 닫힌다 */
+  /**
+   * 손잡이를 잡고 아래로 끌면 닫힌다.
+   *
+   * **PanResponder로는 안 된다.** 시트는 Modal 안에 있는데, 그 안에서는 손이 닿는
+   * 것만 묻고(`onStartShouldSetResponder`) **움직임은 한 번도 묻지 않는다**
+   * (`onMoveShouldSetResponder`가 영영 안 불린다). 계측해 보니 raw `onTouchMove`가
+   * 서른 번 도착하는 동안 move 협상은 0번이었다 — 손짓의 주인을 정하는 협상이
+   * Modal 안에서 반쪽만 도는 것이고, 그래서 닫기 제스처가 통째로 죽어 있었다.
+   *
+   * gesture-handler는 그 협상을 거치지 않고 네이티브 제스처로 직접 잡는다. Modal은
+   * 별도의 뷰 계층이라 안쪽에 GestureHandlerRootView를 한 번 더 깔아야 인식된다.
+   *
+   * 손잡이 자리에만 건다. 시트 몸통 전체에 걸면 안쪽 스크롤·휠 피커와 세로로 다툰다.
+   */
   const pan = useMemo(
     () =>
-      PanResponder.create({
-        onMoveShouldSetPanResponder: (_e, g) => g.dy > 6 && Math.abs(g.dy) > Math.abs(g.dx),
-        onPanResponderMove: (_e, g) => drag.setValue(Math.max(0, g.dy)),
-        onPanResponderRelease: (_e, g) => {
-          if (g.dy > DISMISS_DISTANCE || g.vy > DISMISS_VELOCITY) {
+      Gesture.Pan()
+        .activeOffsetY(DRAG_SLOP) // 아래로 끌 때만 가져간다
+        .failOffsetY(-DRAG_SLOP) // 위로 올리는 손짓은 넘긴다
+        .onUpdate((e) => drag.setValue(Math.max(0, e.translationY)))
+        .onEnd((e) => {
+          if (e.translationY > DISMISS_DISTANCE || e.velocityY > DISMISS_VELOCITY) {
             Animated.timing(drag, {
               toValue: 600,
               duration: 180,
@@ -151,11 +169,9 @@ export function Sheet({ visible, onClose, onClosed, children, style }: Props) {
           } else {
             Animated.spring(drag, { toValue: 0, useNativeDriver: true, bounciness: 4 }).start();
           }
-        },
-        onPanResponderTerminate: () => {
-          Animated.spring(drag, { toValue: 0, useNativeDriver: true }).start();
-        },
-      }),
+        })
+        // Animated.Value를 만지므로 JS 스레드에서 돈다
+        .runOnJS(true),
     [drag, close]
   );
 
@@ -168,38 +184,47 @@ export function Sheet({ visible, onClose, onClosed, children, style }: Props) {
 
   return (
     <Modal visible transparent animationType="none" onRequestClose={close}>
-      <Animated.View style={[StyleSheet.absoluteFill, { opacity: anim }]}>
-        <Pressable style={[StyleSheet.absoluteFill, styles.backdrop]} onPress={close} />
-      </Animated.View>
-
-      <View style={[styles.wrap, { paddingBottom: kb }]} pointerEvents="box-none">
-        <Animated.View
-          style={[
-            styles.sheet,
-            E3,
-            // 남은 자리보다 커지지 않는다 — 커지면 위가 화면 밖으로 잘린다
-            { maxHeight: screenH - kb - Math.max(insets.top, 24) - 12 },
-            { transform: [{ translateY }] },
-            style,
-          ]}
-        >
-          <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFill} />
-          <LinearGradient
-            colors={[C.sheetTop, C.sheetBottom]}
-            style={StyleSheet.absoluteFill}
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
-          />
-          <View style={styles.border} pointerEvents="none" />
-
-          {/* 손잡이 — 여기를 잡고 끌어내린다 */}
-          <View style={styles.grabWrap} {...pan.panHandlers}>
-            <View style={styles.grab} />
-          </View>
-
-          {children}
+      {/* Modal은 별도의 뷰 계층이라 제스처 뿌리를 여기 한 번 더 깐다 */}
+      <GestureHandlerRootView style={StyleSheet.absoluteFill}>
+        <Animated.View style={[StyleSheet.absoluteFill, { opacity: anim }]}>
+          <Pressable style={[StyleSheet.absoluteFill, styles.backdrop]} onPress={close} />
         </Animated.View>
-      </View>
+
+        <View
+          style={[styles.wrap, { paddingBottom: kb }]}
+          pointerEvents="box-none"
+          {...dismissKeyboardOnEmptyTap()}
+        >
+          <Animated.View
+            style={[
+              styles.sheet,
+              E3,
+              // 남은 자리보다 커지지 않는다 — 커지면 위가 화면 밖으로 잘린다
+              { maxHeight: screenH - kb - Math.max(insets.top, 24) - 12 },
+              { transform: [{ translateY }] },
+              style,
+            ]}
+          >
+            <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFill} />
+            <LinearGradient
+              colors={[C.sheetTop, C.sheetBottom]}
+              style={StyleSheet.absoluteFill}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+            />
+            <View style={styles.border} pointerEvents="none" />
+
+            {/* 손잡이 — 여기를 잡고 끌어내린다 */}
+            <GestureDetector gesture={pan}>
+              <View style={styles.grabWrap}>
+                <View style={styles.grab} />
+              </View>
+            </GestureDetector>
+
+            {children}
+          </Animated.View>
+        </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
@@ -219,6 +244,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: RADIUS.sheet,
     borderTopRightRadius: RADIUS.sheet,
   },
-  grabWrap: { alignItems: 'center', paddingTop: 10, paddingBottom: 6 },
+  // 막대는 5px이지만 손이 잡는 자리는 그보다 넉넉해야 한다
+  grabWrap: { alignItems: 'center', paddingTop: 12, paddingBottom: 14 },
   grab: { width: 44, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.24)' },
 });

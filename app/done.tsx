@@ -10,6 +10,7 @@ import { PhaseFlood } from '../src/components/PhaseFlood';
 import { clock, isSimple } from '../src/engine/labels';
 import { clockTime } from '../src/engine/records';
 import { NO_LIVED, type Lived, type RoundOrders, type RoundSkips } from '../src/engine/segments';
+import { noteFinishedWorkout } from '../src/review';
 import { useSession } from '../src/session';
 import { useStore } from '../src/store';
 import { useToast } from '../src/components/Toast';
@@ -47,6 +48,18 @@ export default function Done() {
   useEffect(() => {
     session.stop();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /**
+   * 리뷰를 청할 자리 — **끝까지 간 실행에서만.**
+   *
+   * 도중에 껐다면 그 사람은 지금 만족한 상태가 아니다. 세지도 묻지도 않는다.
+   * 나머지 조건(세 번째부터, 생애 한 번, 물을 수 없는 자리면 침묵)은 review.ts에
+   * 있다. 화면을 먼저 떠나면 묻는 것만 취소된다.
+   */
+  useEffect(() => {
+    if (!full) return;
+    return noteFinishedWorkout();
+  }, [full]);
 
   /** 실행 중에 바꾼 차례 — 라운드별. 마지막 라운드의 것이 최종 차례다 */
   const rounds = useMemo<RoundOrders | undefined>(() => parseRounds(orders), [orders]);
@@ -150,7 +163,11 @@ export default function Done() {
           <Text style={styles.name} numberOfLines={2}>
             {preset.name}
           </Text>
-          {!!detailLine(preset) && <Text style={styles.detail}>{detailLine(preset)}</Text>}
+          {/* 종목 수는 기록에서 — 실행 중에 붙인 종목까지 세야 한다(detailLine) */}
+          {(() => {
+            const line = detailLine(preset, entry?.blocks.length);
+            return !!line && <Text style={styles.detail}>{line}</Text>;
+          })()}
           {/* 언제부터 언제까지 — 기록 화면이 카드 머리에 적는 것과 같은 사실이다 */}
           {!!entry && (
             <Text style={[styles.detail, TABULAR]}>
@@ -296,12 +313,17 @@ function parseRounds(raw?: string): string[][] | undefined {
  * 숫자가 있으면 둘이 다투고("0세트"인데 "3종목 2라운드"), 줄도 길어져 접힌다.
  * 타이머(종목 하나)는 적을 구성이 없어 웜업·쿨다운만 남는다.
  */
-function detailLine(p: Preset): string {
+function detailLine(p: Preset, blockCount = p.blocks.length): string {
   const parts = [
-    isSimple(p)
+    /*
+      종목 수는 **그날 실제로 한 것**으로 센다. 실행 중에 「운동 더 하기」로 붙인
+      종목은 프리셋에 없으므로, blocks.length만 보면 두 종목을 했는데 「1종목」이
+      된다. 부르는 쪽이 기록의 종목 수를 넘겨준다.
+    */
+    blockCount <= 1 && p.rounds <= 1
       ? null
       : t('doneScreen.composition', {
-          blocks: t('count.blocks', { count: p.blocks.length }),
+          blocks: t('count.blocks', { count: blockCount }),
           rounds: t('count.rounds', { count: p.rounds }),
         }),
     p.warmupSec > 0 || p.cooldownSec > 0

@@ -28,8 +28,22 @@ const NOTE = {
   C7: 2093,
 };
 
+/**
+ * 무음 루프는 **길고 가볍게** 따로 굽는다.
+ *
+ * 이 파일 하나가 iOS에게 "나는 오디오를 내보내는 중"이라고 말해 주는 유일한
+ * 근거다(백그라운드 오디오 모드). 짧은 파일을 반복하면 이어붙는 순간마다
+ * 재생이 끊길 틈이 생기고, 그 틈에 걸리면 앱이 그대로 정지한다 —
+ * 1초짜리로 30분을 돌면 그 순간이 1800번이다. 60초면 30번이다.
+ *
+ * 대신 길이만큼 파일이 커지므로 소리 없는 트랙에는 8kHz를 쓴다.
+ * 디지털 무음은 표본이 성겨도 무음이다. 60초에 960KB.
+ */
+const SILENCE_RATE = 8000;
+const SILENCE_SEC = 60;
+
 /** 16-bit mono PCM WAV */
-function wav(samples) {
+function wav(samples, rate = RATE) {
   const data = Buffer.alloc(samples.length * 2);
   for (let i = 0; i < samples.length; i++) {
     const v = Math.max(-1, Math.min(1, samples[i]));
@@ -43,8 +57,8 @@ function wav(samples) {
   head.writeUInt32LE(16, 16);
   head.writeUInt16LE(1, 20); // PCM
   head.writeUInt16LE(1, 22); // mono
-  head.writeUInt32LE(RATE, 24);
-  head.writeUInt32LE(RATE * 2, 28);
+  head.writeUInt32LE(rate, 24);
+  head.writeUInt32LE(rate * 2, 28);
   head.writeUInt16LE(2, 32);
   head.writeUInt16LE(16, 34);
   head.write('data', 36);
@@ -128,8 +142,6 @@ const FILES = {
     chord([NOTE.G6, NOTE.C6], 620, 0.55)
   ),
 
-  // 백그라운드 오디오 세션 유지용 무음 루프 (계층 1)
-  silence: silence(1000),
 };
 
 fs.mkdirSync(OUT, { recursive: true });
@@ -137,4 +149,12 @@ for (const [name, samples] of Object.entries(FILES)) {
   const file = path.join(OUT, `${name}.wav`);
   fs.writeFileSync(file, wav(samples));
   console.log(`${name}.wav  ${(samples.length / RATE).toFixed(3)}s`);
+}
+
+// 백그라운드 오디오 세션 유지용 무음 루프 (계층 1) — 위 SILENCE_* 주석 참고
+{
+  const n = SILENCE_RATE * SILENCE_SEC;
+  const file = path.join(OUT, 'silence.wav');
+  fs.writeFileSync(file, wav(new Float32Array(n), SILENCE_RATE));
+  console.log(`silence.wav  ${SILENCE_SEC}s @ ${SILENCE_RATE}Hz`);
 }

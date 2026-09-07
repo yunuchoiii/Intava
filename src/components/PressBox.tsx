@@ -6,6 +6,7 @@
  * 튕기며 돌아온다 — 손가락을 뗀 쪽이 기분 좋게 읽힌다.
  */
 import React, { useMemo, useRef } from 'react';
+import { Keyboard } from 'react-native';
 import { commitTick, tapTick } from '../feedback';
 import {
   Animated,
@@ -98,6 +99,13 @@ export function PressBox({
         disabled || !onPress
           ? undefined
           : () => {
+              /*
+                글자를 쓰던 중이면 먼저 키보드를 내린다. 버튼은 손짓을 스스로
+                가져가서 Screen·Sheet의 빈자리 감지까지 올라가지 않는다.
+                ✕(ClearButton)은 PressBox가 아니라서 여기 안 걸린다 — 지우고
+                계속 쓰는 자리라 내리면 안 된다.
+              */
+              Keyboard.dismiss();
               fire();
               onPress();
             }

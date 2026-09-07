@@ -9,6 +9,7 @@ import { usePreventRemove } from 'expo-router/react-navigation';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
+  Keyboard,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -21,6 +22,7 @@ import { BlockList } from '../src/components/BlockList';
 import { useDragAutoScroll } from '../src/components/useDragAutoScroll';
 import { useToast } from '../src/components/Toast';
 import { Chevron, Collapsible } from '../src/components/Collapsible';
+import { Checkbox } from '../src/components/Checkbox';
 import { ClearButton } from '../src/components/ClearButton';
 import { BlockPickerSheet } from '../src/components/BlockPickerSheet';
 import { BlockSheet } from '../src/components/BlockSheet';
@@ -49,6 +51,11 @@ const ACTION_RADIUS = 16;
  * 두 프리셋을 통째로 JSON으로 견주면 키 순서와 시각 도장(updatedAt·lastRunAt)에
  * 걸려 아무것도 안 고쳤는데 고쳤다고 나온다. 저장할 값만 정한 순서로 늘어놓는다.
  * 이름은 다듬어서 본다 — 뒤에 공백 하나 붙인 것을 편집으로 치지 않는다.
+ *
+ * **여기 빠진 값은 저장되지 않는다.** 기존 루틴은 저장 버튼 없이 지문이 달라질
+ * 때만 쓰기 때문에, 편집 화면에 칸을 새로 놓으면 이 목록에도 같이 놓아야 한다 —
+ * 「종목 사이 휴식」과 「마지막 세트 뒤 휴식」을 여기 안 적어서 화면에서는 바뀌는데
+ * 나갔다 들어오면 되돌아가 있었다.
  */
 function fingerprint(p: Preset): string {
   return JSON.stringify([
@@ -57,6 +64,10 @@ function fingerprint(p: Preset): string {
     p.prepareSec,
     p.rounds,
     p.roundRestSec,
+    // 없는 값은 참이다(types.ts) — undefined와 true가 다른 지문이 되면 옛 루틴이
+    // 열자마자 바뀐 것으로 보인다
+    p.skipLastSetRest !== false,
+    p.blockRestSec,
     p.cooldownSec,
     p.blocks.map((b) => [b.id, b.name.trim(), b.workSec, b.restSec, b.sets, (b.memo ?? '').trim()]),
   ]);
@@ -378,7 +389,11 @@ export default function Edit() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           scrollEnabled={!reordering}
-          onScrollBeginDrag={() => setTip(null)}
+          onScrollBeginDrag={() => {
+            setTip(null);
+            // 목록을 훑기 시작하면 글쓰기는 끝난 것이다
+            Keyboard.dismiss();
+          }}
         >
           <View style={styles.nameRow}>
             <Text style={styles.nameLabel}>{t('edit.name')}</Text>
@@ -494,11 +509,6 @@ export default function Edit() {
                 valueSize={21}
                 chevron
               />
-              {/*
-                종목 사이 휴식 줄은 없다 — 종목 전환 구간이 사라지고 마지막 세트
-                뒤에도 그 종목의 휴식이 돌게 바뀌었다(segments.ts). blockRestSec은
-                옛 데이터 호환으로 타입에만 남는다.
-              */}
               <ValueRow
                 title={t('edit.roundRest')}
                 display={durationShort(draft.roundRestSec) || t('common.none')}
@@ -510,6 +520,43 @@ export default function Edit() {
                 valueSize={21}
                 chevron
               />
+              {/*
+                종목과 종목 사이 — 자리를 옮기고 무게를 갈아 끼우는 시간.
+
+                바로 아래 체크박스와 한 쌍이다. 마지막 세트 뒤 휴식을 켜 둔 채
+                전환까지 주면 쉬는 구간이 잇달아 두 번 서므로, 둘을 붙여 놓고
+                한눈에 보이게 뒀다. 종목이 하나뿐이면(타이머) 이 줄은 안 보인다 —
+                옮겨 갈 다음 종목이 없다.
+              */}
+              {draft.blocks.length > 1 && (
+                <>
+                  <ValueRow
+                    title={t('edit.blockRest')}
+                    display={durationShort(draft.blockRestSec) || t('common.none')}
+                    open={open === 'blockRest'}
+                    onToggle={() => toggleRow('blockRest')}
+                    wheel="time"
+                    value={draft.blockRestSec}
+                    onChange={(blockRestSec) => patch({ blockRestSec })}
+                    valueSize={21}
+                    chevron
+                  />
+                  <Pressable
+                    style={styles.skipRow}
+                    onPress={() =>
+                      patch({ skipLastSetRest: draft.skipLastSetRest === false })
+                    }
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: draft.skipLastSetRest !== false }}
+                  >
+                    <Checkbox on={draft.skipLastSetRest !== false} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.skipLabel}>{t('edit.skipLastRest')}</Text>
+                      <Text style={styles.skipNote}>{t('edit.skipLastRestNote')}</Text>
+                    </View>
+                  </Pressable>
+                </>
+              )}
 
               <View style={[styles.sectionRow, tip === 'startEnd' && styles.raised]}>
                 <Text style={[styles.section, { marginTop: 0, marginBottom: 0 }]}>{t('edit.startEnd')}</Text>
@@ -622,6 +669,16 @@ const styles = StyleSheet.create({
     borderBottomColor: C.divider,
   },
   nameLabel: { fontSize: 13, color: C.textTertiary },
+  /** 종목 전환 줄 바로 아래 — 둘이 한 쌍이라 사이를 좁게 붙인다 */
+  skipRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  skipLabel: { fontSize: 16, fontWeight: '600', color: C.textPrimary },
+  skipNote: { marginTop: 3, fontSize: 13, lineHeight: 18, color: C.textTertiary },
   nameInputRow: { flexDirection: 'row', alignItems: 'center' },
   nameInput: {
     marginTop: 10,
