@@ -195,6 +195,27 @@ const EMPTY: RunSnapshot = {
 
 const SessionContext = createContext<Session | null>(null);
 
+/**
+ * 초마다 바뀌지 않는 몫만 담은 두 번째 창구.
+ *
+ * 스냅샷은 1초에 한 번씩 새 값이 된다. 그걸 통째로 하나의 컨텍스트에 실어
+ * 보내면 "타이머가 도는 중인가"만 알고 싶은 화면들(홈·편집·기록·설정)까지 1초에
+ * 한 번씩 다시 그려진다 — 실행 화면은 투명 모달이라 그 아래 홈이 내내 살아
+ * 있어서, 운동하는 40분 동안 목록 한 장이 2400번 다시 그려진다. 남는 것이
+ * 하나도 없는 일이고, 그 값은 전부 열로 나간다.
+ *
+ * 여기 담긴 것은 실행 하나에 한두 번 바뀌는 것들뿐이다.
+ */
+export type SessionStable = {
+  preset: Preset | null;
+  done: boolean;
+  restoredFromStorage: boolean;
+  start: Session['start'];
+  stop: Session['stop'];
+};
+
+const StableContext = createContext<SessionStable | null>(null);
+
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const { presets, settings, markRun, addRecord } = useStore();
   const [stored, setStored] = useState<Stored | null>(null);
@@ -222,11 +243,26 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   // ── 저장 ────────────────────────────────────────────────────────────────
 
-  const persist = useCallback((next: Stored | null) => {
+  /**
+   * `disk`를 끄면 메모리에만 반영한다 — 링을 문지르는 동안 쓰는 길이다.
+   *
+   * 드래그는 손가락이 움직이는 프레임마다 seekTo를 부르는데, 그때마다 JSON을
+   * 만들어 디스크에 쓰면 초당 예순 번씩 파일이 열린다. 문지르는 값은 손을 뗄 때
+   * 한 번만 남기면 되고(commitScrub이 flush한다), 그 사이에 앱이 죽더라도
+   * 잃는 것은 문지르던 몇 초뿐이다.
+   */
+  const persist = useCallback((next: Stored | null, disk = true) => {
     storedRef.current = next;
     setStored(next);
+    if (!disk) return;
     if (next) void AsyncStorage.setItem(KEY, JSON.stringify(next));
     else void AsyncStorage.removeItem(KEY);
+  }, []);
+
+  /** 메모리에만 있던 것을 디스크에 옮긴다 */
+  const flush = useCallback(() => {
+    const s = storedRef.current;
+    if (s) void AsyncStorage.setItem(KEY, JSON.stringify(s));
   }, []);
 
   const [restoredFromStorage, setRestoredFromStorage] = useState(false);
@@ -345,7 +381,15 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     const shot = snapshotAt(e);
     setSnap(shot);
 
-    if (s.pausedAt != null) return;
+    /*
+      멈췄거나 다 끝났으면 **예약해둔 깨어남까지 거둔다.** 예전에는 그냥
+      돌아갔는데, 앞선 tick이 다음 초 경계에 걸어둔 타이머는 그대로 남아
+      한 번 더 깨어나 계획 전체를 다시 훑었다. 더 셀 것이 없는 자리다.
+    */
+    if (s.pausedAt != null) {
+      clearTimer();
+      return;
+    }
 
     /*
       무음 루프가 아직 도는지 매 초 확인한다. 이 루프가 iOS에게 "나는 오디오를
@@ -356,6 +400,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     keepSessionAlive();
 
     if (shot.done) {
+      clearTimer();
       if (!doneFired.current) {
         doneFired.current = true;
         segmentFeedback('DONE', settingsRef.current);
@@ -537,7 +582,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         zeroAt: (s.pausedAt ?? Date.now()) - clamped * 1000,
         lived: { ...lived, at: Math.max(lived.at, clamped) },
       };
-      persist(next);
+      // replan이 꺼진 호출은 링을 문지르는 중이다 — 손을 뗄 때 한 번에 적는다
+      persist(next, replan);
       if (clamped < p.total) doneFired.current = false;
       if (!announce) {
         const shot = snapshotAt(clamped);
@@ -551,324 +597,356 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     [persist, snapshotAt, tick, reschedule, elapsedNow]
   );
 
-  const value = useMemo<Session>(() => {
-    /**
-     * 지금 손댈 수 있는 라운드와, 그 안에서 이미 굳은 앞자리 수.
-     *
-     * 굳는 기준은 "지나갔는가"다. 하고 있는 종목까지가 굳고 그 뒤가 열린다.
-     * 라운드 사이 휴식에서는 이번 라운드가 통째로 끝난 뒤이므로 **다음 라운드**를
-     * 열어준다 — 그 자리에서 다음 판의 차례를 짜는 것이 자연스럽다.
-     */
-    const edit = (() => {
-      const natural = preset?.blocks.map((b) => b.id) ?? [];
-      const orderOf = (round: number) => stored?.orders?.[round - 1] ?? natural;
-      const skipOf = (round: number) => stored?.skips?.[round - 1] ?? [];
-      const at = (round: number, locked: number) => ({
-        round,
-        locked,
-        order: orderOf(round),
-        skip: skipOf(round),
-      });
-      const seg = snap.seg;
-      if (!preset || !seg) return at(1, natural.length);
-      switch (seg.phase) {
-        case 'WARMUP':
-        case 'PREPARE':
-          return at(1, 0);
-        case 'WORK':
-        case 'SET_REST':
-        case 'BLOCK_REST': {
-          const round = seg.round ?? 1;
-          /*
-            굳은 자리는 seg.blk로 셀 수 없다. blk은 **실제로 도는 목록**에서 몇
-            번째냐인데, 시트가 보여주는 목록은 뺀 종목까지 들고 있어서 빼기가
-            하나라도 있으면 두 자리가 어긋난다. 정체(blockId)로 되짚는다.
-          */
-          const order = orderOf(round);
-          const pos = seg.blockId ? order.indexOf(seg.blockId) : -1;
-          /*
-            차례에 없는 종목을 돌고 있을 수 있다 — 실행 중에 편집 화면에서 종목을
-            더하면 계획에는 라운드 끝에 붙지만 이 차례에는 없다. 그때는 통째로
-            잠근다. 시트에 보이는 것은 전부 그 앞의 종목이라 이미 다 지난 것이다.
-          */
-          return {
-            round,
-            locked: pos >= 0 ? pos + 1 : order.length,
-            order,
-            skip: skipOf(round),
-          };
-        }
-        case 'ROUND_REST': {
-          const next = Math.min(preset.rounds, (seg.round ?? 1) + 1);
-          return at(next, 0);
-        }
-        default:
-          // 쿨다운 — 종목은 다 끝났다
-          return at(preset.rounds, natural.length);
+  /**
+   * 지금 손댈 수 있는 라운드와, 그 안에서 이미 굳은 앞자리 수.
+   *
+   * 굳는 기준은 "지나갔는가"다. 하고 있는 종목까지가 굳고 그 뒤가 열린다.
+   * 라운드 사이 휴식에서는 이번 라운드가 통째로 끝난 뒤이므로 **다음 라운드**를
+   * 열어준다 — 그 자리에서 다음 판의 차례를 짜는 것이 자연스럽다.
+   */
+  const edit = useMemo(() => {
+    const natural = preset?.blocks.map((b) => b.id) ?? [];
+    const orderOf = (round: number) => stored?.orders?.[round - 1] ?? natural;
+    const skipOf = (round: number) => stored?.skips?.[round - 1] ?? [];
+    const at = (round: number, locked: number) => ({
+      round,
+      locked,
+      order: orderOf(round),
+      skip: skipOf(round),
+    });
+    const seg = snap.seg;
+    if (!preset || !seg) return at(1, natural.length);
+    switch (seg.phase) {
+      case 'WARMUP':
+      case 'PREPARE':
+        return at(1, 0);
+      case 'WORK':
+      case 'SET_REST':
+      case 'BLOCK_REST': {
+        const round = seg.round ?? 1;
+        /*
+          굳은 자리는 seg.blk로 셀 수 없다. blk은 **실제로 도는 목록**에서 몇
+          번째냐인데, 시트가 보여주는 목록은 뺀 종목까지 들고 있어서 빼기가
+          하나라도 있으면 두 자리가 어긋난다. 정체(blockId)로 되짚는다.
+        */
+        const order = orderOf(round);
+        const pos = seg.blockId ? order.indexOf(seg.blockId) : -1;
+        /*
+          차례에 없는 종목을 돌고 있을 수 있다 — 실행 중에 편집 화면에서 종목을
+          더하면 계획에는 라운드 끝에 붙지만 이 차례에는 없다. 그때는 통째로
+          잠근다. 시트에 보이는 것은 전부 그 앞의 종목이라 이미 다 지난 것이다.
+        */
+        return {
+          round,
+          locked: pos >= 0 ? pos + 1 : order.length,
+          order,
+          skip: skipOf(round),
+        };
       }
-    })();
+      case 'ROUND_REST': {
+        const next = Math.min(preset.rounds, (seg.round ?? 1) + 1);
+        return at(next, 0);
+      }
+      default:
+        // 쿨다운 — 종목은 다 끝났다
+        return at(preset.rounds, natural.length);
+      }
+  }, [preset, stored?.orders, stored?.skips, snap.seg]);
+  /**
+   * 위 값을 controls가 **참조로** 본다 — 그래야 controls의 함수들이 매 초
+   * 새로 만들어지지 않는다. 초마다 바뀌는 것을 붙잡고 있으면 이 함수를
+   * 의존성에 건 화면들(링의 PanResponder 등)이 1초에 한 번씩 다시 엮인다.
+   */
+  const editRef = useRef(edit);
+  editRef.current = edit;
 
-    const controls = {
-      start: (presetId: string, orders?: RoundOrders, skips?: RoundSkips) => {
-        lastIdx.current = -1;
+  const controls = useMemo(() => ({
+    start: (presetId: string, orders?: RoundOrders, skips?: RoundSkips) => {
+      lastIdx.current = -1;
+      lastTick.current = '';
+      doneFired.current = false;
+      recorded.current = false;
+      recordedId.current = undefined;
+      markRun(presetId);
+      // 완료 화면의 "다시 하기"는 방금 돌던 구성을 그대로 물려받는다 — 차례도, 뺀 것도
+      const now = Date.now();
+      persist({ presetId, zeroAt: now, startedAt: now, pausedAt: null, orders, skips });
+      setSyncId((n) => n + 1);
+    },
+    /**
+     * 남은 차례를 바꾼다 — 시간은 건드리지 않는다.
+     *
+     * 지금 라운드의 앞부분(이미 지난 종목 + 지금 하는 종목)이 그대로면 흐른 시간이
+     * 가리키는 구간도 그대로다. 그 뒤만 다시 펴진다. 알림은 앞으로의 일이라
+     * 전부 다시 예약한다.
+     */
+    reorder: (ids: string[]) => {
+      const s = storedRef.current;
+      const p = presetRef.current;
+      if (!s || !p) return;
+      const ed = editRef.current;
+      const natural = p.blocks.map((b) => b.id);
+      const next: RoundOrders = [];
+      for (let r = 1; r <= p.rounds; r++) {
+        next[r - 1] = r < ed.round ? (s.orders?.[r - 1] ?? natural) : ids;
+      }
+      persist({ ...s, orders: next });
+      setSyncId((n) => n + 1);
+      void reschedule();
+    },
+    /**
+     * 뺄 종목을 바꾼다 — 순서와 같은 규칙이다. 지나간 라운드는 그대로 두고
+     * 손댈 수 있는 라운드부터 새 목록을 쓴다.
+     *
+     * 지금 라운드에서 이미 지나간 종목은 ids에 들어오지 않는다(시트가 굳은 행의
+     * 체크박스를 잠근다). 들어오면 지나간 배치가 바뀌어 흐른 시간이 엉뚱한
+     * 구간을 가리키게 되므로, 여기서 한 겹 더 걸러 앞자리를 지킨다.
+     */
+    setSkipped: (ids: string[]) => {
+      const s = storedRef.current;
+      const p = presetRef.current;
+      if (!s || !p) return;
+      const ed = editRef.current;
+      const head = ed.order.slice(0, ed.locked);
+      const frozen = new Set(head);
+      const wasSkipped = new Set(ed.skip);
+      const safe = [
+        // 굳은 자리는 지금 상태 그대로 — 새로 빼지도, 도로 넣지도 않는다.
+        // 통째로 걸러내면 앞서 빼둔 종목이 다음 라운드에 되살아난다.
+        ...head.filter((id) => wasSkipped.has(id)),
+        ...ids.filter((id) => !frozen.has(id)),
+      ];
+      const next: RoundSkips = [];
+      for (let r = 1; r <= p.rounds; r++) {
+        next[r - 1] = r < ed.round ? (s.skips?.[r - 1] ?? []) : safe;
+      }
+      persist({ ...s, skips: next });
+      setSyncId((n) => n + 1);
+      void reschedule();
+    },
+    /**
+     * 정산하고 **기록을 한 건 남긴다** — 완료 화면으로 떠나는 길목이다.
+     *
+     * 여기서 남기는 이유: 이 순간이 완주와 중단이 모두 지나는 유일한 자리이고,
+     * 아직 세션이 살아 있어 계획·시작 시각·지나온 몫을 다 알고 있다. 완료
+     * 화면은 뜨자마자 세션을 비우므로 그 뒤에는 물어볼 데가 없다.
+     *
+     * **한 실행에 한 건이다.** 같은 세션에서 두 번 불려도 두 번 적지 않는다.
+     */
+    settle: () => {
+      const s = storedRef.current;
+      const p = planRef.current;
+      const preset = presetRef.current;
+      if (!s || !p) return { lived: NO_LIVED };
+      const lived = advanceLived(s.lived, p, elapsedNow());
+      persist({ ...s, lived });
+
+      if (preset && !recorded.current) {
+        recorded.current = true;
+        const recordId = uid();
+        recordedId.current = recordId;
+        // at 하나가 아니라 실제로 지나온 구간들로 센다 — 넘긴 종목은 여기서 빠진다
+        const { blocks, segs } = summarizeLived(p, livedSpans(lived));
+        const specOf = new Map(
+          preset.blocks.map((b) => [b.id, blockSummary(b.workSec, b.restSec, b.sets)])
+        );
+        addRecord({
+          id: recordId,
+          presetId: preset.id,
+          presetName: preset.name,
+          startedAt: s.startedAt ?? s.zeroAt,
+          endedAt: Date.now(),
+          totalSec: Math.round(lived.total),
+          workSec: Math.round(lived.work),
+          completedSets: lived.sets,
+          completed: lived.at >= p.total - 0.01,
+          shape: shapeLabel(preset),
+          blocks: blocks.map((b) => ({
+            name: b.name,
+            spec: specOf.get(b.blockId) ?? '',
+            durSec: Math.round(b.durSec),
+          })),
+          segs: segs.map((x) => ({ phase: x.phase, durSec: x.durSec })),
+        });
+      }
+      // 두 번 불려도 같은 기록을 가리킨다 — 완료 화면이 뒤늦게 물어도 답이 있다
+      return { lived, recordId: recordedId.current };
+    },
+    toggle: () => {
+      const s = storedRef.current;
+      if (!s) return;
+      if (s.pausedAt != null) {
+        // 재개 — 멈춰 있던 만큼 기준 시각을 뒤로 민다
+        const paused = Date.now() - s.pausedAt;
+        persist({ ...s, zeroAt: s.zeroAt + paused, pausedAt: null });
+        lastIdx.current = snapshotAt(elapsedNow()).idx;
         lastTick.current = '';
-        doneFired.current = false;
-        recorded.current = false;
-        recordedId.current = undefined;
-        markRun(presetId);
-        // 완료 화면의 "다시 하기"는 방금 돌던 구성을 그대로 물려받는다 — 차례도, 뺀 것도
-        const now = Date.now();
-        persist({ presetId, zeroAt: now, startedAt: now, pausedAt: null, orders, skips });
-        setSyncId((n) => n + 1);
-      },
-      /**
-       * 남은 차례를 바꾼다 — 시간은 건드리지 않는다.
-       *
-       * 지금 라운드의 앞부분(이미 지난 종목 + 지금 하는 종목)이 그대로면 흐른 시간이
-       * 가리키는 구간도 그대로다. 그 뒤만 다시 펴진다. 알림은 앞으로의 일이라
-       * 전부 다시 예약한다.
-       */
-      reorder: (ids: string[]) => {
-        const s = storedRef.current;
-        const p = presetRef.current;
-        if (!s || !p) return;
-        const natural = p.blocks.map((b) => b.id);
-        const next: RoundOrders = [];
-        for (let r = 1; r <= p.rounds; r++) {
-          next[r - 1] = r < edit.round ? (s.orders?.[r - 1] ?? natural) : ids;
-        }
-        persist({ ...s, orders: next });
-        setSyncId((n) => n + 1);
-        void reschedule();
-      },
-      /**
-       * 뺄 종목을 바꾼다 — 순서와 같은 규칙이다. 지나간 라운드는 그대로 두고
-       * 손댈 수 있는 라운드부터 새 목록을 쓴다.
-       *
-       * 지금 라운드에서 이미 지나간 종목은 ids에 들어오지 않는다(시트가 굳은 행의
-       * 체크박스를 잠근다). 들어오면 지나간 배치가 바뀌어 흐른 시간이 엉뚱한
-       * 구간을 가리키게 되므로, 여기서 한 겹 더 걸러 앞자리를 지킨다.
-       */
-      setSkipped: (ids: string[]) => {
-        const s = storedRef.current;
-        const p = presetRef.current;
-        if (!s || !p) return;
-        const head = edit.order.slice(0, edit.locked);
-        const frozen = new Set(head);
-        const wasSkipped = new Set(edit.skip);
-        const safe = [
-          // 굳은 자리는 지금 상태 그대로 — 새로 빼지도, 도로 넣지도 않는다.
-          // 통째로 걸러내면 앞서 빼둔 종목이 다음 라운드에 되살아난다.
-          ...head.filter((id) => wasSkipped.has(id)),
-          ...ids.filter((id) => !frozen.has(id)),
-        ];
-        const next: RoundSkips = [];
-        for (let r = 1; r <= p.rounds; r++) {
-          next[r - 1] = r < edit.round ? (s.skips?.[r - 1] ?? []) : safe;
-        }
-        persist({ ...s, skips: next });
-        setSyncId((n) => n + 1);
-        void reschedule();
-      },
-      /**
-       * 정산하고 **기록을 한 건 남긴다** — 완료 화면으로 떠나는 길목이다.
-       *
-       * 여기서 남기는 이유: 이 순간이 완주와 중단이 모두 지나는 유일한 자리이고,
-       * 아직 세션이 살아 있어 계획·시작 시각·지나온 몫을 다 알고 있다. 완료
-       * 화면은 뜨자마자 세션을 비우므로 그 뒤에는 물어볼 데가 없다.
-       *
-       * **한 실행에 한 건이다.** 같은 세션에서 두 번 불려도 두 번 적지 않는다.
-       */
-      settle: () => {
-        const s = storedRef.current;
-        const p = planRef.current;
-        const preset = presetRef.current;
-        if (!s || !p) return { lived: NO_LIVED };
-        const lived = advanceLived(s.lived, p, elapsedNow());
-        persist({ ...s, lived });
-
-        if (preset && !recorded.current) {
-          recorded.current = true;
-          const recordId = uid();
-          recordedId.current = recordId;
-          // at 하나가 아니라 실제로 지나온 구간들로 센다 — 넘긴 종목은 여기서 빠진다
-          const { blocks, segs } = summarizeLived(p, livedSpans(lived));
-          const specOf = new Map(
-            preset.blocks.map((b) => [b.id, blockSummary(b.workSec, b.restSec, b.sets)])
-          );
-          addRecord({
-            id: recordId,
-            presetId: preset.id,
-            presetName: preset.name,
-            startedAt: s.startedAt ?? s.zeroAt,
-            endedAt: Date.now(),
-            totalSec: Math.round(lived.total),
-            workSec: Math.round(lived.work),
-            completedSets: lived.sets,
-            completed: lived.at >= p.total - 0.01,
-            shape: shapeLabel(preset),
-            blocks: blocks.map((b) => ({
-              name: b.name,
-              spec: specOf.get(b.blockId) ?? '',
-              durSec: Math.round(b.durSec),
-            })),
-            segs: segs.map((x) => ({ phase: x.phase, durSec: x.durSec })),
-          });
-        }
-        // 두 번 불려도 같은 기록을 가리킨다 — 완료 화면이 뒤늦게 물어도 답이 있다
-        return { lived, recordId: recordedId.current };
-      },
-      toggle: () => {
-        const s = storedRef.current;
-        if (!s) return;
-        if (s.pausedAt != null) {
-          // 재개 — 멈춰 있던 만큼 기준 시각을 뒤로 민다
-          const paused = Date.now() - s.pausedAt;
-          persist({ ...s, zeroAt: s.zeroAt + paused, pausedAt: null });
-          lastIdx.current = snapshotAt(elapsedNow()).idx;
-          lastTick.current = '';
-        } else {
-          persist({ ...s, pausedAt: Date.now() });
-        }
-        setSyncId((n) => n + 1);
-        tick();
-        void reschedule();
-      },
-      skipNext: () => {
-        const p = planRef.current;
-        if (!p) return;
-        const found = segmentAt(p, elapsedNow());
-        const nextSeg = found ? p.segs[found.idx + 1] : undefined;
-        seekTo(nextSeg ? nextSeg.start + 0.01 : p.total, storedRef.current?.pausedAt == null);
-      },
-      /**
-       * 지금 하는 종목을 통째로 넘긴다 — 남은 세트를 건너뛰고 **그 종목의 마지막
-       * 휴식**에 내려앉는다(시트의 "다음 휴식으로 갑니다"가 그 말이다).
-       *
-       * `buildPlan`은 한 종목의 세그먼트를 연속으로 펼치므로, 같은 종목의
-       * 운동·휴식이 이어지는 동안 걸어가 그 끝을 본다. 끝이 휴식이면 거기가
-       * 도착점이고(마지막 세트 뒤에도 제 휴식이 돈다), 휴식이 0초라 없거나
-       * 이미 그 휴식 안에 있으면 종목 다음 자리(다음 종목·라운드 휴식·쿨다운,
-       * 없으면 완료)로 간다.
-       */
-      skipBlock: () => {
-        const p = planRef.current;
-        if (!p) return;
-        const found = segmentAt(p, elapsedNow());
-        if (!found) return;
-        const { seg, idx } = found;
-        // 웜업·준비·쿨다운에는 넘길 종목이 없다
-        if (!seg.blockId || (seg.phase !== 'WORK' && seg.phase !== 'SET_REST')) return;
-
-        let i = idx;
-        while (i < p.segs.length) {
-          const s = p.segs[i];
-          const mine =
-            s.blockId === seg.blockId &&
-            s.round === seg.round &&
-            (s.phase === 'WORK' || s.phase === 'SET_REST');
-          if (!mine) break;
-          i += 1;
-        }
-        const tail = p.segs[i - 1];
-        const target =
-          tail && tail.phase === 'SET_REST' && i - 1 > idx ? tail : p.segs[i];
-        seekTo(target ? target.start + 0.01 : p.total, storedRef.current?.pausedAt == null);
-      },
-      skipPrev: () => {
-        const p = planRef.current;
-        if (!p) return;
-        const e = elapsedNow();
-        const found = segmentAt(p, e);
-        if (!found) {
-          const last = p.segs[p.segs.length - 1];
-          seekTo(last ? last.start : 0, false);
-          return;
-        }
-        if (e - found.seg.start > 1.2) {
-          seekTo(found.seg.start, false);
-          return;
-        }
-        const prev = p.segs[found.idx - 1];
-        seekTo(prev ? prev.start : 0, false);
-      },
-      restart: () => {
-        doneFired.current = false;
-        lastIdx.current = -1;
-        const s = storedRef.current;
-        // 처음부터 다시 도는 것이니 지나온 셈도 처음으로 되돌린다
-        if (s) persist({ ...s, zeroAt: Date.now(), pausedAt: null, lived: NO_LIVED });
-        setSyncId((n) => n + 1);
-        tick();
-        void reschedule();
-      },
-      stop: () => {
-        clearTimer();
-        persist(null);
-        setSnap(EMPTY);
-      },
-      beginScrub: () => {
-        const s = storedRef.current;
-        if (!s || s.pausedAt != null) {
-          // 이미 멈춰 있었다면 드래그가 끝나도 그대로 둔다
-          autoPaused.current = false;
-          return;
-        }
-        autoPaused.current = true;
+      } else {
         persist({ ...s, pausedAt: Date.now() });
-        setSyncId((n) => n + 1);
-        void reschedule();
-      },
-      scrubRemain: (remainSec: number) => {
-        const p = planRef.current;
-        if (!p) return;
-        const found = segmentAt(p, elapsedNow());
-        if (!found) return;
-        const { seg } = found;
-        const clamped = Math.max(0.05, Math.min(seg.dur, remainSec));
-        seekTo(seg.start + seg.dur - clamped, false, false);
-      },
-      commitScrub: () => {
-        const s = storedRef.current;
-        if (autoPaused.current && s?.pausedAt != null) {
-          // 멈춰 있던 만큼 기준 시각을 뒤로 밀어 이어서 흐르게 한다
-          persist({ ...s, zeroAt: s.zeroAt + (Date.now() - s.pausedAt), pausedAt: null });
-          lastIdx.current = snapshotAt(elapsedNow()).idx;
-          lastTick.current = '';
-        }
+      }
+      setSyncId((n) => n + 1);
+      tick();
+      void reschedule();
+    },
+    skipNext: () => {
+      const p = planRef.current;
+      if (!p) return;
+      const found = segmentAt(p, elapsedNow());
+      const nextSeg = found ? p.segs[found.idx + 1] : undefined;
+      seekTo(nextSeg ? nextSeg.start + 0.01 : p.total, storedRef.current?.pausedAt == null);
+    },
+    /**
+     * 지금 하는 종목을 통째로 넘긴다 — 남은 세트를 건너뛰고 **그 종목의 마지막
+     * 휴식**에 내려앉는다(시트의 "다음 휴식으로 갑니다"가 그 말이다).
+     *
+     * `buildPlan`은 한 종목의 세그먼트를 연속으로 펼치므로, 같은 종목의
+     * 운동·휴식이 이어지는 동안 걸어가 그 끝을 본다. 끝이 휴식이면 거기가
+     * 도착점이고(마지막 세트 뒤에도 제 휴식이 돈다), 휴식이 0초라 없거나
+     * 이미 그 휴식 안에 있으면 종목 다음 자리(다음 종목·라운드 휴식·쿨다운,
+     * 없으면 완료)로 간다.
+     */
+    skipBlock: () => {
+      const p = planRef.current;
+      if (!p) return;
+      const found = segmentAt(p, elapsedNow());
+      if (!found) return;
+      const { seg, idx } = found;
+      // 웜업·준비·쿨다운에는 넘길 종목이 없다
+      if (!seg.blockId || (seg.phase !== 'WORK' && seg.phase !== 'SET_REST')) return;
+
+      let i = idx;
+      while (i < p.segs.length) {
+        const s = p.segs[i];
+        const mine =
+          s.blockId === seg.blockId &&
+          s.round === seg.round &&
+          (s.phase === 'WORK' || s.phase === 'SET_REST');
+        if (!mine) break;
+        i += 1;
+      }
+      const tail = p.segs[i - 1];
+      const target =
+        tail && tail.phase === 'SET_REST' && i - 1 > idx ? tail : p.segs[i];
+      seekTo(target ? target.start + 0.01 : p.total, storedRef.current?.pausedAt == null);
+    },
+    skipPrev: () => {
+      const p = planRef.current;
+      if (!p) return;
+      const e = elapsedNow();
+      const found = segmentAt(p, e);
+      if (!found) {
+        const last = p.segs[p.segs.length - 1];
+        seekTo(last ? last.start : 0, false);
+        return;
+      }
+      if (e - found.seg.start > 1.2) {
+        seekTo(found.seg.start, false);
+        return;
+      }
+      const prev = p.segs[found.idx - 1];
+      seekTo(prev ? prev.start : 0, false);
+    },
+    restart: () => {
+      doneFired.current = false;
+      lastIdx.current = -1;
+      const s = storedRef.current;
+      // 처음부터 다시 도는 것이니 지나온 셈도 처음으로 되돌린다
+      if (s) persist({ ...s, zeroAt: Date.now(), pausedAt: null, lived: NO_LIVED });
+      setSyncId((n) => n + 1);
+      tick();
+      void reschedule();
+    },
+    stop: () => {
+      clearTimer();
+      persist(null);
+      setSnap(EMPTY);
+    },
+    beginScrub: () => {
+      const s = storedRef.current;
+      if (!s || s.pausedAt != null) {
+        // 이미 멈춰 있었다면 드래그가 끝나도 그대로 둔다
         autoPaused.current = false;
-        setSyncId((n) => n + 1);
-        tick();
-        void reschedule();
+        return;
+      }
+      autoPaused.current = true;
+      persist({ ...s, pausedAt: Date.now() });
+      setSyncId((n) => n + 1);
+      void reschedule();
+    },
+    scrubRemain: (remainSec: number) => {
+      const p = planRef.current;
+      if (!p) return;
+      const found = segmentAt(p, elapsedNow());
+      if (!found) return;
+      const { seg } = found;
+      const clamped = Math.max(0.05, Math.min(seg.dur, remainSec));
+      seekTo(seg.start + seg.dur - clamped, false, false);
+    },
+    commitScrub: () => {
+      const s = storedRef.current;
+      if (autoPaused.current && s?.pausedAt != null) {
+        // 멈춰 있던 만큼 기준 시각을 뒤로 밀어 이어서 흐르게 한다
+        persist({ ...s, zeroAt: s.zeroAt + (Date.now() - s.pausedAt), pausedAt: null });
+        lastIdx.current = snapshotAt(elapsedNow()).idx;
+        lastTick.current = '';
+      }
+      autoPaused.current = false;
+      setSyncId((n) => n + 1);
+      tick();
+      void reschedule();
       },
-    };
+  }), [persist, flush, seekTo, tick, reschedule, elapsedNow, snapshotAt, markRun, addRecord]);
 
-    return {
-      ...snap,
+  const value = useMemo<Session>(() => ({
+    ...snap,
+    preset,
+    plan,
+    total: plan?.total ?? 0,
+    next: plan?.segs[snap.idx + 1],
+    prev: snap.idx > 0 ? plan?.segs[snap.idx - 1] : undefined,
+    // 종목에 속한 자리에서만 넘길 것이 남아 있다 — skipBlock의 문지기와 같은 조건
+    canSkipBlock:
+      !!snap.seg?.blockId && (snap.seg.phase === 'WORK' || snap.seg.phase === 'SET_REST'),
+    syncId,
+    restoredFromStorage,
+    orders: stored?.orders,
+    skips: stored?.skips,
+    roundOrder: edit.order,
+    roundSkips: edit.skip,
+    lockedCount: edit.locked,
+    ...controls,
+  }), [snap, preset, plan, syncId, restoredFromStorage, stored?.orders, stored?.skips, edit, controls]);
+
+  const stable = useMemo<SessionStable>(
+    () => ({
       preset,
-      plan,
-      total: plan?.total ?? 0,
-      next: plan?.segs[snap.idx + 1],
-      prev: snap.idx > 0 ? plan?.segs[snap.idx - 1] : undefined,
-      // 종목에 속한 자리에서만 넘길 것이 남아 있다 — skipBlock의 문지기와 같은 조건
-      canSkipBlock:
-        !!snap.seg?.blockId && (snap.seg.phase === 'WORK' || snap.seg.phase === 'SET_REST'),
-      syncId,
+      done: snap.done,
       restoredFromStorage,
-      orders: stored?.orders,
-      skips: stored?.skips,
-      roundOrder: edit.order,
-      roundSkips: edit.skip,
-      lockedCount: edit.locked,
-      ...controls,
-    };
-  }, [snap, preset, plan, syncId, restoredFromStorage, stored?.orders, stored?.skips, persist, seekTo, tick, reschedule, elapsedNow, snapshotAt, markRun, addRecord]);
+      start: controls.start,
+      stop: controls.stop,
+    }),
+    [preset, snap.done, restoredFromStorage, controls]
+  );
 
-  return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
+  return (
+    <SessionContext.Provider value={value}>
+      <StableContext.Provider value={stable}>{children}</StableContext.Provider>
+    </SessionContext.Provider>
+  );
 }
 
 export function useSession(): Session {
   const v = useContext(SessionContext);
   if (!v) throw new Error('useSession called outside SessionProvider');
+  return v;
+}
+
+/**
+ * 매 초의 스냅샷이 필요 없는 화면은 이걸 쓴다 — 그래야 1초에 한 번씩 다시
+ * 그려지지 않는다. 남은 시간·구간처럼 흐르는 값이 필요하면 useSession이다.
+ */
+export function useSessionStable(): SessionStable {
+  const v = useContext(StableContext);
+  if (!v) throw new Error('useSessionStable called outside SessionProvider');
   return v;
 }

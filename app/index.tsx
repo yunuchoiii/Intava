@@ -25,7 +25,7 @@ import { presetSummary, presetTimeLine } from '../src/engine/labels';
 import { totalSec } from '../src/engine/segments';
 import { t } from '../src/i18n';
 import { selectionTick } from '../src/feedback';
-import { useSession } from '../src/session';
+import { useSessionStable } from '../src/session';
 import { useToast } from '../src/components/Toast';
 import { sortPresets, useStore, type SortKey } from '../src/store';
 import { C, E2, GUTTER, LIFT, RADIUS, TABULAR } from '../src/theme';
@@ -65,7 +65,7 @@ const TOOL_ROW_GUESS = TOOL_ROW_PAD * 2 + 41;
 
 export default function Home() {
   const router = useRouter();
-  const session = useSession();
+  const session = useSessionStable();
   const miniSpace = useMiniTimerSpace();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -422,7 +422,7 @@ function Segmented({
 
 function PresetRow({ preset, onLongPress }: { preset: Preset; onLongPress: () => void }) {
   const router = useRouter();
-  const session = useSession();
+  const session = useSessionStable();
   const total = useMemo(() => totalSec(preset), [preset]);
 
   /**

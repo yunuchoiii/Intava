@@ -13,7 +13,7 @@ import { Animated, PanResponder, StyleSheet, Text, useWindowDimensions, View } f
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { clock, phaseLabel, titleLabel } from '../engine/labels';
 import { useMorph } from '../morph';
-import { useSession } from '../session';
+import { useSession, useSessionStable } from '../session';
 import { E3, GUTTER, PHASE_COLOR, RADIUS, TABULAR } from '../theme';
 import { PauseIcon, PlayIcon } from './Icons';
 import { PressBox } from './PressBox';
@@ -27,7 +27,9 @@ const BAR_GAP = 14;
  * 미니 바가 뜨는 조건이자, 그 자리를 내주는 쪽(편집의 시작 버튼)이 물러나는 조건이다.
  */
 export function useTimerRunning(): boolean {
-  const run = useSession();
+  // 스냅샷이 아니라 **초마다 바뀌지 않는 쪽**을 본다 — 이 훅을 쓰는 화면들이
+  // 1초에 한 번씩 다시 그려지지 않게(session.tsx의 SessionStable 참고)
+  const run = useSessionStable();
   return !!run.preset && !run.done;
 }
 

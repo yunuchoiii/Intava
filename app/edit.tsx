@@ -35,7 +35,7 @@ import { ValueRow } from '../src/components/ValueRow';
 import { t } from '../src/i18n';
 import { durationLong, durationShort } from '../src/engine/labels';
 import { totalSec, workSec } from '../src/engine/segments';
-import { useSession } from '../src/session';
+import { useSessionStable } from '../src/session';
 import { emptyPreset, uid, useStore } from '../src/store';
 import { C, GUTTER, TABULAR } from '../src/theme';
 import { kindOf, type Block, type Preset } from '../src/types';
@@ -78,7 +78,7 @@ export default function Edit() {
   const insets = useSafeAreaInsets();
   const miniSpace = useMiniTimerSpace();
   const running = useTimerRunning();
-  const session = useSession();
+  const session = useSessionStable();
   const { getPreset, savePreset, settings, presets } = useStore();
   const toast = useToast();
 
