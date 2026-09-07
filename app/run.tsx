@@ -232,9 +232,54 @@ export default function Run() {
     router.replace({ pathname: '/done', params: doneParams() });
   };
 
+  /**
+   * 「완료할까요?」는 **다른 시트가 다 내려간 뒤에** 띄운다.
+   *
+   * ⚠️ 실행 화면은 투명 모달 라우트라 그 위에서는 모달이 한 번에 하나뿐이다.
+   * 닫는 것과 여는 것이 같은 프레임에 겹치면 뒤엣것이 아예 안 뜨고 앞엣것의
+   * 투명한 껍데기만 남아 화면 전체의 터치를 먹는다 — 아래 시트들이 서로
+   * 「내려간 뒤에」 여는 이유가 그것이다.
+   *
+   * 이 자리만 그 규칙에서 빠져 있었다. 시트에서 손댄 것이 **그 자리에서 계획을
+   * 줄여** 곧장 완료가 되는 길이 있다 — 순서 시트에서 마지막 종목의 체크를 끄면,
+   * 종목 시트에서 세트나 시간을 줄이면 그렇다. 그러면 그 시트가 떠 있는 채로
+   * 완료 시트가 겹쳐 뜨면서 화면이 굳는다. 한 번 굳으면 되돌릴 길이 없다 —
+   * run.done은 이미 참이고 시트는 뜨지 않았으니, 앱을 껐다 켜야 그제서야
+   * 완료 시트가 올라온다.
+   *
+   * asked는 한 번 물었는지다. 「더 할게요」로 시트를 닫으면 asking이 거짓으로
+   * 돌아오는데, 그것만 보고 다시 물으면 종목을 고르기도 전에 같은 시트가
+   * 도로 선다. 종목을 붙여 계획이 늘어나면(run.done이 거짓) 다시 물을 수 있다.
+   */
+  const asked = useRef(false);
+  const askWhenClosed = useRef(false);
   useEffect(() => {
-    if (run.done) setAsking(true);
-  }, [run.done]);
+    if (!run.done) {
+      asked.current = false;
+      return;
+    }
+    if (asked.current) return;
+    if (ordering || more || editing) {
+      // 운동이 끝났으니 그 시트에서 고르던 것은 없던 일로 한다
+      pending.current = null;
+      askWhenClosed.current = true;
+      setOrdering(false);
+      setMore(false);
+      setEditing(null);
+      return;
+    }
+    asked.current = true;
+    setAsking(true);
+  }, [run.done, ordering, more, editing]);
+
+  /** 시트가 다 내려간 뒤 — 미뤄둔 「완료할까요?」가 있으면 이제 띄운다 */
+  const askIfPending = useCallback(() => {
+    if (!askWhenClosed.current) return;
+    askWhenClosed.current = false;
+    asked.current = true;
+    // 한 프레임 띄운다 — 해제와 표시가 겹치지 않게(다른 시트들과 같은 규칙)
+    requestAnimationFrame(() => setAsking(true));
+  }, []);
 
   const dismiss = useCallback(() => {
     if (router.canGoBack()) router.back();
@@ -657,6 +702,7 @@ export default function Run() {
           pending.current = null;
           if (what === 'order') setOrdering(true);
           else if (what === 'skip') run.skipBlock();
+          askIfPending();
         }}
       />
 
@@ -684,6 +730,7 @@ export default function Run() {
           setEditing(null);
         }}
         onDelete={() => setEditing(null)}
+        onClosed={askIfPending}
       />
 
       {/*
@@ -738,6 +785,7 @@ export default function Run() {
       <OrderSheet
         visible={ordering}
         onClose={() => setOrdering(false)}
+        onClosed={askIfPending}
         blocks={orderBlocks}
         lockedCount={run.lockedCount}
         skipped={run.roundSkips}
