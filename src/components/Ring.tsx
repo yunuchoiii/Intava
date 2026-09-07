@@ -20,6 +20,13 @@ import {
   View,
   type GestureResponderEvent,
 } from 'react-native';
+import Reanimated, {
+  Easing as ReEasing,
+  cancelAnimation,
+  useAnimatedProps,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 import { selectionTick } from '../feedback';
 import { ABS, TABULAR } from '../theme';
@@ -34,7 +41,19 @@ const GRAB_MAX = 181;
 /** 이만큼은 움직여야 손짓의 방향을 판단한다 */
 const DECIDE_PX = 6;
 
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+/**
+ * 링의 진행만 **UI 스레드에서** 돈다.
+ *
+ * strokeDashoffset은 RN의 네이티브 드라이버가 다루지 못하는 속성이라, 예전에는
+ * `useNativeDriver: false`로 돌렸다. 그러면 운동하는 내내 — 40분이면 14만 프레임 —
+ * JS가 매 프레임 값을 계산해 네이티브로 건네준다. 화면에 아무 일도 없는 휴식
+ * 2분 동안에도 쉬지 않는다. 이 앱에서 끊임없이 도는 계산은 이것 하나뿐이라,
+ * 발열의 가장 큰 몫이기도 하다.
+ *
+ * reanimated의 애니메이션 값은 JS를 거치지 않고 UI 스레드에서 보간된다.
+ * 그리는 것은 똑같고, JS는 구간이 바뀔 때 한 번씩만 값을 건다.
+ */
+const AnimatedCircle = Reanimated.createAnimatedComponent(Circle);
 
 type Props = {
   /** 남은 비율 0~1 */
@@ -71,7 +90,7 @@ export function Ring({
   onScrubEnd,
 }: Props) {
   const pulse = useRef(new Animated.Value(1)).current;
-  const prog = useRef(new Animated.Value(ratio)).current;
+  const prog = useSharedValue(Math.max(0, Math.min(1, ratio)));
   const [scrubbing, setScrubbing] = useState(false);
 
   /**
@@ -132,18 +151,13 @@ export function Ring({
   /** 기준 재설정 + 남은 시간만큼 0을 향해 선형으로 흐르기 */
   useEffect(() => {
     if (scrubbing) return; // 드래그 중에는 손가락이 값을 쥐고 있다
-    prog.setValue(Math.max(0, Math.min(1, ratioRef.current)));
+    cancelAnimation(prog);
+    prog.value = Math.max(0, Math.min(1, ratioRef.current));
     if (paused) return;
     const ms = remainRef.current * 1000;
     if (ms <= 0) return;
-    const anim = Animated.timing(prog, {
-      toValue: 0,
-      duration: ms,
-      easing: Easing.linear,
-      useNativeDriver: false, // strokeDashoffset은 네이티브 드라이버 대상이 아니다
-    });
-    anim.start();
-    return () => anim.stop();
+    prog.value = withTiming(0, { duration: ms, easing: ReEasing.linear });
+    return () => cancelAnimation(prog);
   }, [syncKey, paused, scrubbing, prog]);
 
   /**
@@ -155,10 +169,9 @@ export function Ring({
    * 잇는다. 시계도 스톱워치도 그렇게 돌고, 하단 막대가 왼쪽에서 오른쪽으로
    * 차오르는 것과도 같은 방향이다.
    */
-  const dashoffset = useMemo(
-    () => prog.interpolate({ inputRange: [0, 1], outputRange: [-CIRC, 0], extrapolate: 'clamp' }),
-    [prog]
-  );
+  const dash = useAnimatedProps(() => ({
+    strokeDashoffset: -CIRC + Math.max(0, Math.min(1, prog.value)) * CIRC,
+  }));
 
   // ---- 드래그로 남은 시간 조정 -------------------------------------------
 
@@ -229,6 +242,8 @@ export function Ring({
           Math.hypot(g.dx, g.dy) > DECIDE_PX &&
           isTurning(e, g.dx, g.dy),
         onPanResponderGrant: (e) => {
+          // 흐르던 값을 여기서 세운다 — 손가락이 쥔 값 위로 애니메이션이 계속 밀면 서로 다툰다
+          cancelAnimation(prog);
           lastAngle.current = angleOf(e);
           accum.current = 0;
           startRemain.current = remainRef.current;
@@ -254,7 +269,7 @@ export function Ring({
             0,
             Math.min(dur, startRemain.current - (accum.current / (Math.PI * 2)) * dur)
           );
-          prog.setValue(next / dur);
+          prog.value = next / dur;
 
           const sec = Math.ceil(next);
           if (sec !== lastSecond.current) {
@@ -312,7 +327,7 @@ export function Ring({
           strokeWidth={scrubbing ? 18 : 15}
           strokeLinecap="round"
           strokeDasharray={CIRC}
-          strokeDashoffset={dashoffset}
+          animatedProps={dash}
         />
       </Svg>
 
