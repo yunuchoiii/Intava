@@ -237,7 +237,8 @@ export const ja: Catalog = {
     again: 'もう一度',
     home: 'ホームへ',
     titleStopped: 'ワークアウト終了',
-    span: '{{from}} 〜 {{to}}',
+    /** 언제 — 완료 화면은 그날의 끝이라 시각만으로는 어느 날의 것인지 모른다 */
+    spanDated: '{{date}} · {{from}} 〜 {{to}}',
     saveOrderTitle: '新しい順番を保存しますか？',
     saveOrderBody: '今回変更した種目の順番をこのルーティンに保存します。',
     saveOrderSkip: '保存しない',

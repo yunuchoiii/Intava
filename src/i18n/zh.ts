@@ -236,7 +236,8 @@ export const zh: Catalog = {
     again: '再来一次',
     home: '回到首页',
     titleStopped: '训练结束',
-    span: '{{from}} ~ {{to}}',
+    /** 언제 — 완료 화면은 그날의 끝이라 시각만으로는 어느 날의 것인지 모른다 */
+    spanDated: '{{date}} · {{from}} ~ {{to}}',
     saveOrderTitle: '要保存新的顺序吗？',
     saveOrderBody: '会把这次更改的动作顺序保存到这个循环。',
     saveOrderSkip: '不保存',

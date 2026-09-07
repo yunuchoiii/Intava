@@ -245,7 +245,8 @@ export const en: Catalog = {
     again: 'Do it again',
     home: 'Home',
     titleStopped: 'Workout ended',
-    span: '{{from}} – {{to}}',
+    /** 언제 — 완료 화면은 그날의 끝이라 시각만으로는 어느 날의 것인지 모른다 */
+    spanDated: '{{date}} · {{from}} – {{to}}',
     saveOrderTitle: 'Save the new order?',
     saveOrderBody: 'The exercise order you changed this time will be saved to this routine.',
     saveOrderSkip: "Don't save",

@@ -8,7 +8,7 @@ import { Chevron, Collapsible } from '../src/components/Collapsible';
 import { PressBox } from '../src/components/PressBox';
 import { PhaseFlood } from '../src/components/PhaseFlood';
 import { clock, isSimple } from '../src/engine/labels';
-import { clockTime } from '../src/engine/records';
+import { clockTime, dateLabel } from '../src/engine/records';
 import { NO_LIVED, type Lived, type RoundOrders, type RoundSkips } from '../src/engine/segments';
 import { useSession } from '../src/session';
 import { useStore } from '../src/store';
@@ -151,10 +151,16 @@ export default function Done() {
             {preset.name}
           </Text>
           {!!detailLine(preset) && <Text style={styles.detail}>{detailLine(preset)}</Text>}
-          {/* 언제부터 언제까지 — 기록 화면이 카드 머리에 적는 것과 같은 사실이다 */}
+          {/*
+            언제 — 날짜부터 적는다. 이 화면은 그 자리에서만 보는 것이 아니다.
+            운동을 끝내고 그대로 두었다가 몇 시간 뒤에, 자정을 넘겨 다음 날에
+            다시 보는 일이 있는데 시각만 있으면 어느 날의 것인지 알 수 없다.
+            기록 화면이 그날 머리에 적는 것과 같은 문장을 쓴다(dateLabel).
+          */}
           {!!entry && (
             <Text style={[styles.detail, TABULAR]}>
-              {t('doneScreen.span', {
+              {t('doneScreen.spanDated', {
+                date: dateLabel(entry.startedAt),
                 from: clockTime(entry.startedAt),
                 to: clockTime(entry.endedAt),
               })}
