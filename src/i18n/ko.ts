@@ -125,9 +125,9 @@ export const ko = {
   backup: {
     data: '데이터',
     export: '내보내기',
-    exportNote: '루틴·운동 기록·설정 중 담을 것을 골라 파일 하나로 저장합니다.',
+    exportNote: '설정 및 데이터를 파일로 내보냅니다.',
     import: '불러오기',
-    importNote: '내보낸 파일에서 되돌립니다. 같은 루틴은 덮어씁니다.',
+    importNote: '내보낸 설정 및 데이터를 불러옵니다. 같은 루틴은 덮어씁니다.',
     /** 무엇을 담을지 고르는 시트 */
     selectTitle: '무엇을 내보낼까요?',
     exportConfirm: '내보내기',

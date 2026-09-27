@@ -116,9 +116,9 @@ export const en: Catalog = {
   backup: {
     data: 'Data',
     export: 'Export',
-    exportNote: 'Pick what to include — routines, workout log, settings — and save it as one file.',
+    exportNote: 'Export your settings and data to a file.',
     import: 'Import',
-    importNote: 'Restore from an exported file. Matching routines are overwritten.',
+    importNote: 'Restore settings and data from an exported file. Matching routines are overwritten.',
     selectTitle: 'What should go in the file?',
     exportConfirm: 'Export',
     itemPresets_one: '{{count}} routine',

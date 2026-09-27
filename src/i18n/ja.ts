@@ -109,9 +109,9 @@ export const ja: Catalog = {
   backup: {
     data: 'データ',
     export: '書き出し',
-    exportNote: 'ルーティン・トレーニング記録・設定から選んで、1つのファイルに保存します。',
+    exportNote: '設定とデータをファイルに書き出します。',
     import: '読み込み',
-    importNote: '書き出したファイルから復元します。同じルーティンは上書きされます。',
+    importNote: '書き出した設定とデータを読み込みます。同じルーティンは上書きされます。',
     selectTitle: '何を書き出しますか？',
     exportConfirm: '書き出す',
     itemPresets_one: 'ルーティン {{count}} 件',

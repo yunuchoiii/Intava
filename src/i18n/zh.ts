@@ -109,9 +109,9 @@ export const zh: Catalog = {
   backup: {
     data: '数据',
     export: '导出',
-    exportNote: '从训练、训练记录和设置中选择要包含的内容，保存为一个文件。',
+    exportNote: '将设置和数据导出为文件。',
     import: '导入',
-    importNote: '从导出的文件恢复。同名训练会被覆盖。',
+    importNote: '从导出的文件恢复设置和数据。同名训练会被覆盖。',
     selectTitle: '要导出什么？',
     exportConfirm: '导出',
     itemPresets_one: '{{count}} 个训练',
