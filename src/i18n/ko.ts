@@ -125,9 +125,9 @@ export const ko = {
   backup: {
     data: '데이터',
     export: '내보내기',
-    exportNote: '루틴·운동 기록·설정 중 담을 것을 골라 파일 하나로 저장합니다.',
+    exportNote: '설정 및 데이터를 파일로 내보냅니다.',
     import: '불러오기',
-    importNote: '내보낸 파일에서 되돌립니다. 같은 루틴은 덮어씁니다.',
+    importNote: '내보낸 설정 및 데이터를 불러옵니다.',
     /** 무엇을 담을지 고르는 시트 */
     selectTitle: '무엇을 내보낼까요?',
     exportConfirm: '내보내기',
@@ -142,7 +142,7 @@ export const ko = {
     badTitle: '읽을 수 없는 파일',
     badBody: '인타바에서 내보낸 파일이 아니거나, 되돌릴 것이 들어 있지 않습니다.',
     askTitle: '불러올까요?',
-    askBody: '이 파일에 든 것만 가져옵니다. 이름이 같아도 다른 루틴이면 따로 추가됩니다.',
+    askBody: '같은 루틴이 있다면 덮어씁니다. 이름이 같아도 다른 루틴이면 따로 추가됩니다.',
     doneTitle: '불러왔습니다',
   },
   settings: {
@@ -161,11 +161,9 @@ export const ko = {
     privacy: '개인정보 처리방침',
     support: '지원 · 문의',
     language: '언어',
-    languageNote: 'iOS 설정에서 이 앱의 언어를 바꿉니다.',
     volume: '볼륨',
     volumeLabel: '알림음 크기',
     duckMusic: '알림음 나올 때 음악 줄이기',
-    duckMusicNote: '알림음이 울리는 동안만 음악이 작아졌다가 돌아옵니다.',
     screen: '화면',
     keepAwake: '실행 중 화면 꺼짐 방지',
   },
@@ -273,7 +271,8 @@ export const ko = {
     /** 도중에 끈 경우 — 같은 화면을 쓰되 말은 달라야 한다 */
     titleStopped: '운동 종료',
     /** 언제부터 언제까지 — 기록 화면의 카드 머리와 같은 사실 */
-    span: '{{from}} ~ {{to}}',
+    /** 언제 — 완료 화면은 그날의 끝이라 시각만으로는 어느 날의 것인지 모른다 */
+    spanDated: '{{date}} · {{from}} ~ {{to}}',
     saveOrderTitle: '바뀐 순서를 저장할까요?',
     saveOrderBody: '이번에 변경된 종목 순서를 이 루틴에 저장합니다.',
     saveOrderSkip: '저장 안 함',
@@ -303,7 +302,6 @@ export const ko = {
       '종목 전체를 몇 바퀴 돌지 정합니다. 세트는 한 종목 안에서의 반복이고, 라운드는 종목 전체의 반복입니다.',
     startEnd:
       '세 구간 모두 0으로 내리면 사라집니다. 실행 중에는 웜업이 **주황**, 준비가 **앰버**, 쿨다운이 **회색빛 파랑** 화면으로 보입니다.',
-    volume: '음악을 멈추지 않고 알림음만 겹쳐 재생합니다. 아래에서 알림음이 울리는 동안만 음악을 낮출 수 있습니다.',
     keepScreenOn: '이 앱은 화면이 꺼진 채로 쓰이는 것을 정상으로 봅니다.',
   },
 

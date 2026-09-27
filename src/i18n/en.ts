@@ -116,9 +116,9 @@ export const en: Catalog = {
   backup: {
     data: 'Data',
     export: 'Export',
-    exportNote: 'Pick what to include — routines, workout log, settings — and save it as one file.',
+    exportNote: 'Export your settings and data to a file.',
     import: 'Import',
-    importNote: 'Restore from an exported file. Matching routines are overwritten.',
+    importNote: 'Restore settings and data from an exported file.',
     selectTitle: 'What should go in the file?',
     exportConfirm: 'Export',
     itemPresets_one: '{{count}} routine',
@@ -131,8 +131,7 @@ export const en: Catalog = {
     badTitle: 'Unreadable file',
     badBody: 'This is not a file exported from intava, or there is nothing in it to restore.',
     askTitle: 'Import?',
-    askBody:
-      'Only what the file contains will be imported. Routines with the same name are still added separately unless they are the same routine.',
+    askBody: 'Routines that already exist will be overwritten. A routine with the same name but a different identity is added separately.',
     doneTitle: 'Imported',
   },
   settings: {
@@ -151,11 +150,9 @@ export const en: Catalog = {
     privacy: 'Privacy Policy',
     support: 'Support',
     language: 'Language',
-    languageNote: 'Change the language for this app in iOS Settings.',
     volume: 'Volume',
     volumeLabel: 'Cue volume',
     duckMusic: 'Lower music for cues',
-    duckMusicNote: 'Music dips only while a cue plays, then comes back.',
     screen: 'Screen',
     keepAwake: 'Keep screen on while running',
   },
@@ -252,7 +249,8 @@ export const en: Catalog = {
     again: 'Do it again',
     home: 'Home',
     titleStopped: 'Workout ended',
-    span: '{{from}} – {{to}}',
+    /** 언제 — 완료 화면은 그날의 끝이라 시각만으로는 어느 날의 것인지 모른다 */
+    spanDated: '{{date}} · {{from}} – {{to}}',
     saveOrderTitle: 'Save the new order?',
     saveOrderBody: 'The exercise order you changed this time will be saved to this routine.',
     saveOrderSkip: "Don't save",
@@ -281,7 +279,6 @@ export const en: Catalog = {
       'How many times to cycle through every exercise. Sets repeat within one exercise; rounds repeat the whole list.',
     startEnd:
       'Drop any of the three to zero and it disappears. While running, warm-up shows **orange**, prepare **amber**, and cool-down **slate blue**.',
-    volume: 'Cues play over your music without stopping it. Below, you can dip the music just while a cue plays.',
     keepScreenOn: 'This app expects to be used with the screen off.',
   },
 

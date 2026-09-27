@@ -6,8 +6,12 @@
  *
  * **이 루프 하나가 앱의 백그라운드 전체를 떠받친다.** 끊기는 순간 iOS가 앱을
  * 정지시키고, 그러면 구간 전환도 알림 예약 갱신도 멈춘다. 그래서 무음 파일은
- * **60초짜리**다 — 짧은 파일을 반복하면 이어붙는 순간마다 끊길 틈이 생기는데,
- * 1초짜리로 30분을 돌면 그 순간이 1800번이고 60초면 30번이다.
+ * **65분짜리**다 — expo-audio의 loop는 파일이 끝날 때 다음 아이템을 이어붙이는
+ * 방식이라(AVQueuePlayer, AudioPlayer.swift enqueueNextLoopItem) 이어붙는 찰나에
+ * "재생 중인 오디오가 없는" 순간이 생긴다. 1초짜리로 돌 때는 매초, 60초짜리로
+ * 늘린 뒤에도 분마다 그 틈이 있었고, 두 기기(iOS 27.2)에서 모두 시작 1~3분 뒤
+ * 알림음이 끊기고 앱이 재워졌다. 운동 한 번보다 긴 파일이면 이어붙일 일 자체가
+ * 없다. 무음은 AAC로 압축하면 65분이 277KB다.
  *
  * 오디오 믹싱 정책: 음악을 **멈추지는 않는다.** 'doNotMix'는 쓰지 않는다.
  *
@@ -29,7 +33,20 @@ import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-aud
  *   - 세션이 소리마다 켜졌다 꺼지니 duckOthers가 알림음마다 음악을 잠깐씩만 눌렀다.
  * 기본값이 false라 옵션을 빼먹으면 그대로 재발한다.
  */
-const KEEP_SESSION = { keepAudioSessionActive: true };
+/**
+ * 상태 이벤트 주기도 같이 늦춘다.
+ *
+ * expo-audio는 플레이어마다 AVPlayer의 periodic time observer를 달고 그 주기가
+ * 기본 500ms다. 관찰자가 돌 때마다 currentTime을 담은 이벤트가 네이티브에서
+ * JS로 건너오는데, 이 앱은 그 값을 어디서도 읽지 않는다. 무음 루프가 운동 내내
+ * 돌기 때문에 이것만으로 백그라운드에서 **0.5초마다 JS가 깨어났다** — 한 시간에
+ * 7,200번, 우리 tick(1초)보다 잦다. 실기기 배터리 화면에서 백그라운드 38분에
+ * 15%가 빠진 것을 보고 상시로 도는 것부터 걷어낸 것이다.
+ *
+ * 60초로 두면 무음 루프(60초짜리)에서는 사실상 울리지 않고, 1초 남짓한 알림음
+ * 플레이어에서는 아예 닿지 않는다.
+ */
+const KEEP_SESSION = { keepAudioSessionActive: true, updateInterval: 60_000 };
 
 export type Cue =
   | 'cue' // 웜업/준비 시작 — 짧은 안내음
@@ -52,7 +69,7 @@ const SOURCES: Record<Cue, number> = {
   done: require('../assets/sounds/done.wav'),
 };
 
-const SILENCE = require('../assets/sounds/silence.wav');
+const SILENCE = require('../assets/sounds/silence.m4a');
 
 let players: Partial<Record<Cue, AudioPlayer>> = {};
 let keepAlive: AudioPlayer | null = null;
@@ -217,10 +234,27 @@ export function play(name: Cue): void {
  * resumeSession과 달리 여기서는 playing을 본다. 매 초 무조건 play()를 부르면
  * 네이티브가 재생 끝 알림과 시간 관찰자를 초마다 다시 단다.
  */
+/**
+ * 되살리기는 5초에 한 번만 시도한다.
+ *
+ * expo-audio의 play()는 부를 때마다 AVAudioSession.setActive(true)와 관찰자
+ * 재등록을 한다(AudioModule.swift "play"). 다른 앱이 세션을 쥐고 있어 되살아나지
+ * 않는 동안 매초 부르면 한 시간에 1,800번 세션을 두고 싸운다 — 주 기기 배터리
+ * 화면에서 백그라운드 32분에 15%가 빠진 그 상태다. 앱이 살아 있으면서 소리는
+ * 못 내던 것이 이 싸움이었다. 5초면 iOS가 앱을 재우기 전에 되살릴 기회는 남기고
+ * 싸움은 5분의 1로 준다.
+ */
+const REVIVE_GAP_MS = 5000;
+let lastRevive = 0;
+
 export function keepSessionAlive(): void {
   if (!keepAlive) return;
   try {
-    if (!keepAlive.playing) keepAlive.play();
+    if (keepAlive.playing) return;
+    const now = Date.now();
+    if (now - lastRevive < REVIVE_GAP_MS) return;
+    lastRevive = now;
+    keepAlive.play();
   } catch {
     // 정리 직후 등
   }

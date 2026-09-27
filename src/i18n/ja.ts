@@ -109,9 +109,9 @@ export const ja: Catalog = {
   backup: {
     data: 'データ',
     export: '書き出し',
-    exportNote: 'ルーティン・トレーニング記録・設定から選んで、1つのファイルに保存します。',
+    exportNote: '設定とデータをファイルに書き出します。',
     import: '読み込み',
-    importNote: '書き出したファイルから復元します。同じルーティンは上書きされます。',
+    importNote: '書き出した設定とデータを読み込みます。',
     selectTitle: '何を書き出しますか？',
     exportConfirm: '書き出す',
     itemPresets_one: 'ルーティン {{count}} 件',
@@ -124,7 +124,7 @@ export const ja: Catalog = {
     badTitle: '読み取れないファイル',
     badBody: 'intava で書き出したファイルではないか、復元できるものが入っていません。',
     askTitle: '読み込みますか？',
-    askBody: 'このファイルに入っているものだけを読み込みます。名前が同じでも別のルーティンなら追加されます。',
+    askBody: '同じルーティンがあれば上書きされます。名前が同じでも別のルーティンなら追加されます。',
     doneTitle: '読み込みました',
   },
   settings: {
@@ -143,11 +143,9 @@ export const ja: Catalog = {
     privacy: 'プライバシーポリシー',
     support: 'サポート・お問い合わせ',
     language: '言語',
-    languageNote: 'iOSの設定でこのアプリの言語を変えます。',
     volume: '音量',
     volumeLabel: '通知音の大きさ',
     duckMusic: '通知音のあいだ音楽を下げる',
-    duckMusicNote: '通知音が鳴っているあいだだけ音楽が小さくなり、すぐ戻ります。',
     screen: '画面',
     keepAwake: '実行中に画面を消さない',
   },
@@ -244,7 +242,8 @@ export const ja: Catalog = {
     again: 'もう一度',
     home: 'ホームへ',
     titleStopped: 'ワークアウト終了',
-    span: '{{from}} 〜 {{to}}',
+    /** 언제 — 완료 화면은 그날의 끝이라 시각만으로는 어느 날의 것인지 모른다 */
+    spanDated: '{{date}} · {{from}} 〜 {{to}}',
     saveOrderTitle: '新しい順番を保存しますか？',
     saveOrderBody: '今回変更した種目の順番をこのルーティンに保存します。',
     saveOrderSkip: '保存しない',
@@ -273,7 +272,6 @@ export const ja: Catalog = {
       '種目全体を何周するかを決めます。セットは一つの種目の中の繰り返し、ラウンドは種目全体の繰り返しです。',
     startEnd:
       '三つとも0にすると消えます。実行中はウォームアップが**オレンジ**、準備が**アンバー**、クールダウンが**青灰色**の画面になります。',
-    volume: '音楽を止めずに通知音だけを重ねて鳴らします。下の設定で、通知音のあいだだけ音楽を下げられます。',
     keepScreenOn: 'このアプリは画面を消したまま使うことを前提にしています。',
   },
 

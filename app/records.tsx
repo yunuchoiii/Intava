@@ -20,6 +20,7 @@ import { useToast } from '../src/components/Toast';
 import { clock } from '../src/engine/labels';
 import {
   clockTime,
+  dateLabel,
   dayMinutes,
   groupByDay,
   humanMinutes,
@@ -272,11 +273,7 @@ export default function Records() {
 
           <View style={styles.dayHead}>
             <Text style={styles.dayLabel}>
-              {t('records.dateLabel', {
-                m: view.m,
-                d: sel,
-                w: weekdays[selDate.getDay()],
-              })}
+              {dateLabel(selDate.getTime())}
             </Text>
             {sessions.length > 0 && (
               <Text style={[styles.daySummary, TABULAR]}>

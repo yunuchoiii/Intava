@@ -102,9 +102,15 @@ export function segLabel(seg: Segment | undefined, from?: Segment | null, preset
     (!from || from.blockId !== seg.blockId || from.round !== seg.round);
 
   if (crossing) {
-    return seg.set != null
-      ? t('jump.blockWithSet', { block: seg.name, name: phase, set: seg.set })
-      : t('jump.block', { block: seg.name, name: phase });
+    /*
+      첫 세트 번호는 붙이지 않는다. 새 종목은 늘 1세트부터라 「플랭크 · 1세트」의
+      뒷부분은 아무것도 말해 주지 않고, 이름이 길면 그 자리를 밀어내 이름 쪽이
+      먼저 줄어든다 — 종목 전환에서 이 버튼의 쓸모는 오직 그 이름인데. 다른
+      종목의 **뒤 세트**로 되돌아가는 길(휴식이 0초인 종목에서 ⏮)에만 번호를 단다.
+    */
+    if (seg.set == null) return t('jump.block', { block: seg.name, name: phase });
+    if (seg.set === 1) return seg.name ?? phase; // crossing이 이미 이름을 보장한다 — 타입만 좁힌다
+    return t('jump.blockWithSet', { block: seg.name, name: phase, set: seg.set });
   }
 
   if (!numbered || seg.set == null) return phase;
@@ -265,12 +271,28 @@ export function notificationText(
   }
   return {
     title: named(describeSegment(seg)),
-    body: t('notify.bodyNext', { what: next ? nextName(next) : t('phase.DONE') }),
+    body: t('notify.bodyNext', { what: next ? nextName(next, seg, preset) : t('phase.DONE') }),
   };
 }
 
-function nextName(seg: Segment): string {
-  return phaseLabel(seg.phase);
+/**
+ * 「다음 · …」의 뒷부분 — **다른 종목으로 건너갈 때는 종목 이름을 붙인다.**
+ *
+ * 제목이 종목 이름을 앞세우게 된 뒤에도(named) 이 줄은 「다음 · 운동」이었다.
+ * 그래서 종목 전환에서 잠금화면에 「스쿼트 · 종목 전환 30초 / 다음 · 운동」이
+ * 뜬다 — 방금 끝낸 것은 아는데 **무엇을 하러 일어나야 하는지**가 없다. 종목이
+ * 바뀌는 자리가 바로 그 이름이 가장 필요한 자리다.
+ *
+ * 기준은 실행 화면의 「다음」 버튼(segLabel)과 같다: **지금 있는 자리가 그
+ * 종목에 속하지 않을 때만** 붙인다. 같은 종목의 세트 사이 휴식은 제목이 이미
+ * 그 이름을 들고 있어 같은 말이 두 번 되고, 타이머(종목 1·라운드 1)는 종목
+ * 이름이 곧 타이머 이름이라 어느 경우에도 붙이지 않는다.
+ */
+function nextName(seg: Segment, from: Segment, preset: Preset): string {
+  const phase = phaseLabel(seg.phase);
+  if (seg.phase !== 'WORK' || !seg.name || isSimple(preset)) return phase;
+  if (from.blockId === seg.blockId && from.round === seg.round) return phase;
+  return t('jump.block', { block: seg.name, name: phase });
 }
 
 /**

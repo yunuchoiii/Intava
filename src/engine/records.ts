@@ -51,6 +51,19 @@ export function humanMinutes(total: number): string {
   return m ? t('records.hoursMinutes', { h, m }) : t('records.hours', { h });
 }
 
+/**
+ * "8월 9일 일요일" — 기록 화면의 그날 머리와 완료 화면이 같은 문장을 쓴다.
+ * 두 곳에서 따로 이어붙이면 언젠가 한쪽만 바뀐다.
+ */
+export function dateLabel(ms: number): string {
+  const d = new Date(ms);
+  return t('records.dateLabel', {
+    m: d.getMonth() + 1,
+    d: d.getDate(),
+    w: t('records.weekdays').split(' ')[d.getDay()],
+  });
+}
+
 /** "오전 7:18" — 분은 두 자리로 채운다 */
 export function clockTime(ms: number): string {
   const d = new Date(ms);

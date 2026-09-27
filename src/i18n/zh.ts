@@ -109,9 +109,9 @@ export const zh: Catalog = {
   backup: {
     data: '数据',
     export: '导出',
-    exportNote: '从训练、训练记录和设置中选择要包含的内容，保存为一个文件。',
+    exportNote: '将设置和数据导出为文件。',
     import: '导入',
-    importNote: '从导出的文件恢复。同名训练会被覆盖。',
+    importNote: '从导出的文件恢复设置和数据。',
     selectTitle: '要导出什么？',
     exportConfirm: '导出',
     itemPresets_one: '{{count}} 个训练',
@@ -124,7 +124,7 @@ export const zh: Catalog = {
     badTitle: '无法读取的文件',
     badBody: '这不是 intava 导出的文件，或者其中没有可恢复的内容。',
     askTitle: '要导入吗？',
-    askBody: '只导入这个文件中包含的内容。名称相同但不是同一个训练时，仍会另外添加。',
+    askBody: '已有的同一训练将被覆盖。名称相同但不是同一个训练时，仍会另外添加。',
     doneTitle: '已导入',
   },
   settings: {
@@ -143,11 +143,9 @@ export const zh: Catalog = {
     privacy: '隐私政策',
     support: '支持与反馈',
     language: '语言',
-    languageNote: '在 iOS 设置中更改此应用的语言。',
     volume: '音量',
     volumeLabel: '提示音音量',
     duckMusic: '提示音响起时降低音乐',
-    duckMusicNote: '只在提示音播放时把音乐调低，随后立即恢复。',
     screen: '屏幕',
     keepAwake: '运行时保持屏幕常亮',
   },
@@ -243,7 +241,8 @@ export const zh: Catalog = {
     again: '再来一次',
     home: '回到首页',
     titleStopped: '训练结束',
-    span: '{{from}} ~ {{to}}',
+    /** 언제 — 완료 화면은 그날의 끝이라 시각만으로는 어느 날의 것인지 모른다 */
+    spanDated: '{{date}} · {{from}} ~ {{to}}',
     saveOrderTitle: '要保存新的顺序吗？',
     saveOrderBody: '会把这次更改的动作顺序保存到这个循环。',
     saveOrderSkip: '不保存',
@@ -271,7 +270,6 @@ export const zh: Catalog = {
     rounds: '设定把所有动作走几遍。组是一个动作内部的重复，轮是整组动作的重复。',
     startEnd:
       '三项都调到0就会消失。运行时热身显示**橙色**，准备显示**琥珀色**，放松显示**灰蓝色**。',
-    volume: '不会停止音乐，只把提示音叠加播放。可在下方设置为仅在提示音期间降低音乐。',
     keepScreenOn: '这个应用默认你会在息屏状态下使用。',
   },
 
