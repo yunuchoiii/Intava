@@ -14,6 +14,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMiniTimerSpace } from '../src/components/MiniTimer';
 import { PressBox } from '../src/components/PressBox';
@@ -35,6 +36,23 @@ import { C, GUTTER, TABULAR } from '../src/theme';
  * 스프링(speed 18)이 끝나고 Modal이 실제로 벗겨지기까지 잡은 여유다.
  */
 const SHEET_DISMISS_MS = 320;
+
+/**
+ * 왼쪽 끝에서 오른쪽으로 밀면 홈으로.
+ *
+ * 스택의 뒤로가기 제스처는 이 화면에서 꺼 두었다(_layout.tsx) — iOS 26부터는 화면
+ * 어디서 밀어도 뒤로 가서, 볼륨 슬라이더를 오른쪽으로 끄는 손짓이 그대로
+ * 뒤로가기가 됐다. 구간을 좁히는 옵션(gestureResponseDistance)은 인식 시점의
+ * 손가락 위치로 재는 값이라 8번 중 1번만 걸렸다.
+ *
+ * 그래서 우리가 직접 잡는다. gesture-handler의 hitSlop으로 **왼쪽 EDGE_PT 안에서
+ * 시작한 손짓만** 받는다 — 슬라이더는 GUTTER(24pt) 안쪽에서 시작하므로 이 띠에
+ * 닿지 않고, 세로로 흐르는 손짓은 failOffsetY로 스크롤에 넘긴다.
+ */
+const EDGE_PT = 24;
+/** 이만큼 끌거나 이 속도로 놓으면 돌아간다 — 닫히는 몸짓은 스택의 slide_from_bottom 그대로 */
+const BACK_DISTANCE = 90;
+const BACK_VELOCITY = 600;
 
 /**
  * 설치된 앱의 버전 — 문제를 알릴 때 사용자가 그대로 읽어줄 수 있어야 한다.
@@ -70,6 +88,23 @@ function useAppVersion(): string {
 export default function SettingsScreen() {
   const router = useRouter();
   const appVersion = useAppVersion();
+  /**
+   * 화면을 손가락에 딸려 보내지 않는다. 그렇게 해봤더니 오른쪽으로 끌려가다
+   * 아래로 내려가는 모양이 이상했다 — 이 화면은 아래에서 올라온 것이라
+   * 내려가며 닫혀야 한다. 손짓은 신호로만 쓰고, 닫히는 몸짓은 스택의 것을 쓴다.
+   */
+  const edgeBack = useMemo(
+    () =>
+      Gesture.Pan()
+        .hitSlop({ left: 0, width: EDGE_PT }) // 왼쪽 띠에서 시작한 손짓만
+        .activeOffsetX(12) // 오른쪽으로 이만큼 가야 잡는다
+        .failOffsetY([-12, 12]) // 세로로 먼저 움직이면 스크롤의 것
+        .onEnd((e) => {
+          if (e.translationX > BACK_DISTANCE || e.velocityX > BACK_VELOCITY) router.back();
+        })
+        .runOnJS(true),
+    [router]
+  );
   const insets = useSafeAreaInsets();
   const miniSpace = useMiniTimerSpace();
   const { presets, settings, setSettings, mergePresets, records, mergeRecords } = useStore();
@@ -124,6 +159,7 @@ export default function SettingsScreen() {
 
   return (
     <Screen>
+      <GestureDetector gesture={edgeBack}>
       <View style={{ flex: 1, paddingTop: insets.top + 6 }}>
         <View style={styles.topBar}>
           {/* 좌우를 같은 폭으로 두어야 제목이 가운데 온다 */}
@@ -258,6 +294,7 @@ export default function SettingsScreen() {
           <ActionRow title={t('backup.import')} note={t('backup.importNote')} onPress={doImport} last />
         </ScrollView>
       </View>
+      </GestureDetector>
 
       <ExportSheet
         visible={exporting}
