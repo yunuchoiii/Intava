@@ -106,7 +106,9 @@ export default function SettingsScreen() {
       picked.settings ? t('backup.itemSettings') : null,
     ].filter(Boolean);
 
-    Alert.alert(t('backup.askTitle'), `${t('backup.askBody')}\n\n${items.join('\n')}`, [
+    // 줄마다 가운뎃점 — 설명 문장 아래 목록임이 한눈에 갈린다
+    const list = items.map((line) => `· ${line}`).join('\n');
+    Alert.alert(t('backup.askTitle'), `${t('backup.askBody')}\n\n${list}`, [
       { text: t('common.cancel'), style: 'cancel' },
       {
         text: t('backup.import'),
