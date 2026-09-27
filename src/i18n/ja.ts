@@ -124,7 +124,7 @@ export const ja: Catalog = {
     badTitle: '読み取れないファイル',
     badBody: 'intava で書き出したファイルではないか、復元できるものが入っていません。',
     askTitle: '読み込みますか？',
-    askBody: '同じルーティンがあれば上書きされます。',
+    askBody: '同じルーティンがあれば上書きされます。名前が同じでも別のルーティンなら追加されます。',
     doneTitle: '読み込みました',
   },
   settings: {

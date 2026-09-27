@@ -124,7 +124,7 @@ export const zh: Catalog = {
     badTitle: '无法读取的文件',
     badBody: '这不是 intava 导出的文件，或者其中没有可恢复的内容。',
     askTitle: '要导入吗？',
-    askBody: '已有的同一训练将被覆盖。',
+    askBody: '已有的同一训练将被覆盖。名称相同但不是同一个训练时，仍会另外添加。',
     doneTitle: '已导入',
   },
   settings: {

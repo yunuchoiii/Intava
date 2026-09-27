@@ -142,7 +142,7 @@ export const ko = {
     badTitle: '읽을 수 없는 파일',
     badBody: '인타바에서 내보낸 파일이 아니거나, 되돌릴 것이 들어 있지 않습니다.',
     askTitle: '불러올까요?',
-    askBody: '같은 루틴이 있다면 덮어씁니다.',
+    askBody: '같은 루틴이 있다면 덮어씁니다. 이름이 같아도 다른 루틴이면 따로 추가됩니다.',
     doneTitle: '불러왔습니다',
   },
   settings: {

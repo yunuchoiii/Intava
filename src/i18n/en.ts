@@ -131,7 +131,7 @@ export const en: Catalog = {
     badTitle: 'Unreadable file',
     badBody: 'This is not a file exported from intava, or there is nothing in it to restore.',
     askTitle: 'Import?',
-    askBody: 'Routines that already exist will be overwritten.',
+    askBody: 'Routines that already exist will be overwritten. A routine with the same name but a different identity is added separately.',
     doneTitle: 'Imported',
   },
   settings: {
