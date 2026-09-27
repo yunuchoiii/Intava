@@ -13,7 +13,10 @@ import {
   Switch,
   Text,
   View,
+  Animated,
+  useWindowDimensions,
 } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMiniTimerSpace } from '../src/components/MiniTimer';
 import { PressBox } from '../src/components/PressBox';
@@ -35,6 +38,23 @@ import { C, GUTTER, TABULAR } from '../src/theme';
  * 스프링(speed 18)이 끝나고 Modal이 실제로 벗겨지기까지 잡은 여유다.
  */
 const SHEET_DISMISS_MS = 320;
+
+/**
+ * 왼쪽 끝에서 오른쪽으로 밀면 홈으로.
+ *
+ * 스택의 뒤로가기 제스처는 이 화면에서 꺼 두었다(_layout.tsx) — iOS 26부터는 화면
+ * 어디서 밀어도 뒤로 가서, 볼륨 슬라이더를 오른쪽으로 끄는 손짓이 그대로
+ * 뒤로가기가 됐다. 구간을 좁히는 옵션(gestureResponseDistance)은 인식 시점의
+ * 손가락 위치로 재는 값이라 8번 중 1번만 걸렸다.
+ *
+ * 그래서 우리가 직접 잡는다. gesture-handler의 hitSlop으로 **왼쪽 EDGE_PT 안에서
+ * 시작한 손짓만** 받는다 — 슬라이더는 GUTTER(24pt) 안쪽에서 시작하므로 이 띠에
+ * 닿지 않고, 세로로 흐르는 손짓은 failOffsetY로 스크롤에 넘긴다.
+ */
+const EDGE_PT = 24;
+/** 이만큼 끌거나 이 속도로 놓으면 돌아간다 — Sheet의 닫기와 같은 감각 */
+const BACK_DISTANCE = 90;
+const BACK_VELOCITY = 600;
 
 /**
  * 설치된 앱의 버전 — 문제를 알릴 때 사용자가 그대로 읽어줄 수 있어야 한다.
@@ -70,6 +90,31 @@ function useAppVersion(): string {
 export default function SettingsScreen() {
   const router = useRouter();
   const appVersion = useAppVersion();
+  const { width: screenW } = useWindowDimensions();
+  /** 손가락을 따라 화면이 오른쪽으로 딸려간다 — 돌아갈지 말지를 손이 느끼게 */
+  const drag = useRef(new Animated.Value(0)).current;
+  const edgeBack = useMemo(
+    () =>
+      Gesture.Pan()
+        .hitSlop({ left: 0, width: EDGE_PT }) // 왼쪽 띠에서 시작한 손짓만
+        .activeOffsetX(12) // 오른쪽으로 이만큼 가야 잡는다
+        .failOffsetY([-12, 12]) // 세로로 먼저 움직이면 스크롤의 것
+        .onUpdate((e) => drag.setValue(Math.max(0, e.translationX)))
+        .onEnd((e) => {
+          if (e.translationX > BACK_DISTANCE || e.velocityX > BACK_VELOCITY) {
+            Animated.timing(drag, {
+              toValue: screenW,
+              duration: 160,
+              useNativeDriver: true,
+            }).start(() => router.back());
+          } else {
+            Animated.spring(drag, { toValue: 0, useNativeDriver: true, bounciness: 4 }).start();
+          }
+        })
+        // Animated.Value를 만지므로 JS 스레드에서 돈다
+        .runOnJS(true),
+    [drag, router, screenW]
+  );
   const insets = useSafeAreaInsets();
   const miniSpace = useMiniTimerSpace();
   const { presets, settings, setSettings, mergePresets, records, mergeRecords } = useStore();
@@ -124,7 +169,8 @@ export default function SettingsScreen() {
 
   return (
     <Screen>
-      <View style={{ flex: 1, paddingTop: insets.top + 6 }}>
+      <GestureDetector gesture={edgeBack}>
+      <Animated.View style={{ flex: 1, paddingTop: insets.top + 6, transform: [{ translateX: drag }] }}>
         <View style={styles.topBar}>
           {/* 좌우를 같은 폭으로 두어야 제목이 가운데 온다 */}
           <View style={styles.topSide}>
@@ -257,7 +303,8 @@ export default function SettingsScreen() {
           />
           <ActionRow title={t('backup.import')} note={t('backup.importNote')} onPress={doImport} last />
         </ScrollView>
-      </View>
+      </Animated.View>
+      </GestureDetector>
 
       <ExportSheet
         visible={exporting}
