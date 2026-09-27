@@ -1,7 +1,8 @@
 /** 5.8 설정 (전역) */
 import { useRouter } from 'expo-router';
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Platform,
   Alert,
   LayoutChangeEvent,
   Linking,
@@ -18,7 +19,7 @@ import { useMiniTimerSpace } from '../src/components/MiniTimer';
 import { PressBox } from '../src/components/PressBox';
 import { BackIcon } from '../src/components/Icons';
 import { Screen } from '../src/components/Screen';
-import Constants from 'expo-constants';
+import * as Application from 'expo-application';
 import { preview } from '../src/audio';
 import { exportBackup, pickBackup } from '../src/backup';
 import { ExportSheet, type ExportPick } from '../src/components/ExportSheet';
@@ -35,16 +36,40 @@ import { C, GUTTER, TABULAR } from '../src/theme';
  */
 const SHEET_DISMISS_MS = 320;
 
-/** 설치된 앱의 버전 — 문제를 알릴 때 사용자가 그대로 읽어줄 수 있어야 한다 */
-const appVersion = (() => {
-  const v = Constants.expoConfig?.version;
-  const b = Constants.expoConfig?.ios?.buildNumber;
+/**
+ * 설치된 앱의 버전 — 문제를 알릴 때 사용자가 그대로 읽어줄 수 있어야 한다.
+ *
+ * 스토어에서 받은 앱은 「1.2.0」, 그 밖(케이블 설치·TestFlight·시뮬레이터)은
+ * 「1.2.0 (2)」 — **빌드 번호가 붙어 있으면 개발 빌드다.** 같은 1.2.0인데 하나는
+ * 스토어 것이고 하나는 고친 것인 두 폰을 갈라 봐야 할 일이 발열 조사 때 실제로
+ * 있었다. 값은 설정 파일이 아니라 **깔린 바이너리**에서 읽는다 — EAS가 빌드
+ * 번호를 스스로 올리므로 app.json의 숫자는 스토어 빌드와 다를 수 있다.
+ *
+ * 스토어인지는 iOS의 영수증·프로비저닝으로 가른다(expo-application). 판정이
+ * 나기 전에는 버전만 보여 준다 — 번호가 붙었다 떨어지는 것보다 낫다.
+ * Android는 갈라 볼 길이 없어 버전만 적는다.
+ */
+function useAppVersion(): string {
+  const [store, setStore] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (Platform.OS !== 'ios') {
+      setStore(true);
+      return;
+    }
+    Application.getIosApplicationReleaseTypeAsync()
+      .then((kind) => setStore(kind === Application.ApplicationReleaseType.APP_STORE))
+      .catch(() => setStore(false));
+  }, []);
+  const v = Application.nativeApplicationVersion;
+  const b = Application.nativeBuildVersion;
   if (!v) return '—';
-  return b ? `${v} (${b})` : v;
-})();
+  if (store === null || store || !b) return v;
+  return `${v} (${b})`;
+}
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const appVersion = useAppVersion();
   const insets = useSafeAreaInsets();
   const miniSpace = useMiniTimerSpace();
   const { presets, settings, setSettings, mergePresets, records, mergeRecords } = useStore();
@@ -135,7 +160,6 @@ export default function SettingsScreen() {
           <Pressable style={styles.linkRow} onPress={() => Linking.openSettings()}>
             <View style={{ flex: 1, paddingRight: 16 }}>
               <Text style={styles.rowTitle}>{t('settings.language')}</Text>
-              <Text style={styles.note}>{t('settings.languageNote')}</Text>
             </View>
             <Text style={styles.chevron}>›</Text>
           </Pressable>
@@ -199,13 +223,11 @@ export default function SettingsScreen() {
               if (settings.sound) void preview(volume);
             }}
           />
-          <Text style={styles.note}>{t('tips.volume')}</Text>
 
           {/* 볼륨 바로 아래 — 「알림음이 음악에 어떻게 얹히는가」가 한 이야기다 */}
           <View style={{ marginTop: 18 }}>
             <ToggleRow
               title={t('settings.duckMusic')}
-              note={t('settings.duckMusicNote')}
               value={settings.duckMusic}
               onChange={(duckMusic) => setSettings({ duckMusic })}
               last
@@ -254,7 +276,7 @@ function ToggleRow({
   last,
 }: {
   title: string;
-  note: string;
+  note?: string;
   value: boolean;
   onChange: (v: boolean) => void;
   last?: boolean;
@@ -263,7 +285,7 @@ function ToggleRow({
     <View style={[styles.toggleRow, last && { borderBottomWidth: 0 }]}>
       <View style={{ flex: 1, paddingRight: 16 }}>
         <Text style={styles.rowTitle}>{title}</Text>
-        <Text style={styles.note}>{note}</Text>
+        {!!note && <Text style={styles.note}>{note}</Text>}
       </View>
       <Switch
         value={value}
