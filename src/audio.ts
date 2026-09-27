@@ -29,7 +29,20 @@ import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-aud
  *   - 세션이 소리마다 켜졌다 꺼지니 duckOthers가 알림음마다 음악을 잠깐씩만 눌렀다.
  * 기본값이 false라 옵션을 빼먹으면 그대로 재발한다.
  */
-const KEEP_SESSION = { keepAudioSessionActive: true };
+/**
+ * 상태 이벤트 주기도 같이 늦춘다.
+ *
+ * expo-audio는 플레이어마다 AVPlayer의 periodic time observer를 달고 그 주기가
+ * 기본 500ms다. 관찰자가 돌 때마다 currentTime을 담은 이벤트가 네이티브에서
+ * JS로 건너오는데, 이 앱은 그 값을 어디서도 읽지 않는다. 무음 루프가 운동 내내
+ * 돌기 때문에 이것만으로 백그라운드에서 **0.5초마다 JS가 깨어났다** — 한 시간에
+ * 7,200번, 우리 tick(1초)보다 잦다. 실기기 배터리 화면에서 백그라운드 38분에
+ * 15%가 빠진 것을 보고 상시로 도는 것부터 걷어낸 것이다.
+ *
+ * 60초로 두면 무음 루프(60초짜리)에서는 사실상 울리지 않고, 1초 남짓한 알림음
+ * 플레이어에서는 아예 닿지 않는다.
+ */
+const KEEP_SESSION = { keepAudioSessionActive: true, updateInterval: 60_000 };
 
 export type Cue =
   | 'cue' // 웜업/준비 시작 — 짧은 안내음
