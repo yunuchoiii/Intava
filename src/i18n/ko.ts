@@ -127,7 +127,7 @@ export const ko = {
     export: '내보내기',
     exportNote: '설정 및 데이터를 파일로 내보냅니다.',
     import: '불러오기',
-    importNote: '내보낸 설정 및 데이터를 불러옵니다. 같은 루틴은 덮어씁니다.',
+    importNote: '내보낸 설정 및 데이터를 불러옵니다.',
     /** 무엇을 담을지 고르는 시트 */
     selectTitle: '무엇을 내보낼까요?',
     exportConfirm: '내보내기',
@@ -142,7 +142,7 @@ export const ko = {
     badTitle: '읽을 수 없는 파일',
     badBody: '인타바에서 내보낸 파일이 아니거나, 되돌릴 것이 들어 있지 않습니다.',
     askTitle: '불러올까요?',
-    askBody: '이 파일에 든 것만 가져옵니다. 이름이 같아도 다른 루틴이면 따로 추가됩니다.',
+    askBody: '같은 루틴이 있다면 덮어씁니다.',
     doneTitle: '불러왔습니다',
   },
   settings: {
