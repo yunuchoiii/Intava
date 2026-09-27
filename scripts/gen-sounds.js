@@ -33,14 +33,15 @@ const NOTE = {
  *
  * 이 파일 하나가 iOS에게 "나는 오디오를 내보내는 중"이라고 말해 주는 유일한
  * 근거다(백그라운드 오디오 모드). 짧은 파일을 반복하면 이어붙는 순간마다
- * 재생이 끊길 틈이 생기고, 그 틈에 걸리면 앱이 그대로 정지한다 —
- * 1초짜리로 30분을 돌면 그 순간이 1800번이다. 60초면 30번이다.
+ * 재생이 끊길 틈이 생기고, 그 틈에 걸리면 앱이 그대로 정지한다 — 1초짜리는
+ * 매초, 60초짜리는 분마다 그 틈이 있었고 실기기에서 시작 몇 분 뒤 앱이
+ * 재워졌다. 그래서 **운동 한 번보다 긴 65분**으로 두어 이어붙일 일을 없앤다.
  *
- * 대신 길이만큼 파일이 커지므로 소리 없는 트랙에는 8kHz를 쓴다.
- * 디지털 무음은 표본이 성겨도 무음이다. 60초에 960KB.
+ * WAV로는 65분이 62MB라 AAC로 압축한다(afconvert, 8kbps). 디지털 무음은
+ * 압축하면 거의 남지 않아 277KB다. 표본률도 8kHz면 충분하다.
  */
 const SILENCE_RATE = 8000;
-const SILENCE_SEC = 60;
+const SILENCE_SEC = 65 * 60;
 
 /** 16-bit mono PCM WAV */
 function wav(samples, rate = RATE) {
@@ -154,7 +155,11 @@ for (const [name, samples] of Object.entries(FILES)) {
 // 백그라운드 오디오 세션 유지용 무음 루프 (계층 1) — 위 SILENCE_* 주석 참고
 {
   const n = SILENCE_RATE * SILENCE_SEC;
-  const file = path.join(OUT, 'silence.wav');
-  fs.writeFileSync(file, wav(new Float32Array(n), SILENCE_RATE));
-  console.log(`silence.wav  ${SILENCE_SEC}s @ ${SILENCE_RATE}Hz`);
+  const tmp = path.join(require('os').tmpdir(), 'intava-silence.wav');
+  const file = path.join(OUT, 'silence.m4a');
+  fs.writeFileSync(tmp, wav(new Float32Array(n), SILENCE_RATE));
+  // macOS 내장 변환기 — 다른 OS에서 돌릴 일은 없다(iOS 빌드 자산)
+  require('child_process').execFileSync('afconvert', ['-f', 'm4af', '-d', 'aac', '-b', '8000', tmp, file]);
+  fs.unlinkSync(tmp);
+  console.log(`silence.m4a  ${SILENCE_SEC}s @ ${SILENCE_RATE}Hz  ${(fs.statSync(file).size / 1024).toFixed(0)}KB`);
 }
