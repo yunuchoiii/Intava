@@ -13,6 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
+  AppState,
   Easing,
   PanResponder,
   StyleSheet,
@@ -94,6 +95,26 @@ export function Ring({
   const [scrubbing, setScrubbing] = useState(false);
 
   /**
+   * 화면이 앞에 있을 때만 흐른다.
+   *
+   * ⚠️ 링의 진행은 구간 내내 도는 애니메이션이고, 애니메이션은 **매 프레임** 값을
+   * 계산해 그린다. 앱이 뒤로 가도 이 루프는 멈추지 않았다 — 스토어 빌드(RN
+   * Animated, JS 드라이버)는 JS 스레드에서, reanimated로 옮긴 뒤에는 UI 스레드에서
+   * 계속 돌았다. 실기기(iOS 27.2)에서 iOS가 "CPU 80% 초과, 60초"로 앱을 죽인
+   * 리포트가 그것이고(cpu_resource_fatal, JS 스레드 스택), 시뮬레이터에서
+   * Safari 뒤로 보낸 채 재도 프로세스 CPU가 25%였다. 한 시간 운동에 배터리
+   * 15~20%, 발열, 그리고 죽은 뒤 알림음이 안 나던 것이 전부 이 루프였다.
+   *
+   * 뒤에 있을 때는 그릴 화면이 없다. 애니메이션을 세우고 값만 맞춰 두었다가,
+   * 앞으로 오면 세션이 syncId를 올려 주므로(AppState active) 그때 다시 잇는다.
+   */
+  const [active, setActive] = useState(AppState.currentState === 'active');
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => setActive(state === 'active'));
+    return () => sub.remove();
+  }, []);
+
+  /**
    * 멈춤의 정도 — 0이면 돌고 있고 1이면 멈춰 있다. 톡 꺼지지 않고 건너간다.
    *
    * **눌리는 것은 링 안쪽 글자뿐이다.** 링 자체(흰 테)는 그대로 둔다 — 그것은
@@ -132,9 +153,9 @@ export function Ring({
   const durRef = useRef(durSec);
   durRef.current = durSec;
 
-  /** 마지막 3초 맥동 */
+  /** 마지막 3초 맥동 — 뒤에 있을 때는 이것도 세운다(같은 이유) */
   useEffect(() => {
-    if (!warn) {
+    if (!warn || !active) {
       pulse.stopAnimation(() => pulse.setValue(1));
       return;
     }
@@ -146,19 +167,19 @@ export function Ring({
     );
     loop.start();
     return () => loop.stop();
-  }, [warn, pulse]);
+  }, [warn, active, pulse]);
 
   /** 기준 재설정 + 남은 시간만큼 0을 향해 선형으로 흐르기 */
   useEffect(() => {
     if (scrubbing) return; // 드래그 중에는 손가락이 값을 쥐고 있다
     cancelAnimation(prog);
     prog.value = Math.max(0, Math.min(1, ratioRef.current));
-    if (paused) return;
+    if (paused || !active) return;
     const ms = remainRef.current * 1000;
     if (ms <= 0) return;
     prog.value = withTiming(0, { duration: ms, easing: ReEasing.linear });
     return () => cancelAnimation(prog);
-  }, [syncKey, paused, scrubbing, prog]);
+  }, [syncKey, paused, scrubbing, active, prog]);
 
   /**
    * 남은 만큼을 흰 호로 그리되, **줄어드는 머리가 시계방향으로 전진**하게 한다.
