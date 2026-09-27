@@ -111,7 +111,7 @@ export const ja: Catalog = {
     export: '書き出し',
     exportNote: '設定とデータをファイルに書き出します。',
     import: '読み込み',
-    importNote: '書き出した設定とデータを読み込みます。同じルーティンは上書きされます。',
+    importNote: '書き出した設定とデータを読み込みます。',
     selectTitle: '何を書き出しますか？',
     exportConfirm: '書き出す',
     itemPresets_one: 'ルーティン {{count}} 件',
@@ -124,7 +124,7 @@ export const ja: Catalog = {
     badTitle: '読み取れないファイル',
     badBody: 'intava で書き出したファイルではないか、復元できるものが入っていません。',
     askTitle: '読み込みますか？',
-    askBody: 'このファイルに入っているものだけを読み込みます。名前が同じでも別のルーティンなら追加されます。',
+    askBody: '同じルーティンがあれば上書きされます。',
     doneTitle: '読み込みました',
   },
   settings: {

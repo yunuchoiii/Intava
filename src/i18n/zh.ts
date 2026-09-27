@@ -111,7 +111,7 @@ export const zh: Catalog = {
     export: '导出',
     exportNote: '将设置和数据导出为文件。',
     import: '导入',
-    importNote: '从导出的文件恢复设置和数据。同名训练会被覆盖。',
+    importNote: '从导出的文件恢复设置和数据。',
     selectTitle: '要导出什么？',
     exportConfirm: '导出',
     itemPresets_one: '{{count}} 个训练',
@@ -124,7 +124,7 @@ export const zh: Catalog = {
     badTitle: '无法读取的文件',
     badBody: '这不是 intava 导出的文件，或者其中没有可恢复的内容。',
     askTitle: '要导入吗？',
-    askBody: '只导入这个文件中包含的内容。名称相同但不是同一个训练时，仍会另外添加。',
+    askBody: '已有的同一训练将被覆盖。',
     doneTitle: '已导入',
   },
   settings: {

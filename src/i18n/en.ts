@@ -118,7 +118,7 @@ export const en: Catalog = {
     export: 'Export',
     exportNote: 'Export your settings and data to a file.',
     import: 'Import',
-    importNote: 'Restore settings and data from an exported file. Matching routines are overwritten.',
+    importNote: 'Restore settings and data from an exported file.',
     selectTitle: 'What should go in the file?',
     exportConfirm: 'Export',
     itemPresets_one: '{{count}} routine',
@@ -131,8 +131,7 @@ export const en: Catalog = {
     badTitle: 'Unreadable file',
     badBody: 'This is not a file exported from intava, or there is nothing in it to restore.',
     askTitle: 'Import?',
-    askBody:
-      'Only what the file contains will be imported. Routines with the same name are still added separately unless they are the same routine.',
+    askBody: 'Routines that already exist will be overwritten.',
     doneTitle: 'Imported',
   },
   settings: {
