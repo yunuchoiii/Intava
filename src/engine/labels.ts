@@ -102,9 +102,15 @@ export function segLabel(seg: Segment | undefined, from?: Segment | null, preset
     (!from || from.blockId !== seg.blockId || from.round !== seg.round);
 
   if (crossing) {
-    return seg.set != null
-      ? t('jump.blockWithSet', { block: seg.name, name: phase, set: seg.set })
-      : t('jump.block', { block: seg.name, name: phase });
+    /*
+      첫 세트 번호는 붙이지 않는다. 새 종목은 늘 1세트부터라 「플랭크 · 1세트」의
+      뒷부분은 아무것도 말해 주지 않고, 이름이 길면 그 자리를 밀어내 이름 쪽이
+      먼저 줄어든다 — 종목 전환에서 이 버튼의 쓸모는 오직 그 이름인데. 다른
+      종목의 **뒤 세트**로 되돌아가는 길(휴식이 0초인 종목에서 ⏮)에만 번호를 단다.
+    */
+    if (seg.set == null) return t('jump.block', { block: seg.name, name: phase });
+    if (seg.set === 1) return seg.name ?? phase; // crossing이 이미 이름을 보장한다 — 타입만 좁힌다
+    return t('jump.blockWithSet', { block: seg.name, name: phase, set: seg.set });
   }
 
   if (!numbered || seg.set == null) return phase;
