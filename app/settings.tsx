@@ -13,8 +13,6 @@ import {
   Switch,
   Text,
   View,
-  Animated,
-  useWindowDimensions,
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -52,7 +50,7 @@ const SHEET_DISMISS_MS = 320;
  * 닿지 않고, 세로로 흐르는 손짓은 failOffsetY로 스크롤에 넘긴다.
  */
 const EDGE_PT = 24;
-/** 이만큼 끌거나 이 속도로 놓으면 돌아간다 — Sheet의 닫기와 같은 감각 */
+/** 이만큼 끌거나 이 속도로 놓으면 돌아간다 — 닫히는 몸짓은 스택의 slide_from_bottom 그대로 */
 const BACK_DISTANCE = 90;
 const BACK_VELOCITY = 600;
 
@@ -90,30 +88,22 @@ function useAppVersion(): string {
 export default function SettingsScreen() {
   const router = useRouter();
   const appVersion = useAppVersion();
-  const { width: screenW } = useWindowDimensions();
-  /** 손가락을 따라 화면이 오른쪽으로 딸려간다 — 돌아갈지 말지를 손이 느끼게 */
-  const drag = useRef(new Animated.Value(0)).current;
+  /**
+   * 화면을 손가락에 딸려 보내지 않는다. 그렇게 해봤더니 오른쪽으로 끌려가다
+   * 아래로 내려가는 모양이 이상했다 — 이 화면은 아래에서 올라온 것이라
+   * 내려가며 닫혀야 한다. 손짓은 신호로만 쓰고, 닫히는 몸짓은 스택의 것을 쓴다.
+   */
   const edgeBack = useMemo(
     () =>
       Gesture.Pan()
         .hitSlop({ left: 0, width: EDGE_PT }) // 왼쪽 띠에서 시작한 손짓만
         .activeOffsetX(12) // 오른쪽으로 이만큼 가야 잡는다
         .failOffsetY([-12, 12]) // 세로로 먼저 움직이면 스크롤의 것
-        .onUpdate((e) => drag.setValue(Math.max(0, e.translationX)))
         .onEnd((e) => {
-          if (e.translationX > BACK_DISTANCE || e.velocityX > BACK_VELOCITY) {
-            Animated.timing(drag, {
-              toValue: screenW,
-              duration: 160,
-              useNativeDriver: true,
-            }).start(() => router.back());
-          } else {
-            Animated.spring(drag, { toValue: 0, useNativeDriver: true, bounciness: 4 }).start();
-          }
+          if (e.translationX > BACK_DISTANCE || e.velocityX > BACK_VELOCITY) router.back();
         })
-        // Animated.Value를 만지므로 JS 스레드에서 돈다
         .runOnJS(true),
-    [drag, router, screenW]
+    [router]
   );
   const insets = useSafeAreaInsets();
   const miniSpace = useMiniTimerSpace();
@@ -170,7 +160,7 @@ export default function SettingsScreen() {
   return (
     <Screen>
       <GestureDetector gesture={edgeBack}>
-      <Animated.View style={{ flex: 1, paddingTop: insets.top + 6, transform: [{ translateX: drag }] }}>
+      <View style={{ flex: 1, paddingTop: insets.top + 6 }}>
         <View style={styles.topBar}>
           {/* 좌우를 같은 폭으로 두어야 제목이 가운데 온다 */}
           <View style={styles.topSide}>
@@ -303,7 +293,7 @@ export default function SettingsScreen() {
           />
           <ActionRow title={t('backup.import')} note={t('backup.importNote')} onPress={doImport} last />
         </ScrollView>
-      </Animated.View>
+      </View>
       </GestureDetector>
 
       <ExportSheet
