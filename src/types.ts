@@ -64,6 +64,11 @@ export type Settings = {
   notifications: boolean;
   vibration: boolean;
   countdownBeep: boolean;
+  /**
+   * 구간이 끝나기 몇 초 전부터 틱을 울릴지 — 1~10. 예전에는 3초로 못박혀 있었다.
+   * 무거운 세트를 내려놓고 다음 자세를 잡는 데 3초는 짧다는 사람이 있다.
+   */
+  countdownSec: number;
   keepScreenOn: boolean;
   volume: number;
   /**
@@ -81,6 +86,7 @@ export const DEFAULT_SETTINGS: Settings = {
   notifications: true,
   vibration: true,
   countdownBeep: true,
+  countdownSec: 3,
   keepScreenOn: false,
   volume: 0.8,
   duckMusic: false,

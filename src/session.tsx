@@ -51,6 +51,12 @@ import type { Block, Preset, Segment } from './types';
 
 const KEY = 'intava:session';
 
+/** 카운트다운 길이 — 옛 저장값·불러온 파일에 이상한 값이 와도 1~10 안에 둔다 */
+export function countdownOf(s: { countdownSec?: number }): number {
+  const n = Math.round(s.countdownSec ?? 3);
+  return Number.isFinite(n) ? Math.min(10, Math.max(1, n)) : 3;
+}
+
 type Stored = {
   presetId: string;
   zeroAt: number;
@@ -428,9 +434,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       segmentFeedback(shot.seg!.phase, settingsRef.current);
     }
 
-    // 각 구간 마지막 3초 — 3, 2, 1에 한 번씩
+    // 각 구간 마지막 N초 — N, …, 2, 1에 한 번씩 (N은 설정, 기본 3)
     const left = Math.ceil(shot.remain - 0.001);
-    if (left <= 3 && left >= 1) {
+    if (left <= countdownOf(settingsRef.current) && left >= 1) {
       const key = `${shot.idx}:${left}`;
       if (lastTick.current !== key) {
         lastTick.current = key;

@@ -65,7 +65,7 @@ type Props = {
   title: string;
   clock: string;
   sub: string;
-  /** 마지막 3초 — 숫자가 맥동한다. 일시정지 중에는 맥동하지 않는다 */
+  /** 마지막 N초(카운트다운 설정과 같은 길이) — 숫자가 맥동한다. 일시정지 중에는 맥동하지 않는다 */
   warn: boolean;
   paused: boolean;
   /** 바뀌면 애니메이션이 기준을 다시 잡는다 (구간 전환·일시정지·점프) */
@@ -153,7 +153,7 @@ export function Ring({
   const durRef = useRef(durSec);
   durRef.current = durSec;
 
-  /** 마지막 3초 맥동 — 뒤에 있을 때는 이것도 세운다(같은 이유) */
+  /** 마지막 N초 맥동 — 뒤에 있을 때는 이것도 세운다(같은 이유) */
   useEffect(() => {
     if (!warn || !active) {
       pulse.stopAnimation(() => pulse.setValue(1));
