@@ -24,8 +24,6 @@ import * as Application from 'expo-application';
 import { preview } from '../src/audio';
 import { exportBackup, pickBackup } from '../src/backup';
 import { ExportSheet, type ExportPick } from '../src/components/ExportSheet';
-import { ValueRow } from '../src/components/ValueRow';
-import { countdownOf } from '../src/session';
 import { useStore } from '../src/store';
 import { t } from '../src/i18n';
 import { C, GUTTER, TABULAR } from '../src/theme';
@@ -90,8 +88,6 @@ function useAppVersion(): string {
 export default function SettingsScreen() {
   const router = useRouter();
   const appVersion = useAppVersion();
-  /** 카운트다운 길이 휠이 펼쳐져 있는가 */
-  const [countdownOpen, setCountdownOpen] = useState(false);
   /**
    * 화면을 손가락에 딸려 보내지 않는다. 그렇게 해봤더니 오른쪽으로 끌려가다
    * 아래로 내려가는 모양이 이상했다 — 이 화면은 아래에서 올라온 것이라
@@ -240,34 +236,10 @@ export default function SettingsScreen() {
           />
           <ToggleRow
             title={t('settings.countdown')}
-            note={t('settings.countdownNote', { n: countdownOf(settings) })}
+            note={t('settings.countdownNote')}
             value={settings.countdownBeep}
-            onChange={(countdownBeep) => {
-              setSettings({ countdownBeep });
-              if (!countdownBeep) setCountdownOpen(false);
-            }}
+            onChange={(countdownBeep) => setSettings({ countdownBeep })}
           />
-          {/*
-            길이는 카운트다운을 켰을 때만 고른다. 꺼져 있는데 줄이 서 있으면 무엇의
-            길이인지 읽히지 않는다. 휠은 편집 화면의 세트 수와 같은 것을 쓴다.
-          */}
-          {settings.countdownBeep && (
-            <ValueRow
-              title={t('settings.countdownLength')}
-              display={t('settings.countdownSeconds', { n: countdownOf(settings) })}
-              open={countdownOpen}
-              onToggle={() => setCountdownOpen((v) => !v)}
-              wheel="count"
-              value={countdownOf(settings)}
-              onChange={(countdownSec) => setSettings({ countdownSec })}
-              min={1}
-              max={10}
-              unit={t('settings.countdownUnit')}
-              valueSize={17}
-              divider
-              chevron
-            />
-          )}
           {/* 소리·진동과 같은 갈래다 — 볼륨 아래 홀로 있던 것을 알림으로 들인다 */}
           <ToggleRow
             title={t('settings.push')}

@@ -40,6 +40,14 @@ export type Preset = {
    * 참으로 두면 08-21 이전과 똑같이 돈다.
    */
   skipLastSetRest?: boolean;
+  /**
+   * 구간이 끝나기 몇 초 전부터 카운트다운 틱을 울릴지 — 1~10, 없으면 3.
+   *
+   * 루틴마다 다르다. 무거운 세트를 내려놓고 다음 자세를 잡는 루틴에는 3초가
+   * 짧고, 20초 타바타에는 10초가 길다. 켜고 끄기는 설정(countdownBeep)이
+   * 앱 전체에 한 번, 길이는 여기서 루틴마다.
+   */
+  countdownSec?: number;
   rounds: number;
   roundRestSec: number;
   cooldownSec: number;
@@ -64,11 +72,6 @@ export type Settings = {
   notifications: boolean;
   vibration: boolean;
   countdownBeep: boolean;
-  /**
-   * 구간이 끝나기 몇 초 전부터 틱을 울릴지 — 1~10. 예전에는 3초로 못박혀 있었다.
-   * 무거운 세트를 내려놓고 다음 자세를 잡는 데 3초는 짧다는 사람이 있다.
-   */
-  countdownSec: number;
   keepScreenOn: boolean;
   volume: number;
   /**
@@ -86,7 +89,6 @@ export const DEFAULT_SETTINGS: Settings = {
   notifications: true,
   vibration: true,
   countdownBeep: true,
-  countdownSec: 3,
   keepScreenOn: false,
   volume: 0.8,
   duckMusic: false,

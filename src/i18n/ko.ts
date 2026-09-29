@@ -61,6 +61,9 @@ export const ko = {
   },
 
   edit: {
+    countdown: '카운트다운',
+    countdownSeconds: '{{n}}초',
+    countdownUnit: '초',
     titleRoutine: '루틴 편집',
     titleTimer: '타이머 편집',
     create: '만들기',
@@ -153,10 +156,7 @@ export const ko = {
     vibration: '진동',
     vibrationNote: '구간마다 다른 패턴으로 울립니다.',
     countdown: '구간 끝 카운트다운',
-    countdownNote: '각 구간이 끝나기 {{n}}초 전부터 짧은 틱이 울립니다.',
-    countdownLength: '카운트다운 길이',
-    countdownSeconds: '{{n}}초',
-    countdownUnit: '초',
+    countdownNote: '각 구간이 끝나기 전 짧은 틱이 울립니다. 길이는 루틴마다 정합니다.',
     push: '푸시 알림',
     pushNote: '앱이 완전히 멈춰도 구간 전환을 알려줍니다.',
     app: '앱',

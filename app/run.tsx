@@ -564,7 +564,7 @@ export default function Run() {
             title={title.rest}
             clock={clock(run.remain)}
             sub={subLabel(run.seg, preset)}
-            warn={!run.done && run.remain <= (settings.countdownBeep ? countdownOf(settings) : 3) && !run.paused}
+            warn={!run.done && run.remain <= (settings.countdownBeep ? countdownOf(preset) : 3) && !run.paused}
             paused={run.paused}
             syncKey={`${run.idx}:${run.syncId}`}
             onScrubStart={run.beginScrub}

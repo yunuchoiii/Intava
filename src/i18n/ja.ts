@@ -50,6 +50,9 @@ export const ja: Catalog = {
   },
 
   edit: {
+    countdown: 'カウントダウン',
+    countdownSeconds: '{{n}}秒',
+    countdownUnit: '秒',
     titleRoutine: 'ルーティンを編集',
     titleTimer: 'タイマーを編集',
     create: '作成',
@@ -135,10 +138,7 @@ export const ja: Catalog = {
     vibration: '振動',
     vibrationNote: '区間ごとに違うパターンで振動します。',
     countdown: '区間の終わりのカウントダウン',
-    countdownNote: '各区間の終わり{{n}}秒前から短く鳴ります。',
-    countdownLength: 'カウントダウンの長さ',
-    countdownSeconds: '{{n}}秒',
-    countdownUnit: '秒',
+    countdownNote: '各区間の終わりの前に短く鳴ります。長さはルーティンごとに決めます。',
     push: '通知',
     pushNote: 'アプリが完全に止まっても区間の切り替えを知らせます。',
     app: 'アプリ',
