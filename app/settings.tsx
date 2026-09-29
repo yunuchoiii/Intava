@@ -21,6 +21,7 @@ import { PressBox } from '../src/components/PressBox';
 import { BackIcon } from '../src/components/Icons';
 import { Screen } from '../src/components/Screen';
 import * as Application from 'expo-application';
+import Constants from 'expo-constants';
 import { preview } from '../src/audio';
 import { exportBackup, pickBackup } from '../src/backup';
 import { ExportSheet, type ExportPick } from '../src/components/ExportSheet';
@@ -82,7 +83,9 @@ function useAppVersion(): string {
   const b = Application.nativeBuildVersion;
   if (!v) return '—';
   if (store === null || store || !b) return v;
-  return `${v} (${b})`;
+  // 케이블 빌드는 번호가 늘 같아서(app.json의 2) 커밋 해시까지 붙인다 — app.config.js
+  const commit = Constants.expoConfig?.extra?.commit as string | undefined;
+  return commit ? `${v} (${b}) · ${commit}` : `${v} (${b})`;
 }
 
 export default function SettingsScreen() {
