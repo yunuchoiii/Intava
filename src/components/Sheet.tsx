@@ -1,8 +1,10 @@
 /**
  * 바텀시트 껍데기 — 배경 페이드인, 아래로 끌어 닫기.
  *
- * Modal의 slide 애니메이션은 시트만 움직이고 뒤 배경은 즉시 어두워진다.
- * 그래서 애니메이션을 직접 돌린다 — 배경은 서서히 깔리고, 시트는 스프링으로 올라온다.
+ * **Modal이 아니다.** 뿌리의 OverlayHost 위에 Portal로 올라가는 평범한 View다
+ * (Overlay.tsx에 왜 그런지 적어 두었다 — 가끔 화면 전체가 안 눌리던 것이 Modal의
+ * 잔여 레이어였다). 애니메이션은 직접 돌린다 — 배경은 서서히 깔리고, 시트는
+ * 스프링으로 올라온다.
  */
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,7 +12,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Animated,
   Keyboard,
-  Modal,
   Platform,
   Pressable,
   StyleSheet,
@@ -19,8 +20,9 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Portal } from './Overlay';
 import { dismissKeyboardOnEmptyTap } from './Screen';
 import { ABS, C, E3, RADIUS } from '../theme';
 
@@ -37,9 +39,9 @@ type Props = {
   /**
    * 시트가 화면에서 **완전히 내려간 뒤** 불린다.
    *
-   * 이어서 다른 시트를 열어야 할 때 이걸 기다린다. iOS는 한 화면이 동시에 두
-   * 모달을 띄우지 못해서, 닫는 것과 여는 것이 겹치면 뒤엣것이 아예 안 뜨고
-   * 앞엣것의 투명한 껍데기만 남아 화면 전체의 터치를 먹는다.
+   * 이어서 다른 시트를 열거나 화면을 옮길 때 이걸 기다린다. Modal이던 시절에는
+   * 겹치면 껍데기가 남아 화면이 먹통이 됐고, 지금은 그 위험은 없지만 내려가는
+   * 몸짓 위에 다른 것이 올라오면 어수선하다.
    */
   onClosed?: () => void;
   children: React.ReactNode;
@@ -131,7 +133,7 @@ export function Sheet({ visible, onClose, onClosed, children, style }: Props) {
     if (closing.current) return;
     closing.current = true;
     /*
-      키보드를 먼저 내린다. 글쓰기 칸에 초점이 남은 채로 Modal이 걷히면
+      키보드를 먼저 내린다. 글쓰기 칸에 초점이 남은 채로 시트가 걷히면
       first responder가 사라진 뷰를 가리킨 채 남아, 키보드만 떠 있거나 그 자리가
       안 눌리는 상태가 된다.
     */
@@ -142,14 +144,9 @@ export function Sheet({ visible, onClose, onClosed, children, style }: Props) {
   /**
    * 손잡이를 잡고 아래로 끌면 닫힌다.
    *
-   * **PanResponder로는 안 된다.** 시트는 Modal 안에 있는데, 그 안에서는 손이 닿는
-   * 것만 묻고(`onStartShouldSetResponder`) **움직임은 한 번도 묻지 않는다**
-   * (`onMoveShouldSetResponder`가 영영 안 불린다). 계측해 보니 raw `onTouchMove`가
-   * 서른 번 도착하는 동안 move 협상은 0번이었다 — 손짓의 주인을 정하는 협상이
-   * Modal 안에서 반쪽만 도는 것이고, 그래서 닫기 제스처가 통째로 죽어 있었다.
-   *
-   * gesture-handler는 그 협상을 거치지 않고 네이티브 제스처로 직접 잡는다. Modal은
-   * 별도의 뷰 계층이라 안쪽에 GestureHandlerRootView를 한 번 더 깔아야 인식된다.
+   * gesture-handler로 잡는다. Modal이던 시절 PanResponder의 move 협상이 그 안에서
+   * 돌지 않아 여기로 왔고, 이제 Modal은 아니지만 바꿀 이유가 없다 — 뿌리의
+   * GestureHandlerRootView 하나로 그대로 인식된다.
    *
    * 손잡이 자리에만 건다. 시트 몸통 전체에 걸면 안쪽 스크롤·휠 피커와 세로로 다툰다.
    */
@@ -183,9 +180,8 @@ export function Sheet({ visible, onClose, onClosed, children, style }: Props) {
   );
 
   return (
-    <Modal visible transparent animationType="none" onRequestClose={close}>
-      {/* Modal은 별도의 뷰 계층이라 제스처 뿌리를 여기 한 번 더 깐다 */}
-      <GestureHandlerRootView style={StyleSheet.absoluteFill}>
+    <Portal>
+      <View style={StyleSheet.absoluteFill}>
         <Animated.View style={[StyleSheet.absoluteFill, { opacity: anim }]}>
           <Pressable style={[StyleSheet.absoluteFill, styles.backdrop]} onPress={close} />
         </Animated.View>
@@ -224,8 +220,8 @@ export function Sheet({ visible, onClose, onClosed, children, style }: Props) {
             {children}
           </Animated.View>
         </View>
-      </GestureHandlerRootView>
-    </Modal>
+      </View>
+    </Portal>
   );
 }
 
