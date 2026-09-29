@@ -37,7 +37,7 @@ import { ValueRow } from '../src/components/ValueRow';
 import { t } from '../src/i18n';
 import { durationLong, durationShort } from '../src/engine/labels';
 import { totalSec, workSec } from '../src/engine/segments';
-import { useSessionStable } from '../src/session';
+import { countdownOf, useSessionStable } from '../src/session';
 import { emptyPreset, uid, useStore } from '../src/store';
 import { C, GUTTER, TABULAR } from '../src/theme';
 import { kindOf, type Block, type Preset } from '../src/types';
@@ -69,6 +69,7 @@ function fingerprint(p: Preset): string {
     p.skipLastSetRest !== false,
     p.blockRestSec,
     p.cooldownSec,
+    p.countdownSec ?? 3,
     p.blocks.map((b) => [b.id, b.name.trim(), b.workSec, b.restSec, b.sets, (b.memo ?? '').trim()]),
   ]);
 }
@@ -345,6 +346,25 @@ export default function Edit() {
     </>
   );
 
+  /**
+   * 구간 끝 카운트다운 — 루틴마다 1~10초. 시작·마무리와는 다른 이야기라 그 묶음
+   * 밖에 따로 선다. 켜고 끄기는 설정에서 앱 전체에 한 번이다.
+   */
+  const countdownRow = (
+    <ValueRow
+      title={t('edit.countdown')}
+      display={t('edit.countdownSeconds', { n: countdownOf(draft) })}
+      open={open === 'countdown'}
+      onToggle={() => toggleRow('countdown')}
+      wheel="count"
+      value={countdownOf(draft)}
+      onChange={(countdownSec) => patch({ countdownSec })}
+      min={1}
+      max={10}
+      unit={t('edit.countdownUnit')}
+    />
+  );
+
   return (
     <Screen>
       <View style={{ flex: 1, paddingTop: insets.top + 6 }}>
@@ -466,6 +486,7 @@ export default function Edit() {
                 </View>
               </Pressable>
               <Collapsible open={startEndOpen}>{startEndRows}</Collapsible>
+              {countdownRow}
             </>
           ) : (
             <>
@@ -563,6 +584,7 @@ export default function Edit() {
                 <InfoTip text={t('tips.startEnd')} {...toInfoTip(tip, setTip, 'startEnd')} />
               </View>
               {startEndRows}
+              {countdownRow}
             </>
           )}
 
