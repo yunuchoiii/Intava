@@ -19,6 +19,14 @@ const SCHEMA_VERSION = 1;
 const KEY_PRESETS = 'intava:presets';
 const KEY_SETTINGS = 'intava:settings';
 const KEY_RECORDS = 'intava:records';
+/**
+ * 마지막으로 저장한 루틴의 카운트다운 길이 — 새 루틴의 기본값이 된다.
+ *
+ * 카운트다운은 루틴마다 정하지만, 한 번 5초로 정한 사람은 다음 루틴도 5초를
+ * 바란다. 설정에 두면 「앱 전체에 하나」로 되돌아가므로(5ee98af에서 뺀 것)
+ * 설정과는 따로, 백업에도 싣지 않는 기기 값으로 둔다.
+ */
+const KEY_LAST_COUNTDOWN = 'intava:lastCountdown';
 
 type Envelope<T> = { version: number; data: T };
 
@@ -86,12 +94,14 @@ function seedPresets(): Preset[] {
   ];
 }
 
-export function emptyPreset(kind: 'routine' | 'timer'): Preset {
+/** 새 프리셋 — countdownSec은 마지막으로 저장한 값이 있으면 그것을 물려받는다 */
+export function emptyPreset(kind: 'routine' | 'timer', countdownSec?: number): Preset {
   const now = Date.now();
   return kind === 'timer'
     ? {
         id: uid(),
         kind: 'timer',
+        countdownSec,
         name: t('defaults.timerName'),
         warmupSec: 0,
         prepareSec: 10,
@@ -106,6 +116,7 @@ export function emptyPreset(kind: 'routine' | 'timer'): Preset {
     : {
         id: uid(),
         kind: 'routine',
+        countdownSec,
         name: t('defaults.routineName'),
         warmupSec: 0,
         prepareSec: 10,
@@ -123,6 +134,8 @@ type StoreValue = {
   ready: boolean;
   presets: Preset[];
   settings: Settings;
+  /** 마지막으로 저장한 루틴의 카운트다운 길이 — 없으면 아직 아무도 정하지 않은 것 */
+  lastCountdownSec?: number;
   getPreset: (id?: string) => Preset | undefined;
   savePreset: (p: Preset) => void;
   deletePreset: (id: string) => void;
@@ -146,6 +159,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [presets, setPresets] = useState<Preset[]>([]);
   const [settings, setSettingsState] = useState<Settings>(DEFAULT_SETTINGS);
   const [records, setRecords] = useState<WorkoutRecord[]>([]);
+  const [lastCountdownSec, setLastCountdownSec] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     let alive = true;
@@ -153,8 +167,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const stored = await load<Preset[] | null>(KEY_PRESETS, null);
       const s = await load<Settings>(KEY_SETTINGS, DEFAULT_SETTINGS);
       const rec = await load<WorkoutRecord[]>(KEY_RECORDS, []);
+      const cd = await load<number | null>(KEY_LAST_COUNTDOWN, null);
       if (!alive) return;
       setRecords(Array.isArray(rec) ? rec : []);
+      if (typeof cd === 'number') setLastCountdownSec(cd);
       if (stored === null) {
         const seeded = seedPresets();
         setPresets(seeded);
@@ -205,6 +221,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       ready,
       presets,
       settings,
+      lastCountdownSec,
       getPreset: (id?: string) => presets.find((p) => p.id === id),
       savePreset: (p: Preset) => {
         const next = { ...p, updatedAt: Date.now() };
@@ -213,6 +230,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             ? prev.map((x) => (x.id === p.id ? next : x))
             : [next, ...prev]
         );
+        // 직접 정한 값만 기억한다 — 옛 루틴의 「안 정함(3초)」이 정한 값을 덮으면 안 된다
+        if (p.countdownSec != null && p.countdownSec !== lastCountdownSec) {
+          setLastCountdownSec(p.countdownSec);
+          void save(KEY_LAST_COUNTDOWN, p.countdownSec);
+        }
       },
       deletePreset: (id: string) => persist((prev) => prev.filter((p) => p.id !== id)),
       records,
@@ -270,7 +292,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           return [...prev, ...fresh].sort((a, b) => b.startedAt - a.startedAt);
         }),
     }),
-    [ready, presets, settings, persist, records, persistRecords]
+    [ready, presets, settings, lastCountdownSec, persist, records, persistRecords]
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

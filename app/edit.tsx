@@ -91,11 +91,11 @@ export default function Edit() {
   const miniSpace = useMiniTimerSpace();
   const running = useTimerRunning();
   const session = useSessionStable();
-  const { getPreset, savePreset, settings, presets } = useStore();
+  const { getPreset, savePreset, settings, presets, lastCountdownSec } = useStore();
   const toast = useToast();
 
   const initial = useMemo(
-    () => getPreset(id) ?? emptyPreset(kind === 'timer' ? 'timer' : 'routine'),
+    () => getPreset(id) ?? emptyPreset(kind === 'timer' ? 'timer' : 'routine', lastCountdownSec),
     [] // eslint-disable-line react-hooks/exhaustive-deps
   );
   /**
