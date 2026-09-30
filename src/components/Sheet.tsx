@@ -44,11 +44,26 @@ type Props = {
    * 몸짓 위에 다른 것이 올라오면 어수선하다.
    */
   onClosed?: () => void;
+  /**
+   * 바깥(어두운 배경)을 누르면 닫히는가 — 기본은 닫힌다.
+   *
+   * 끄면 배경은 여전히 뒤 화면의 터치를 막되 아무 일도 하지 않는다. 손잡이를
+   * 끌어내리는 길은 그대로다 — 닫히지 않는 시트가 아니라, 스치는 것으로는
+   * 닫히지 않는 시트다.
+   */
+  dismissOnBackdrop?: boolean;
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
 };
 
-export function Sheet({ visible, onClose, onClosed, children, style }: Props) {
+export function Sheet({
+  visible,
+  onClose,
+  onClosed,
+  dismissOnBackdrop = true,
+  children,
+  style,
+}: Props) {
   const [mounted, setMounted] = useState(visible);
   const anim = useRef(new Animated.Value(0)).current; // 0 = 닫힘, 1 = 열림
   const drag = useRef(new Animated.Value(0)).current; // 손가락으로 끌어내린 거리
@@ -183,7 +198,10 @@ export function Sheet({ visible, onClose, onClosed, children, style }: Props) {
     <Portal>
       <View style={StyleSheet.absoluteFill}>
         <Animated.View style={[StyleSheet.absoluteFill, { opacity: anim }]}>
-          <Pressable style={[StyleSheet.absoluteFill, styles.backdrop]} onPress={close} />
+          <Pressable
+            style={[StyleSheet.absoluteFill, styles.backdrop]}
+            onPress={dismissOnBackdrop ? close : undefined}
+          />
         </Animated.View>
 
         <View
