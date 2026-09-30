@@ -52,6 +52,7 @@
     },
     "plugins": [
       "./plugins/withoutPushEntitlement",
+      "./plugins/withFreshPodResources",
       "expo-router",
       "expo-system-ui",
       [
