@@ -73,7 +73,14 @@ export function OverlayHost() {
 
 let seq = 0;
 
-/** 자식을 OverlayHost로 올린다. 내려가면(언마운트) 같이 걷힌다 */
+/**
+ * 자식을 OverlayHost로 올린다. 내려가면(언마운트) 같이 걷힌다.
+ *
+ * 자식은 effect에서 올라가므로 호스트에 그려지는 것은 부모 렌더의 **한 커밋 뒤**다.
+ * 보통은 보이지 않지만 제어 TextInput(`value`)은 이 한 박자에 걸린다 — RN이
+ * 옛 값을 네이티브에 되썼다가 새 값으로 다시 쓰는 왕복이 한글 조합을 끊는다.
+ * 시트 안의 글쓰기 칸은 `defaultValue`로 둔다(BlockSheet 참고).
+ */
 export function Portal({ children }: { children: React.ReactNode }) {
   const api = useContext(OverlayContext);
   if (!api) throw new Error('Portal used outside OverlayProvider');
