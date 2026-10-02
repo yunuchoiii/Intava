@@ -4,15 +4,15 @@
  * 항목 설명은 상주 텍스트가 아니라 제목 옆 ⓘ 툴팁이다.
  *
  * 행 안에 그대로 그리면 두 가지가 안 된다 — 뒤에 오는 행들이 위에 덮이고,
- * 화면 끝 행에서는 툴팁이 잘린다. 그래서 화면 위에 띄우고(Modal), 아이콘의
+ * 화면 끝 행에서는 툴팁이 잘린다. 그래서 화면 위에 띄우고(Overlay의 Portal), 아이콘의
  * 실제 위치를 재서 그 아래에 놓되 화면 밖으로 나가지 않게 가둔다.
  */
 import { BlurView } from 'expo-blur';
+import { Portal } from './Overlay';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  Modal,
   Pressable,
   StyleSheet,
   Text,
@@ -56,7 +56,9 @@ export function InfoTip({ text, open, onToggle }: Props) {
       /*
         Sheet와 같은 이유로 완주에 매달지 않는다. 닫힘이 끊기면 `mounted`가
         true로 굳고 `open`은 이미 false라 이 effect가 다시 돌지 않는다 —
-        투명한 전면 Modal이 남아 화면 전체의 터치를 삼킨다.
+        Modal이던 시절에는 투명한 전면 겹이 남아 화면 전체의 터치를 삼켰다.
+        지금은 Overlay 위의 View라 그럴 일은 없지만, 닫힘이 끊겨도 반드시 걷히게
+        두는 것은 그대로다.
       */
       let done = false;
       const drop = () => {
@@ -89,7 +91,8 @@ export function InfoTip({ text, open, onToggle }: Props) {
         <Text style={styles.i}>i</Text>
       </Pressable>
 
-      <Modal visible={mounted} transparent animationType="none" onRequestClose={onToggle}>
+      {mounted && (
+      <Portal>
         {/* 바깥을 누르면 닫힌다 */}
         <Pressable style={StyleSheet.absoluteFill} onPress={onToggle} />
         <Animated.View style={[styles.tip, { left, top, opacity: fade }, E3]}>
@@ -117,7 +120,8 @@ export function InfoTip({ text, open, onToggle }: Props) {
             </Text>
           </Pressable>
         </Animated.View>
-      </Modal>
+      </Portal>
+      )}
     </View>
   );
 }

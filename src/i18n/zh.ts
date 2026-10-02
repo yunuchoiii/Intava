@@ -50,6 +50,9 @@ export const zh: Catalog = {
   },
 
   edit: {
+    countdown: '倒计时',
+    countdownSeconds: '{{n}}秒',
+    countdownUnit: '秒',
     titleRoutine: '编辑循环',
     titleTimer: '编辑计时器',
     create: '创建',
@@ -134,8 +137,8 @@ export const zh: Catalog = {
     soundNote: '切换区间时发出提示音。',
     vibration: '振动',
     vibrationNote: '每个区间使用不同的振动模式。',
-    countdown: '最后3秒倒计时',
-    countdownNote: '每个区间结束前3秒发出短促提示。',
+    countdown: '倒计时',
+    countdownNote: '每个区间结束前发出短促提示。提前几秒在训练编辑中设置。',
     push: '通知',
     pushNote: '即使应用被完全停止，也会提示区间切换。',
     app: '应用',

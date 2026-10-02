@@ -462,8 +462,10 @@ function Row(props: RowProps) {
           }
         >
           <Text style={styles.name}>{block.name}</Text>
-          <Text style={[styles.summary, TABULAR]}>
+          {/* 메모는 요약 뒤에 잇는다 — 행 높이가 못 박혀 있어 줄을 늘릴 수 없다. 길면 메모 쪽이 잘린다 */}
+          <Text style={[styles.summary, TABULAR]} numberOfLines={1}>
             {blockSummary(block.workSec, block.restSec, block.sets)}
+            {block.memo?.trim() ? ` · ${block.memo.trim()}` : null}
           </Text>
         </Pressable>
       </View>

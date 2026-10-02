@@ -2,7 +2,7 @@
   "expo": {
     "name": "intava",
     "slug": "Intava",
-    "version": "1.3.0",
+    "version": "1.3.1",
     "scheme": "intava",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -52,6 +52,7 @@
     },
     "plugins": [
       "./plugins/withoutPushEntitlement",
+      "./plugins/withFreshPodResources",
       "expo-router",
       "expo-system-ui",
       [

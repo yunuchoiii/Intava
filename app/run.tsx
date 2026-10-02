@@ -26,7 +26,7 @@ import { Ring } from '../src/components/Ring';
 import { clock, isSimple, phaseLabel, ringTitle, segLabel, subLabel } from '../src/engine/labels';
 import { useMorph } from '../src/morph';
 import { ensurePermission } from '../src/notify';
-import { useSession } from '../src/session';
+import { countdownOf, useSession } from '../src/session';
 import { uid, useStore } from '../src/store';
 import { t } from '../src/i18n';
 import type { Block } from '../src/types';
@@ -564,7 +564,7 @@ export default function Run() {
             title={title.rest}
             clock={clock(run.remain)}
             sub={subLabel(run.seg, preset)}
-            warn={!run.done && run.remain <= 3 && !run.paused}
+            warn={!run.done && run.remain <= (settings.countdownBeep ? countdownOf(preset) : 3) && !run.paused}
             paused={run.paused}
             syncKey={`${run.idx}:${run.syncId}`}
             onScrubStart={run.beginScrub}

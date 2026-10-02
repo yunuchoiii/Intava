@@ -1,5 +1,5 @@
 /** 5.4 종목 편집 시트 — 하단 시트, 뒤 화면은 45% 어둡게 */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Keyboard,
   Pressable,
@@ -50,6 +50,21 @@ export function BlockSheet({
   const [alsoTimer, setAlsoTimer] = useState(false);
   const [nameFocused, setNameFocused] = useState(false);
   const [memoFocused, setMemoFocused] = useState(false);
+  /**
+   * 글쓰기 칸은 **비제어(defaultValue)** 다 — `value`를 주면 한글이 깨진다.
+   *
+   * 시트는 Portal을 거쳐 OverlayHost에 그려지는데, Portal은 자식을 effect에서
+   * 올려보내므로 여기서 setDraft한 값이 칸에 닿는 것은 **한 커밋 뒤**다. 그 사이
+   * RN의 TextInput은 제 손에 든 마지막 글자(lastNativeText)와 아직 옛것인 `value`가
+   * 다르다고 보고 옛 글자를 네이티브에 되쓴다 — 바로 다음 커밋에 새 글자로 다시
+   * 쓰지만, 그 왕복이 iOS 한글 조합(marked text)을 끊어 「하」가 「ㅎㅏ」가 된다.
+   * 영문은 왕복이 보이지 않아 멀쩡했다.
+   *
+   * 값은 onChangeText로만 받고, 칸을 비우는 것은 ref의 clear()로 직접 한다.
+   * 다른 종목을 열면 key가 바뀌어 새 defaultValue로 다시 붙는다.
+   */
+  const nameRef = useRef<TextInput>(null);
+  const memoRef = useRef<TextInput>(null);
   /**
    * 닫히는 동안 보여줄 값 — 부모가 block을 비워도 여기서는 붙잡고 있는다.
    *
@@ -115,7 +130,9 @@ export function BlockSheet({
             <Text style={styles.nameLabel}>{t('sheet.blockName')}</Text>
             <View style={styles.nameInputRow}>
               <TextInput
-                value={draft.name}
+                key={`name-${held.origin?.id}`}
+                ref={nameRef}
+                defaultValue={draft.name}
                 onChangeText={(name) => patch({ name })}
                 style={[styles.nameInput, { flex: 1 }]}
                 placeholder={t('sheet.blockNamePlaceholder')}
@@ -127,7 +144,12 @@ export function BlockSheet({
                 onBlur={() => setNameFocused(false)}
               />
               {nameFocused && draft.name.length > 0 && (
-                <ClearButton onPress={() => patch({ name: '' })} />
+                <ClearButton
+                  onPress={() => {
+                    nameRef.current?.clear();
+                    patch({ name: '' });
+                  }}
+                />
               )}
             </View>
           </View>
@@ -175,7 +197,9 @@ export function BlockSheet({
             {/* 이름칸과 같은 규칙 — 쓰는 중이면서 글자가 있을 때만 ✕가 선다 */}
             <View style={styles.memoInputRow}>
               <TextInput
-                value={draft.memo ?? ''}
+                key={`memo-${held.origin?.id}`}
+                ref={memoRef}
+                defaultValue={draft.memo ?? ''}
                 onChangeText={(memo) => patch({ memo })}
                 style={[styles.memoInput, { flex: 1 }]}
                 placeholder={t('sheet.memoPlaceholder')}
@@ -187,7 +211,12 @@ export function BlockSheet({
                 onBlur={() => setMemoFocused(false)}
               />
               {memoFocused && (draft.memo ?? '').length > 0 && (
-                <ClearButton onPress={() => patch({ memo: '' })} />
+                <ClearButton
+                  onPress={() => {
+                    memoRef.current?.clear();
+                    patch({ memo: '' });
+                  }}
+                />
               )}
             </View>
           </View>

@@ -57,6 +57,9 @@ export const en: Catalog = {
   },
 
   edit: {
+    countdown: 'Countdown',
+    countdownSeconds: '{{n}} sec',
+    countdownUnit: 'sec',
     titleRoutine: 'Edit routine',
     titleTimer: 'Edit timer',
     create: 'Create',
@@ -141,8 +144,8 @@ export const en: Catalog = {
     soundNote: 'Plays a cue when the segment changes.',
     vibration: 'Vibration',
     vibrationNote: 'A different pattern for each segment.',
-    countdown: 'Final 3-second countdown',
-    countdownNote: 'Short ticks for the last three seconds of every segment.',
+    countdown: 'Countdown',
+    countdownNote: 'Short ticks before each segment ends. How many seconds is set per routine.',
     push: 'Notifications',
     pushNote: 'Tells you about segment changes even if the app is fully stopped.',
     app: 'App',
