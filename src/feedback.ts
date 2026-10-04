@@ -93,11 +93,12 @@ export function selectionTick(s?: Settings): void {
  * Taptic 엔진이 덜 깬 채로 나간다. 천천히 돌리면 겨우, 빨리 돌리면 거의 안
  * 느껴져서 "휠에 햅틱이 없다"로 읽혔다.
  *
- * rigid 임팩트는 짧고 단단한 딸깍이라 칸마다 또렷이 끊긴다. (expo-haptics는
- * 세기를 받지 않는다 — 더 여리게 하려면 Light로 바꾸는 수밖에 없다.)
+ * heavy 임팩트로 쏜다. rigid도 써 봤지만 실기기(18 Pro)에서 selection과 구분이
+ * 안 될 만큼 여렸다 — rigid는 「단단한」 것이지 「센」 것이 아니다. expo-haptics는
+ * 세기(intensity)를 받지 않아 스타일로만 고를 수 있고, 그중 가장 묵직한 것이 heavy다.
  */
 export function wheelTick(): void {
-  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
+  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 }
 
 /**
