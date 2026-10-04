@@ -157,6 +157,11 @@ export type Session = RunSnapshot & {
    * 대신 id만 넘기고 완료 화면이 저장소에서 꺼내 보게 한다.
    */
   settle: () => { lived: Lived; recordId?: string };
+  /**
+   * 지금까지 **실제로 운동한** 초 — 멈춘 시간과 건너뛴 구간은 빠진다.
+   * 기록을 남기지 않고 읽기만 한다(settle과 달리).
+   */
+  livedSec: () => number;
   start: (presetId: string, orders?: RoundOrders, skips?: RoundSkips) => void;
   toggle: () => void;
   skipNext: () => void;
@@ -808,6 +813,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       }
       // 두 번 불려도 같은 기록을 가리킨다 — 완료 화면이 뒤늦게 물어도 답이 있다
       return { lived, recordId: recordedId.current };
+    },
+    livedSec: () => {
+      const s = storedRef.current;
+      const p = planRef.current;
+      if (!s || !p) return 0;
+      return advanceLived(s.lived, p, elapsedNow()).total;
     },
     toggle: () => {
       const s = storedRef.current;

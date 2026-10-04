@@ -54,6 +54,8 @@ const CONTROLS_GAP = 42;
 
 /** 「새로 만들기」로 붙이는 빈 종목 — 편집 화면의 기본값과 같다 */
 const NEW_EXTRA = { id: '', name: '', workSec: 30, restSec: 60, sets: 3 };
+/** 이보다 짧게 하고 끄면 완료 화면도 기록도 없이 닫는다 — 잘못 누른 것으로 본다 */
+const DISCARD_UNDER_SEC = 10;
 
 export default function Run() {
   const router = useRouter();
@@ -427,6 +429,16 @@ export default function Run() {
         text: t('run.exitConfirm'),
         style: 'destructive',
         onPress: () => {
+          /*
+            시작하자마자 끈 것은 운동이 아니다 — 잘못 눌렀거나 루틴을 잘못 골랐다.
+            완료 화면도 기록도 없이 그냥 닫는다. 재는 것은 벽시계가 아니라 실제로
+            운동한 시간이다: 3초 하고 멈춘 채 한참 두었다가 꺼도 남길 것이 없다.
+          */
+          if (run.livedSec() < DISCARD_UNDER_SEC) {
+            run.stop();
+            dismiss();
+            return;
+          }
           /*
             도중에 끄더라도 완료 화면을 지난다 — 여기까지 얼마나 했는지 보여주고,
             바꾼 종목 차례를 루틴에 남길지 묻는 자리가 거기다. 세션은 완료 화면이
