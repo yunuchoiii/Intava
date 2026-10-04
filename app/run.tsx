@@ -301,7 +301,7 @@ export default function Run() {
   const opened = useRef(false);
   useFocusEffect(
     useCallback(() => {
-      if (morph.dragging.current) return;
+      if (morph.held()) return;
       if (opened.current) {
         morph.set(0);
         return;
@@ -337,6 +337,7 @@ export default function Run() {
           // 아직 펼쳐지는 중일 수 있다 — 손가락이 값을 넘겨받는다
           morph.stop();
           morph.dragging.current = true;
+          morph.set(0); // 쥔 시각을 찍는다(held) — 값은 펼친 자리 그대로
         },
         // 손가락 이동은 화면 높이로 나눠 0~1로 읽는다 — 아래로 끌수록 1에 가까워진다
         onPanResponderMove: (_e, g) => morph.set(Math.max(0, Math.min(1, g.dy / screenH))),
