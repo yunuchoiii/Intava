@@ -79,25 +79,10 @@ export function countdownFeedback(s: Settings): void {
   if (s.vibration) void Haptics.selectionAsync();
 }
 
-/** 가벼운 선택감 — 칩·탭으로 고르는 것들 */
+/** 휠 피커 스냅 등 가벼운 선택감 */
 export function selectionTick(s?: Settings): void {
   if (s && !s.vibration) return;
   void Haptics.selectionAsync();
-}
-
-/**
- * 휠이 한 칸 지날 때 — 「드르륵」의 한 톨.
- *
- * 예전에는 selectionTick이었다. 그런데 iOS의 selection 햅틱은 가장 여린 것이고,
- * expo-haptics는 부를 때마다 생성기를 새로 만들어 prepare 직후 바로 쏘기 때문에
- * Taptic 엔진이 덜 깬 채로 나간다. 천천히 돌리면 겨우, 빨리 돌리면 거의 안
- * 느껴져서 "휠에 햅틱이 없다"로 읽혔다.
- *
- * rigid 임팩트는 짧고 단단한 딸깍이라 칸마다 또렷이 끊긴다. (expo-haptics는
- * 세기를 받지 않는다 — 더 여리게 하려면 Light로 바꾸는 수밖에 없다.)
- */
-export function wheelTick(): void {
-  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
 }
 
 /**

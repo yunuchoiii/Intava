@@ -14,7 +14,7 @@ import {
   View,
   type NativeScrollEvent,
 } from 'react-native';
-import { wheelTick } from '../feedback';
+import { selectionTick } from '../feedback';
 import { t } from '../i18n';
 import { C, TABULAR } from '../theme';
 
@@ -69,7 +69,7 @@ function Column({ items, index, onIndex, align, width }: ColumnProps) {
       if (clamped !== active) {
         setActive(clamped);
         // 한 칸 지날 때마다 한 번 — 손끝에 눈금이 지나가는 느낌을 만든다
-        wheelTick();
+        selectionTick();
       }
     },
     [active, items.length]
@@ -85,7 +85,7 @@ function Column({ items, index, onIndex, align, width }: ColumnProps) {
   const pick = useCallback(
     (i: number) => {
       if (i === active) return;
-      wheelTick();
+      selectionTick();
       programmatic.current = true;
       ref.current?.scrollTo({ y: i * ITEM_H, animated: true });
       onIndex(i);
