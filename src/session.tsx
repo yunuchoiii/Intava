@@ -138,6 +138,18 @@ export type Session = RunSnapshot & {
    * 운동 중에 고친 것은 이것으로 덮이므로 「고쳤다」 표시도 내린다.
    */
   adopt: (p: Preset) => void;
+  /** 「운동 더 하기」로 덧붙인 종목 — 계획의 꼬리. 루틴의 종목과 따로 산다 */
+  extras: Block[];
+  /**
+   * 종목 하나를 고친다 — 루틴의 종목이면 사본에(편집 표시도 켠다), 덧붙인 종목이면
+   * 꼬리에 넣는다. 덧붙인 종목은 루틴에 남기지 않으므로 편집 표시를 켜지 않는다.
+   */
+  editBlock: (b: Block) => void;
+  /**
+   * 덧붙인 종목의 차례를 새로 정한다 — ids는 꼬리 **전체**다. 이미 지났거나 하고
+   * 있는 앞자리는 부르는 쪽(순서 시트)이 잠가 둔다.
+   */
+  reorderExtras: (ids: string[]) => void;
   plan: Plan | null;
   total: number;
   next: Segment | undefined;
@@ -251,6 +263,9 @@ const EMPTY: RunSnapshot = {
   paused: false,
   done: false,
 };
+
+/** 덧붙인 종목이 없을 때 — 매번 새 배열이면 받는 쪽 메모가 매 초 깨진다 */
+const NO_EXTRAS: Block[] = [];
 
 const SessionContext = createContext<Session | null>(null);
 
@@ -767,6 +782,26 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       if (!s) return;
       persist({ ...s, preset: p, edited: true });
     },
+    editBlock: (b: Block) => {
+      const s = storedRef.current;
+      const p = presetRef.current;
+      if (!s || !p) return;
+      if (p.blocks.some((x) => x.id === b.id)) {
+        persist({ ...s, preset: { ...p, blocks: p.blocks.map((x) => (x.id === b.id ? b : x)) }, edited: true });
+      } else if (s.extras?.some((x) => x.id === b.id)) {
+        persist({ ...s, extras: s.extras.map((x) => (x.id === b.id ? b : x)) });
+      }
+    },
+    reorderExtras: (ids: string[]) => {
+      const s = storedRef.current;
+      if (!s?.extras) return;
+      const byId = new Map(s.extras.map((b) => [b.id, b]));
+      const next = ids.map((id) => byId.get(id)).filter((b) => !!b);
+      // 모자라거나 남는 것이 있으면 손대지 않는다 — 덧붙인 종목이 사라지면 안 된다
+      if (next.length !== s.extras.length) return;
+      persist({ ...s, extras: next });
+      void reschedule();
+    },
     adopt: (p: Preset) => {
       const s = storedRef.current;
       if (!s || s.presetId !== p.id) return;
@@ -1039,6 +1074,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     ...snap,
     preset,
     edited: !!stored?.edited,
+    extras: stored?.extras ?? NO_EXTRAS,
     plan,
     total: plan?.total ?? 0,
     next: plan?.segs[snap.idx + 1],
@@ -1054,7 +1090,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     roundSkips: edit.skip,
     lockedCount: edit.locked,
     ...controls,
-  }), [snap, preset, stored?.edited, plan, syncId, restoredFromStorage, stored?.orders, stored?.skips, edit, controls]);
+  }), [snap, preset, stored?.edited, stored?.extras, plan, syncId, restoredFromStorage, stored?.orders, stored?.skips, edit, controls]);
 
   const stable = useMemo<SessionStable>(
     () => ({

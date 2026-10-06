@@ -37,6 +37,8 @@ type Props = {
   skipped: string[];
   onReorder: (ids: string[]) => void;
   onSkipped: (ids: string[]) => void;
+  /** 체크로 뺄 수 있는 종목인가 — 덧붙인 종목은 빼는 대상이 아니다(라운드에 속하지 않는다) */
+  canSkip?: (block: Block) => boolean;
   /** 행을 눌렀다 — 그 종목을 고치는 시트를 연다 */
   onEdit: (block: Block) => void;
   /** 완전히 내려간 뒤 — 미뤄둔 일을 여기서 처리한다 (RunMoreSheet와 같은 규칙) */
@@ -52,6 +54,7 @@ export function OrderSheet({
   onReorder,
   onSkipped,
   onEdit,
+  canSkip,
   onClosed,
 }: Props) {
   const insets = useSafeAreaInsets();
@@ -99,7 +102,9 @@ export function OrderSheet({
             "운동을 그만두겠다"는 뜻이라면 그 길은 ✕이지 이 체크박스가 아니다.
             도로 넣는 것은 언제나 된다.
           */
-          canToggleSkip={(b) => skipped.includes(b.id) || remaining.length > 1}
+          canToggleSkip={(b) =>
+            canSkip?.(b) !== false && (skipped.includes(b.id) || remaining.length > 1)
+          }
         />
       </ScrollView>
 

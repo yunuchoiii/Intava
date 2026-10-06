@@ -74,7 +74,7 @@ export default function Run() {
   }, []);
   /** 손가락이 처음 닿은 높이 — gestureState.y0는 붙잡은 뒤에야 채워져서 판단에 쓸 수 없다 */
   const grabY = useRef(0);
-  const { settings, presets } = useStore();
+  const { settings, presets, savePreset } = useStore();
   const run = useSession();
   const preset = run.preset;
   const [ordering, setOrdering] = useState(false);
@@ -98,6 +98,15 @@ export default function Run() {
    * 저장될 때 넘어가는 객체가 갈리고 시트가 고치던 값을 처음으로 되돌린다.
    */
   const [editing, setEditing] = useState<Block | null>(null);
+  /**
+   * 「더 할게요 → 새로 만들기」로 만드는 종목 — 설정을 마친 뒤에 붙인다.
+   *
+   * 예전에는 기본값(30초·3세트) 종목을 그 자리에서 붙이고 「붙인 뒤 링 위 이름을
+   * 눌러 고치라」고 했는데, 붙이는 순간 곧장 시작돼서 고칠 새가 없었다.
+   */
+  const [newExtra, setNewExtra] = useState<Block | null>(null);
+  /** 그 시트가 「완료」로 닫혔는지 — 아니면 「완료할까요?」를 다시 묻는다 */
+  const extraAdded = useRef(false);
   /** 「더보기」에서 고른 것 — 시트가 다 내려간 뒤에 실행한다 */
   const pending = useRef<'order' | 'skip' | 'extra' | 'finish' | null>(null);
   /**
@@ -112,7 +121,8 @@ export default function Run() {
    * PanResponder가 새로 만들어져 쥐고 있던 손짓이 끊긴다.
    */
   const sheetUp = useRef(false);
-  sheetUp.current = ordering || more || editing != null || asking || addingExtra;
+  sheetUp.current =
+    ordering || more || editing != null || asking || addingExtra || newExtra != null;
   useEffect(() => {
     void ensurePermission();
   }, []);
@@ -184,14 +194,27 @@ export default function Run() {
   /** 그중 지금 자리. 다 끝났으면 끝을 가리킨다 */
   const cursor = run.seg ? (stageOf[run.idx] ?? -1) : stages.length;
 
-  /** 순서 시트에 늘어놓을 종목 — 손댈 수 있는 라운드의 차례대로 */
-  const orderBlocks = useMemo(
+  /**
+   * 순서 시트에 늘어놓을 종목 — 손댈 수 있는 라운드의 차례대로, 그 뒤에 덧붙인 종목.
+   *
+   * 덧붙인 종목은 라운드가 다 끝난 뒤에만 생기므로, 그때 라운드의 종목은 전부 지난
+   * 것이다. 그래서 굳은 자리는 「라운드 전부 + 덧붙인 것 중 지났거나 하고 있는 것」이다.
+   * 예전에는 덧붙인 종목이 이 목록에 아예 없어서 운동 중에 고칠 길이 없었다.
+   */
+  const roundBlocks = useMemo(
     () =>
       run.roundOrder
         .map((id) => preset?.blocks.find((b) => b.id === id))
         .filter((b) => !!b),
     [run.roundOrder, preset]
   );
+  const orderBlocks = useMemo(() => [...roundBlocks, ...run.extras], [roundBlocks, run.extras]);
+  const extraAt = run.extras.findIndex((b) => b.id === run.seg?.blockId);
+  const orderLocked =
+    run.extras.length === 0
+      ? run.lockedCount
+      : roundBlocks.length +
+        (extraAt >= 0 ? extraAt + 1 : !run.seg || run.seg.phase === 'COOLDOWN' ? run.extras.length : 0);
 
   useEffect(() => {
     if (!settings.keepScreenOn) return;
@@ -553,7 +576,11 @@ export default function Run() {
               */
               <View style={styles.nameAbove}>
                 <PressBox
-                  onPress={() => setEditing(preset.blocks.find((b) => b.id === run.seg?.blockId) ?? null)}
+                  onPress={() =>
+                    setEditing(
+                      [...preset.blocks, ...run.extras].find((b) => b.id === run.seg?.blockId) ?? null
+                    )
+                  }
                   haptic="tap"
                   scaleTo={0.96}
                   dim={0}
@@ -742,10 +769,8 @@ export default function Run() {
         canDelete={false}
         onClose={() => setEditing(null)}
         onSave={(b) => {
-          run.editPreset({
-            ...preset,
-            blocks: preset.blocks.map((x) => (x.id === b.id ? b : x)),
-          });
+          // 루틴의 종목이면 사본에, 덧붙인 종목이면 꼬리에 들어간다
+          run.editBlock(b);
           setEditing(null);
         }}
         onDelete={() => setEditing(null)}
@@ -788,11 +813,18 @@ export default function Run() {
         timers={presets.filter((p) => isSimple(p))}
         blocks={preset.blocks}
         blocksTitle={t('run.moreFromRoutine')}
-        onClose={() => setAddingExtra(false)}
+        onClose={() => {
+          setAddingExtra(false);
+          // 고르지 않고 닫았다 — 끝난 자리에 시트 없이 남지 않게 「완료할까요?」로 돌아간다
+          requestAnimationFrame(() => setAsking(true));
+        }}
         onCreateNew={() => {
           setAddingExtra(false);
-          // 빈 종목을 붙이고, 값은 붙인 뒤 링 위의 이름을 눌러 고친다
-          run.addExtra({ ...NEW_EXTRA, id: uid(), name: t('defaults.block') });
+          // 붙이기 전에 값부터 정한다 — 편집 화면에서 종목을 더할 때와 같은 시트다
+          extraAdded.current = false;
+          requestAnimationFrame(() =>
+            setNewExtra({ ...NEW_EXTRA, id: uid(), name: t('defaults.block') })
+          );
         }}
         onPickTimer={(block) => {
           setAddingExtra(false);
@@ -806,11 +838,54 @@ export default function Run() {
         onClose={() => setOrdering(false)}
         onClosed={askIfPending}
         blocks={orderBlocks}
-        lockedCount={run.lockedCount}
         skipped={run.roundSkips}
-        onReorder={run.reorder}
+        lockedCount={orderLocked}
+        onReorder={(ids) => {
+          const tail = new Set(run.extras.map((b) => b.id));
+          run.reorder(ids.filter((id) => !tail.has(id)));
+          if (tail.size) run.reorderExtras(ids.filter((id) => tail.has(id)));
+        }}
         onSkipped={run.setSkipped}
+        canSkip={(b) => !run.extras.some((x) => x.id === b.id)}
         onEdit={setEditing}
+      />
+
+      {/*
+        「더 할게요 → 새로 만들기」 — 값을 정하고 「완료」를 눌러야 붙는다.
+        닫기만 하면 아무것도 붙지 않고 「완료할까요?」로 돌아간다.
+      */}
+      <BlockSheet
+        block={newExtra}
+        isNew
+        canDelete={false}
+        onClose={() => setNewExtra(null)}
+        onSave={(b, alsoTimer) => {
+          extraAdded.current = true;
+          run.addExtra(b);
+          // 편집 화면과 같은 규칙 — 체크했으면 같은 값으로 타이머도 하나 남긴다
+          if (alsoTimer) {
+            const now = Date.now();
+            savePreset({
+              id: uid(),
+              kind: 'timer',
+              name: b.name,
+              warmupSec: 0,
+              prepareSec: 10,
+              blocks: [{ ...b, id: uid() }],
+              blockRestSec: 30,
+              rounds: 1,
+              roundRestSec: 90,
+              cooldownSec: 0,
+              createdAt: now,
+              updatedAt: now,
+            });
+          }
+          setNewExtra(null);
+        }}
+        onDelete={() => setNewExtra(null)}
+        onClosed={() => {
+          if (!extraAdded.current) setAsking(true);
+        }}
       />
     </>
   );
