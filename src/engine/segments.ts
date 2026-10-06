@@ -290,6 +290,17 @@ export function advanceLived(lived: Lived | undefined, plan: Plan, to: number): 
   };
 }
 
+/**
+ * 지나온 셈을 시간축에서 통째로 옮긴다 — 실행 중 편집으로 지금 자리 앞이 늘거나
+ * 줄었을 때. 0 밑으로 밀린 몫은 잘라낸다.
+ */
+export function shiftLived(lived: Lived, by: number): Lived {
+  const spans = livedSpans(lived)
+    .map(([a, b]): Span => [Math.max(0, a + by), Math.max(0, b + by)])
+    .filter(([a, b]) => b > a);
+  return { ...lived, at: Math.max(0, lived.at + by), spans };
+}
+
 /** offset(초)이 속한 구간. 전체가 끝났으면 null */
 export function segmentAt(plan: Plan, elapsed: number): { seg: Segment; idx: number } | null {
   for (let i = 0; i < plan.segs.length; i++) {

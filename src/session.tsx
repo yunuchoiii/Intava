@@ -36,6 +36,7 @@ import {
   buildPlan,
   livedSpans,
   segmentAt,
+  shiftLived,
   summarizeLived,
   NO_LIVED,
   type Lived,
@@ -59,6 +60,20 @@ export function countdownOf(p: { countdownSec?: number } | null | undefined): nu
 
 type Stored = {
   presetId: string;
+  /**
+   * 이 실행이 도는 루틴 — **시작할 때 베껴 둔 사본이다.** 저장소의 루틴을 따라가지 않는다.
+   *
+   * 예전에는 저장소의 루틴을 그대로 읽어서, 편집 화면에서 고치는 족족 지금 하던
+   * 운동까지 발밑에서 바뀌었다. 이제 둘은 따로 간다.
+   *   · 운동 중 편집(더보기 → 운동 및 순서 편집)은 이 사본만 고친다 — 루틴에 남길지는
+   *     완료 화면에서 묻는다.
+   *   · 편집 화면은 루틴만 고친다 — 지금 운동에도 반영할지는 나갈 때 묻는다(adopt).
+   *
+   * 없으면(이 필드가 생기기 전에 시작한 세션) 저장소의 루틴으로 메운다.
+   */
+  preset?: Preset;
+  /** 운동 중에 사본을 고쳤는가 — 완료 화면이 루틴에 저장할지 물을 근거다 */
+  edited?: boolean;
   zeroAt: number;
   /**
    * 진짜로 시작한 벽시계 시각 — 기록의 "오전 7:18 시작"이 이것이다.
@@ -109,8 +124,20 @@ export type RunSnapshot = {
 };
 
 export type Session = RunSnapshot & {
-  /** 실행 중인 프리셋 — 없으면 세션이 없다 */
+  /** 실행 중인 프리셋(이 실행의 사본) — 없으면 세션이 없다 */
   preset: Preset | null;
+  /** 운동 중에 사본을 고쳤는가 — 완료 화면이 루틴에 남길지 묻는다 */
+  edited: boolean;
+  /**
+   * 운동 중 편집 — 이 실행의 사본만 고친다. 저장소의 루틴은 그대로다.
+   * 지금 하던 자리는 계획이 다시 펴질 때 정체로 되찾는다.
+   */
+  editPreset: (p: Preset) => void;
+  /**
+   * 편집 화면에서 고친 루틴을 지금 운동에도 반영한다 — 사본을 통째로 갈아 끼운다.
+   * 운동 중에 고친 것은 이것으로 덮이므로 「고쳤다」 표시도 내린다.
+   */
+  adopt: (p: Preset) => void;
   plan: Plan | null;
   total: number;
   next: Segment | undefined;
@@ -162,7 +189,13 @@ export type Session = RunSnapshot & {
    * 기록을 남기지 않고 읽기만 한다(settle과 달리).
    */
   livedSec: () => number;
-  start: (presetId: string, orders?: RoundOrders, skips?: RoundSkips) => void;
+  /**
+   * id가 아니라 **루틴 자체**를 받는다 — 이것을 베껴 이 실행의 사본으로 삼는다.
+   * 편집 화면은 저장 직후 곧장 시작하는데, 그때 저장소는 아직 옛 값이라 id로
+   * 찾으면 방금 고친 것이 아니라 그 전 것이 돈다. edited는 완료 화면의 「다시
+   * 하기」가 고친 사본을 이어받을 때 쓴다.
+   */
+  start: (preset: Preset, orders?: RoundOrders, skips?: RoundSkips, edited?: boolean) => void;
   toggle: () => void;
   skipNext: () => void;
   skipPrev: () => void;
@@ -238,6 +271,7 @@ export type SessionStable = {
   restoredFromStorage: boolean;
   start: Session['start'];
   stop: Session['stop'];
+  adopt: Session['adopt'];
 };
 
 const StableContext = createContext<SessionStable | null>(null);
@@ -254,10 +288,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   storedRef.current = stored;
 
   const preset = useMemo(
-    () => presets.find((p) => p.id === stored?.presetId) ?? null,
-    [presets, stored?.presetId]
+    () => stored?.preset ?? presets.find((p) => p.id === stored?.presetId) ?? null,
+    [presets, stored?.preset, stored?.presetId]
   );
-  /** 프리셋 내용이 바뀌면 구간을 다시 편다 — 실행 중 편집을 위해 updatedAt까지 본다 */
+  /** 사본이 바뀌면(운동 중 편집·adopt) 구간을 다시 편다 */
   const plan = useMemo(
     () => (preset ? buildPlan(preset, stored?.orders, stored?.skips, stored?.extras) : null),
     [preset, stored?.orders, stored?.skips, stored?.extras]
@@ -528,7 +562,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           const offset = Math.min(oldElapsed - found.seg.start, Math.max(0, match.dur - 0.05));
           const next = match.start + offset;
           if (Math.abs(next - oldElapsed) >= 0.01) {
-            persist({ ...s, zeroAt: at - next * 1000 });
+            /*
+              지나온 셈(lived)도 같은 만큼 옮긴다. 셈은 시간축 위의 자리로 적혀 있어서,
+              앞 종목에 세트를 하나 더하면 지금 자리는 뒤로 밀리는데 셈은 옛 자리에
+              남는다 — 다음 정산에서 그 사이를 통째로 「운동했다」로 센다.
+            */
+            persist({
+              ...s,
+              zeroAt: at - next * 1000,
+              lived: s.lived && shiftLived(s.lived, next - oldElapsed),
+            });
             setSyncId((n) => n + 1);
           }
         }
@@ -698,17 +741,36 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   editRef.current = edit;
 
   const controls = useMemo(() => ({
-    start: (presetId: string, orders?: RoundOrders, skips?: RoundSkips) => {
+    start: (preset: Preset, orders?: RoundOrders, skips?: RoundSkips, edited?: boolean) => {
       lastIdx.current = -1;
       lastTick.current = '';
       doneFired.current = false;
       recorded.current = false;
       recordedId.current = undefined;
-      markRun(presetId);
-      // 완료 화면의 "다시 하기"는 방금 돌던 구성을 그대로 물려받는다 — 차례도, 뺀 것도
+      markRun(preset.id);
+      // 완료 화면의 "다시 하기"는 방금 돌던 구성을 그대로 물려받는다 — 차례도, 뺀 것도, 고친 것도
       const now = Date.now();
-      persist({ presetId, zeroAt: now, startedAt: now, pausedAt: null, orders, skips });
+      persist({
+        presetId: preset.id,
+        preset,
+        edited: edited || undefined,
+        zeroAt: now,
+        startedAt: now,
+        pausedAt: null,
+        orders,
+        skips,
+      });
       setSyncId((n) => n + 1);
+    },
+    editPreset: (p: Preset) => {
+      const s = storedRef.current;
+      if (!s) return;
+      persist({ ...s, preset: p, edited: true });
+    },
+    adopt: (p: Preset) => {
+      const s = storedRef.current;
+      if (!s || s.presetId !== p.id) return;
+      persist({ ...s, preset: p, edited: undefined });
     },
     /**
      * 남은 차례를 바꾼다 — 시간은 건드리지 않는다.
@@ -976,6 +1038,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<Session>(() => ({
     ...snap,
     preset,
+    edited: !!stored?.edited,
     plan,
     total: plan?.total ?? 0,
     next: plan?.segs[snap.idx + 1],
@@ -991,7 +1054,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     roundSkips: edit.skip,
     lockedCount: edit.locked,
     ...controls,
-  }), [snap, preset, plan, syncId, restoredFromStorage, stored?.orders, stored?.skips, edit, controls]);
+  }), [snap, preset, stored?.edited, plan, syncId, restoredFromStorage, stored?.orders, stored?.skips, edit, controls]);
 
   const stable = useMemo<SessionStable>(
     () => ({
@@ -1000,6 +1063,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       restoredFromStorage,
       start: controls.start,
       stop: controls.stop,
+      adopt: controls.adopt,
     }),
     [preset, snap.done, restoredFromStorage, controls]
   );

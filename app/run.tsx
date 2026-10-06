@@ -74,7 +74,7 @@ export default function Run() {
   }, []);
   /** 손가락이 처음 닿은 높이 — gestureState.y0는 붙잡은 뒤에야 채워져서 판단에 쓸 수 없다 */
   const grabY = useRef(0);
-  const { settings, savePreset, presets } = useStore();
+  const { settings, presets } = useStore();
   const run = useSession();
   const preset = run.preset;
   const [ordering, setOrdering] = useState(false);
@@ -219,6 +219,8 @@ export default function Run() {
       full: run.done ? '1' : '',
       orders: run.orders ? JSON.stringify(run.orders) : '',
       skips: run.skips ? JSON.stringify(run.skips) : '',
+      // 운동 중에 고친 사본 — 완료 화면이 루틴에 남길지 묻고, 「다시 하기」가 이어받는다
+      edited: run.edited ? JSON.stringify(preset) : '',
     };
   };
 
@@ -729,16 +731,20 @@ export default function Run() {
         떨어진다(session.tsx의 정체 되찾기가 못 찾는 경우가 이것이다). 이번
         판에서만 빼려면 「더보기 → 종목 넘기기」가 있고, 루틴에서 아주 지우는
         것은 편집 화면(연필)의 일이다.
+
+        고친 것은 **이 운동에만** 들어간다(세션의 사본). 루틴에 남길지는 운동을
+        마친 뒤 완료 화면에서 묻는다 — 해보기 전에는 좋은 값인지 모른다.
+        링 위 이름을 눌러도, 「운동 및 순서 편집」에서 종목을 눌러도 여기로 온다.
+        순서 시트 위에 겹쳐 뜬다 — 시트는 Modal이 아니라 Portal이라 겹쳐도 된다.
       */}
       <BlockSheet
         block={editing}
         canDelete={false}
         onClose={() => setEditing(null)}
         onSave={(b) => {
-          savePreset({
+          run.editPreset({
             ...preset,
             blocks: preset.blocks.map((x) => (x.id === b.id ? b : x)),
-            updatedAt: Date.now(),
           });
           setEditing(null);
         }}
@@ -804,6 +810,7 @@ export default function Run() {
         skipped={run.roundSkips}
         onReorder={run.reorder}
         onSkipped={run.setSkipped}
+        onEdit={setEditing}
       />
     </>
   );

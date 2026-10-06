@@ -1,5 +1,9 @@
 /**
- * 실행 중 종목 — 남은 차례를 바꾸고, 오늘 안 할 것을 뺀다.
+ * 운동 및 순서 편집 — 실행 중에 종목을 고치고, 남은 차례를 바꾸고, 오늘 안 할 것을 뺀다.
+ *
+ * 행을 누르면 그 종목의 이름·운동·휴식·세트·메모를 고친다(편집 화면과 같은 시트).
+ * 고친 것은 **이 운동에만** 들어가고 루틴은 그대로다 — 남길지는 완료 화면이 묻는다.
+ * 지나간 종목도 고칠 수 있다. 이번 운동에는 이미 지났지만 루틴에 남길 값일 수 있다.
  *
  * 지나간 종목과 지금 하고 있는 종목은 위에 흐리게 굳어 있다. 세션은 흐른 시간을
  * 구간 배열에 대입해 지금 자리를 찾기 때문에, 지나간 배치가 바뀌면 그 자리가
@@ -33,6 +37,8 @@ type Props = {
   skipped: string[];
   onReorder: (ids: string[]) => void;
   onSkipped: (ids: string[]) => void;
+  /** 행을 눌렀다 — 그 종목을 고치는 시트를 연다 */
+  onEdit: (block: Block) => void;
   /** 완전히 내려간 뒤 — 미뤄둔 일을 여기서 처리한다 (RunMoreSheet와 같은 규칙) */
   onClosed?: () => void;
 };
@@ -45,6 +51,7 @@ export function OrderSheet({
   skipped,
   onReorder,
   onSkipped,
+  onEdit,
   onClosed,
 }: Props) {
   const insets = useSafeAreaInsets();
@@ -82,6 +89,7 @@ export function OrderSheet({
           blocks={blocks}
           lockedCount={lockedCount}
           onDragActive={setDragging}
+          onPress={onEdit}
           autoScroll={auto}
           onReorder={(next) => onReorder(next.map((b) => b.id))}
           skipped={skipped}

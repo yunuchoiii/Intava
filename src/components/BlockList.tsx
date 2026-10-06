@@ -39,7 +39,7 @@ const LONG_PRESS_MS = 280;
 
 type Props = {
   blocks: Block[];
-  /** 없으면 행은 눌리지 않는다 — 실행 중 순서 시트에는 열어볼 편집 화면이 없다 */
+  /** 없으면 행은 눌리지 않는다 */
   onPress?: (block: Block) => void;
   onReorder: (next: Block[]) => void;
   /** 끌고 있는 동안 부모 스크롤을 멈추기 위한 신호 */
