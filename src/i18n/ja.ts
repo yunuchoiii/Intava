@@ -188,6 +188,10 @@ export const ja: Catalog = {
     moreTitle: 'その他',
     skipBlock: 'この種目をスキップ',
     skipBlockNote: '残りのセットを飛ばして次の休憩へ進みます。',
+    /** 다음 버튼을 꾹 눌렀을 때 */
+    skipBlockTitle: '今の種目をスキップしますか？',
+    skipBlockBody: '{{name}} — 残りのセットを飛ばして次の休憩へ進みます。',
+    skipBlockConfirm: 'スキップ',
     orderTitle: '種目と順番の編集',
     orderNote: 'タップで編集、長押しで移動、チェックを外すと除外。今回のワークアウトだけに反映されます。',
     /** 운동 및 순서 편집 — 지금 하는 종목 이름 옆 꼬리표 */

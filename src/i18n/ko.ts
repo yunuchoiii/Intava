@@ -210,6 +210,10 @@ export const ko = {
     moreTitle: '더보기',
     skipBlock: '지금 종목 넘기기',
     skipBlockNote: '남은 세트를 건너뛰고 다음 휴식으로 갑니다.',
+    /** 다음 버튼을 꾹 눌렀을 때 */
+    skipBlockTitle: '지금 종목을 넘길까요?',
+    skipBlockBody: '{{name}} — 남은 세트를 건너뛰고 다음 휴식으로 갑니다.',
+    skipBlockConfirm: '넘기기',
     /** 실행 중 종목 순서 시트 */
     orderTitle: '운동 및 순서 편집',
     orderNote: '누르면 고치고, 꾹 눌러 옮기고, 체크를 끄면 뺍니다. 이번 운동에만 적용됩니다.',

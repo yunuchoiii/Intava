@@ -25,6 +25,7 @@ import { PhaseFlood } from '../src/components/PhaseFlood';
 import { Ring } from '../src/components/Ring';
 import { clock, isSimple, phaseLabel, ringTitle, segLabel, subLabel } from '../src/engine/labels';
 import { useMorph } from '../src/morph';
+import { commitTick } from '../src/feedback';
 import { ensurePermission } from '../src/notify';
 import { countdownOf, useSession } from '../src/session';
 import { uid, useStore } from '../src/store';
@@ -461,6 +462,19 @@ export default function Run() {
     });
   };
 
+  /** 다음 버튼을 꾹 — 지금 종목을 넘길지 이름을 대고 묻는다 */
+  const askSkipBlock = () => {
+    commitTick();
+    Alert.alert(
+      t('run.skipBlockTitle'),
+      t('run.skipBlockBody', { name: title.name ?? run.seg?.name ?? '' }),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('run.skipBlockConfirm'), onPress: run.skipBlock },
+      ]
+    );
+  };
+
   const confirmExit = () => {
     Alert.alert(t('run.exitTitle'), t('run.exitBody'), [
       { text: t('run.exitContinue'), style: 'cancel' },
@@ -648,7 +662,17 @@ export default function Run() {
               <MainGlyph color={color} paused={run.paused} />
             </PressBox>
 
-            <ControlButton label={segLabel(run.next, run.seg, preset)} onPress={run.skipNext}>
+            {/*
+              꾹 누르면 지금 종목을 통째로 넘길지 묻는다 — 더보기 → 「지금 종목 넘기기」와
+              같은 일이다. 운동 중에 시트를 두 겹 여는 것보다 손이 이미 가 있는 버튼이
+              가깝다. 넘길 종목이 없는 자리(웜업·준비·쿨다운, 휴식 중)에서는 아무 일도
+              없다 — 그때는 짧게 누르는 넘기기가 이미 같은 일을 한다.
+            */}
+            <ControlButton
+              label={segLabel(run.next, run.seg, preset)}
+              onPress={run.skipNext}
+              onLongPress={run.canSkipBlock ? askSkipBlock : undefined}
+            >
               <NextIcon size={34} />
             </ControlButton>
           </View>
@@ -681,6 +705,20 @@ export default function Run() {
                 </PressBox>
               )}
             </View>
+            {/*
+              막대를 누르면 운동 및 순서 편집이 열린다 — 막대가 그리는 것이 바로 그
+              차례다. 더보기를 거치지 않는 지름길이다. 눌린 티는 내지 않는다(읽는
+              자리라 버튼처럼 보이면 안 된다). 막대가 얇아 위아래로 손가락 자리를 넓힌다.
+            */}
+            <PressBox
+              onPress={simple ? undefined : () => setOrdering(true)}
+              disabled={simple}
+              haptic="tap"
+              scaleTo={1}
+              dim={0}
+              hitSlop={12}
+              accessibilityLabel={t('run.reorder')}
+            >
             <View style={styles.track}>
               {stages.map((s, i) => {
                 const dur = Math.max(0.001, s.end - s.start);
@@ -706,6 +744,7 @@ export default function Run() {
                 );
               })}
             </View>
+            </PressBox>
             <View style={styles.barLabels}>
               <Text style={[styles.barLabel, TABULAR]}>
                 {t('run.elapsed', { time: clock(run.elapsed) })}
@@ -1001,15 +1040,19 @@ function MissingPreset() {
 function ControlButton({
   label,
   onPress,
+  onLongPress,
   children,
 }: {
   label: string;
   onPress: () => void;
+  /** 꾹 누르기 — 있으면 짧게 누르기(onPress)는 오지 않는다 */
+  onLongPress?: () => void;
   children: React.ReactNode;
 }) {
   return (
     <PressBox
       onPress={onPress}
+      onLongPress={onLongPress}
       haptic="tap"
       hitSlop={8}
       scaleTo={0.88}

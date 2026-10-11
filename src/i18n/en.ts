@@ -195,6 +195,10 @@ export const en: Catalog = {
     moreTitle: 'More',
     skipBlock: 'Skip this exercise',
     skipBlockNote: 'Skips the remaining sets and goes to the next rest.',
+    /** 다음 버튼을 꾹 눌렀을 때 */
+    skipBlockTitle: 'Skip this exercise?',
+    skipBlockBody: '{{name}} — skips the remaining sets and goes to the next rest.',
+    skipBlockConfirm: 'Skip',
     orderTitle: 'Edit exercises & order',
     orderNote: 'Tap to edit, hold to move, uncheck to drop. Applies to this workout only.',
     /** 운동 및 순서 편집 — 지금 하는 종목 이름 옆 꼬리표 */

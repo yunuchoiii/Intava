@@ -188,6 +188,10 @@ export const zh: Catalog = {
     moreTitle: '更多',
     skipBlock: '跳过当前动作',
     skipBlockNote: '跳过剩余组数，直接进入下一次休息。',
+    /** 다음 버튼을 꾹 눌렀을 때 */
+    skipBlockTitle: '跳过当前动作吗？',
+    skipBlockBody: '{{name}} — 跳过剩余组数，进入下一个休息。',
+    skipBlockConfirm: '跳过',
     orderTitle: '编辑动作和顺序',
     orderNote: '点按编辑，长按移动，取消勾选即跳过。仅应用于本次训练。',
     /** 운동 및 순서 편집 — 지금 하는 종목 이름 옆 꼬리표 */
