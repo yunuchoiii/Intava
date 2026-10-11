@@ -107,6 +107,13 @@ export default function Run() {
   const [newExtra, setNewExtra] = useState<Block | null>(null);
   /** 그 시트가 「완료」로 닫혔는지 — 아니면 「완료할까요?」를 다시 묻는다 */
   const extraAdded = useRef(false);
+  /**
+   * 새 종목이 어디로 가는가 — 「더 할게요」의 꼬리(tail)인지, 운동 및 순서 편집의
+   * 「종목 추가」(mid)인지. 같은 시트를 쓰고 붙이는 자리만 다르다.
+   */
+  const newTarget = useRef<'tail' | 'mid'>('tail');
+  /** 운동 및 순서 편집에서 「종목 추가」로 고르는 중 — 편집 시트 위에 겹쳐 뜬다 */
+  const [addingMid, setAddingMid] = useState(false);
   /** 「더보기」에서 고른 것 — 시트가 다 내려간 뒤에 실행한다 */
   const pending = useRef<'order' | 'skip' | 'extra' | 'finish' | null>(null);
   /**
@@ -122,7 +129,13 @@ export default function Run() {
    */
   const sheetUp = useRef(false);
   sheetUp.current =
-    ordering || more || editing != null || asking || addingExtra || newExtra != null;
+    ordering ||
+    more ||
+    editing != null ||
+    asking ||
+    addingExtra ||
+    addingMid ||
+    newExtra != null;
   useEffect(() => {
     void ensurePermission();
   }, []);
@@ -822,6 +835,7 @@ export default function Run() {
           setAddingExtra(false);
           // 붙이기 전에 값부터 정한다 — 편집 화면에서 종목을 더할 때와 같은 시트다
           extraAdded.current = false;
+          newTarget.current = 'tail';
           requestAnimationFrame(() =>
             setNewExtra({ ...NEW_EXTRA, id: uid(), name: t('defaults.block') })
           );
@@ -848,6 +862,34 @@ export default function Run() {
         onSkipped={run.setSkipped}
         canSkip={(b) => !run.extras.some((x) => x.id === b.id)}
         onEdit={setEditing}
+        onAdd={() => setAddingMid(true)}
+        canAdd={run.canAddBlock}
+        currentId={
+          run.seg?.phase === 'WORK' || run.seg?.phase === 'SET_REST' ? run.seg.blockId : undefined
+        }
+      />
+
+      {/*
+        운동 및 순서 편집의 「종목 추가」 — 편집 화면과 같은 고르기 시트다. 편집 시트는
+        그대로 둔 채 위에 겹쳐 뜨고, 새로 만들기는 값을 정한 뒤 붙는다.
+      */}
+      <BlockPickerSheet
+        visible={addingMid}
+        timers={presets.filter((p) => isSimple(p))}
+        onClose={() => setAddingMid(false)}
+        onCreateNew={() => {
+          setAddingMid(false);
+          extraAdded.current = false;
+          newTarget.current = 'mid';
+          requestAnimationFrame(() =>
+            setNewExtra({ ...NEW_EXTRA, id: uid(), name: t('defaults.block') })
+          );
+        }}
+        onPickTimer={(block) => {
+          setAddingMid(false);
+          // 새 id를 준다 — 원본 타이머와 얽히지 않게(편집 화면과 같은 규칙)
+          run.addBlock({ ...block, id: uid() });
+        }}
       />
 
       {/*
@@ -861,7 +903,8 @@ export default function Run() {
         onClose={() => setNewExtra(null)}
         onSave={(b, alsoTimer) => {
           extraAdded.current = true;
-          run.addExtra(b);
+          if (newTarget.current === 'mid') run.addBlock(b);
+          else run.addExtra(b);
           // 편집 화면과 같은 규칙 — 체크했으면 같은 값으로 타이머도 하나 남긴다
           if (alsoTimer) {
             const now = Date.now();
@@ -884,7 +927,8 @@ export default function Run() {
         }}
         onDelete={() => setNewExtra(null)}
         onClosed={() => {
-          if (!extraAdded.current) setAsking(true);
+          // 「더 할게요」에서 왔는데 아무것도 안 붙였으면 「완료할까요?」로 돌아간다
+          if (newTarget.current === 'tail' && !extraAdded.current) setAsking(true);
         }}
       />
     </>

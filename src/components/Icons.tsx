@@ -250,3 +250,19 @@ export function CalendarIcon({ size = 22, color = '#FFFFFF' }: IconProps) {
     </Svg>
   );
 }
+
+/**
+ * ⠿ — 끌어 옮기는 손잡이. 운동 및 순서 편집에서 행 오른쪽에 선다.
+ *
+ * 점 여섯 개(2×3)다. 가로줄 세 개(≡)는 이 앱에서 이미 「목록」(ListIcon)이라
+ * 같은 모양을 두 뜻으로 쓰지 않는다.
+ */
+export function GripIcon({ size = 20, color = '#FFFFFF' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      {[6, 12, 18].map((y) =>
+        [9, 15].map((x) => <Circle key={`${x}-${y}`} cx={x} cy={y} r="1.7" fill={color} />)
+      )}
+    </Svg>
+  );
+}

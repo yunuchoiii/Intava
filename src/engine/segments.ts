@@ -30,17 +30,32 @@ export type RoundOrders = string[][];
 export type RoundSkips = string[][];
 
 /**
+ * 운동 중에 더한 종목이 **몇 라운드부터** 도는지 — 종목 id → 라운드 번호.
+ *
+ * 더한 종목은 사본의 blocks에 들어가는데, 그대로 펴면 이미 지나간 라운드에도
+ * 끼어든다. 지난 배치가 바뀌면 흐른 시간이 엉뚱한 구간을 가리키므로(순서를 못
+ * 옮기게 한 것과 같은 이유) 합류한 라운드 앞에서는 걸러낸다.
+ */
+export type RoundJoins = Record<string, number>;
+
+/**
  * 주어진 차례대로 종목을 늘어놓고, 빼기로 한 것을 걸러낸다.
  *
  * 실행 중에 편집 화면에서 종목이 추가·삭제될 수 있으므로 id를 곧이곧대로 믿지
  * 않는다. 없어진 id는 버리고, 차례에 없는 종목은 뒤에 붙인다 — 사용자가 빼기로
  * 한 것 말고는 하나도 빠지지 않게 한다.
  */
-function roundBlocks(p: Preset, ids: string[] | undefined, skip: string[] | undefined) {
-  let list = p.blocks;
+function roundBlocks(
+  p: Preset,
+  ids: string[] | undefined,
+  skip: string[] | undefined,
+  round: number,
+  joins: RoundJoins | undefined
+) {
+  let list = joins ? p.blocks.filter((b) => (joins[b.id] ?? 1) <= round) : p.blocks;
   if (ids) {
-    const picked = ids.map((id) => p.blocks.find((b) => b.id === id)).filter((b) => !!b);
-    const rest = p.blocks.filter((b) => !picked.includes(b));
+    const picked = ids.map((id) => list.find((b) => b.id === id)).filter((b) => !!b);
+    const rest = list.filter((b) => !picked.includes(b));
     list = [...picked, ...rest];
   }
   if (!skip?.length) return list;
@@ -61,7 +76,8 @@ export function buildPlan(
    * 앞의 시간축이 그대로다 — 덧붙이는 순간 사용자는 계획의 끝에 서 있고,
    * 그 자리가 곧 이 꼬리의 시작이 된다.
    */
-  extras?: Block[]
+  extras?: Block[],
+  joins?: RoundJoins
 ): Plan {
   const segs: Segment[] = [];
   let t = 0;
@@ -80,7 +96,7 @@ export function buildPlan(
       길이는 라운드마다 다를 수 있다 — 도중에 종목을 빼면 그 라운드부터 짧아진다.
       상한과 "마지막 종목"을 프리셋의 종목 수로 재면 blocks[b]가 undefined가 된다.
     */
-    const blocks = roundBlocks(p, orders?.[r - 1], skips?.[r - 1]);
+    const blocks = roundBlocks(p, orders?.[r - 1], skips?.[r - 1], r, joins);
     const B = blocks.length;
     for (let b = 0; b < B; b++) {
       const bl = blocks[b];
@@ -136,7 +152,13 @@ export function buildPlan(
   */
   const tail = extras ?? [];
   if (tail.length > 0) {
-    const lastRoundBlocks = roundBlocks(p, orders?.[p.rounds - 1], skips?.[p.rounds - 1]).length;
+    const lastRoundBlocks = roundBlocks(
+      p,
+      orders?.[p.rounds - 1],
+      skips?.[p.rounds - 1],
+      p.rounds,
+      joins
+    ).length;
     tail.forEach((bl, i) => {
       // 앞엣것과의 사이 — 라운드에서 종목이 바뀔 때와 같은 간격이다
       segs.push({ phase: 'BLOCK_REST', round: p.rounds, blk: lastRoundBlocks + i, set: 1, sets: bl.sets, name: bl.name, blockId: bl.id, start: t, dur: p.blockRestSec });

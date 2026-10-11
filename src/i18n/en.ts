@@ -196,8 +196,9 @@ export const en: Catalog = {
     skipBlock: 'Skip this exercise',
     skipBlockNote: 'Skips the remaining sets and goes to the next rest.',
     orderTitle: 'Edit exercises & order',
-    orderNote:
-      'Tap an exercise to change it for this workout only. Unchecking drops it from the remaining rounds. Finished exercises and the current one cannot be moved or dropped.',
+    orderNote: 'Tap to edit, hold to move, uncheck to drop. Applies to this workout only.',
+    /** 운동 및 순서 편집 — 지금 하는 종목 이름 옆 꼬리표 */
+    nowTag: 'Now',
     a11ySkip: 'Drop {{name}}',
     a11yInclude: 'Put {{name}} back',
   },

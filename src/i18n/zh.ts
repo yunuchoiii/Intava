@@ -189,8 +189,9 @@ export const zh: Catalog = {
     skipBlock: '跳过当前动作',
     skipBlockNote: '跳过剩余组数，直接进入下一次休息。',
     orderTitle: '编辑动作和顺序',
-    orderNote:
-      '点按动作只修改本次训练。取消勾选后，该动作会从剩余轮次中移除。已完成的动作和当前动作无法移动或移除。',
+    orderNote: '点按编辑，长按移动，取消勾选即跳过。仅应用于本次训练。',
+    /** 운동 및 순서 편집 — 지금 하는 종목 이름 옆 꼬리표 */
+    nowTag: '进行中',
     a11ySkip: '移除 {{name}}',
     a11yInclude: '恢复 {{name}}',
   },

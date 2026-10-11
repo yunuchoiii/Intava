@@ -42,6 +42,7 @@ import {
   type Lived,
   type Plan,
   type RoundOrders,
+  type RoundJoins,
   type RoundSkips,
 } from './engine/segments';
 import { blockSummary, shapeLabel } from './engine/labels';
@@ -110,6 +111,8 @@ type Stored = {
   extras?: Block[];
   /** 실제로 지나온 몫 — 넘긴 구간은 빠진다 */
   lived?: Lived;
+  /** 운동 중에 더한 종목이 몇 라운드부터 도는지 (segments.ts의 RoundJoins) */
+  joins?: RoundJoins;
 };
 
 export type RunSnapshot = {
@@ -150,6 +153,15 @@ export type Session = RunSnapshot & {
    * 있는 앞자리는 부르는 쪽(순서 시트)이 잠가 둔다.
    */
   reorderExtras: (ids: string[]) => void;
+  /**
+   * 운동 중에 종목을 더한다 — 이번 운동에만(완료 화면에서 루틴에 남길지 묻는다).
+   *
+   * 라운드를 도는 중이면 사본의 종목에 넣어 **손댈 수 있는 라운드부터** 끝에 선다.
+   * 라운드가 다 끝나 덧붙인 종목을 하는 중이면 그 꼬리 끝에 붙인다.
+   * 쿨다운이나 다 끝난 자리에서는 더할 곳이 없다(canAddBlock).
+   */
+  addBlock: (b: Block) => void;
+  canAddBlock: boolean;
   plan: Plan | null;
   total: number;
   next: Segment | undefined;
@@ -295,6 +307,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const { presets, settings, markRun, addRecord } = useStore();
   const [stored, setStored] = useState<Stored | null>(null);
   const [snap, setSnap] = useState<RunSnapshot>(EMPTY);
+  /** controls가 매 초 새로 만들어지지 않게 지금 구간은 참조로 본다(editRef와 같은 이유) */
+  const snapRef = useRef(snap);
+  snapRef.current = snap;
   const [syncId, setSyncId] = useState(0);
 
   const settingsRef = useRef(settings);
@@ -308,8 +323,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   );
   /** 사본이 바뀌면(운동 중 편집·adopt) 구간을 다시 편다 */
   const plan = useMemo(
-    () => (preset ? buildPlan(preset, stored?.orders, stored?.skips, stored?.extras) : null),
-    [preset, stored?.orders, stored?.skips, stored?.extras]
+    () =>
+      preset
+        ? buildPlan(preset, stored?.orders, stored?.skips, stored?.extras, stored?.joins)
+        : null,
+    [preset, stored?.orders, stored?.skips, stored?.extras, stored?.joins]
   );
   const planRef = useRef(plan);
   planRef.current = plan;
@@ -802,6 +820,32 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       persist({ ...s, extras: next });
       void reschedule();
     },
+    addBlock: (b: Block) => {
+      const s = storedRef.current;
+      const p = presetRef.current;
+      if (!s || !p) return;
+      const seg = snapRef.current.seg;
+      if (!seg || seg.phase === 'COOLDOWN') return;
+      // 꼬리를 하는 중이다 — 라운드는 다 지났으니 꼬리 끝에 잇는다
+      if (seg.blockId && s.extras?.some((x) => x.id === seg.blockId)) {
+        persist({ ...s, extras: [...s.extras, b] });
+        void reschedule();
+        return;
+      }
+      const from = editRef.current.round;
+      /*
+        차례를 바꿔 둔 라운드에는 새 id를 끝에 적는다. 계획은 차례에 없는 종목을
+        알아서 뒤에 붙이지만, 시트는 그 차례를 그대로 보여주므로 거기서 빠진다.
+      */
+      const orders = s.orders?.map((ids, i) => (i + 1 >= from ? [...ids, b.id] : ids));
+      persist({
+        ...s,
+        preset: { ...p, blocks: [...p.blocks, b] },
+        orders,
+        edited: true,
+        joins: { ...s.joins, [b.id]: from },
+      });
+    },
     adopt: (p: Preset) => {
       const s = storedRef.current;
       if (!s || s.presetId !== p.id) return;
@@ -1079,6 +1123,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     total: plan?.total ?? 0,
     next: plan?.segs[snap.idx + 1],
     prev: snap.idx > 0 ? plan?.segs[snap.idx - 1] : undefined,
+    canAddBlock: !!snap.seg && snap.seg.phase !== 'COOLDOWN',
     // 종목에 속한 자리에서만 넘길 것이 남아 있다 — skipBlock의 문지기와 같은 조건
     canSkipBlock:
       !!snap.seg?.blockId && (snap.seg.phase === 'WORK' || snap.seg.phase === 'SET_REST'),

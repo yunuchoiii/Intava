@@ -20,6 +20,8 @@ import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlockList } from './BlockList';
+import { PressBox } from './PressBox';
+import { Surface } from './Surface';
 import { Sheet } from './Sheet';
 import { useDragAutoScroll } from './useDragAutoScroll';
 import { t } from '../i18n';
@@ -41,6 +43,12 @@ type Props = {
   canSkip?: (block: Block) => boolean;
   /** 행을 눌렀다 — 그 종목을 고치는 시트를 연다 */
   onEdit: (block: Block) => void;
+  /** 맨 아래 「종목 추가」 — 이번 운동에만 더한다 */
+  onAdd: () => void;
+  /** 더할 자리가 있는가 — 쿨다운·다 끝난 자리에서는 흐리게 둔다 */
+  canAdd: boolean;
+  /** 지금 하고 있는 종목 — 이름 옆에 「운동 중」 */
+  currentId?: string;
   /** 완전히 내려간 뒤 — 미뤄둔 일을 여기서 처리한다 (RunMoreSheet와 같은 규칙) */
   onClosed?: () => void;
 };
@@ -54,6 +62,9 @@ export function OrderSheet({
   onReorder,
   onSkipped,
   onEdit,
+  onAdd,
+  canAdd,
+  currentId,
   canSkip,
   onClosed,
 }: Props) {
@@ -83,7 +94,7 @@ export function OrderSheet({
 
       <ScrollView
         {...auto.props}
-        style={{ maxHeight: 400 }}
+        style={{ maxHeight: 460 }}
         contentContainerStyle={{ paddingHorizontal: GUTTER, paddingBottom: 8 }}
         scrollEnabled={!dragging}
         showsVerticalScrollIndicator={false}
@@ -93,6 +104,8 @@ export function OrderSheet({
           lockedCount={lockedCount}
           onDragActive={setDragging}
           onPress={onEdit}
+          showHandle
+          currentId={currentId}
           autoScroll={auto}
           onReorder={(next) => onReorder(next.map((b) => b.id))}
           skipped={skipped}
@@ -106,6 +119,26 @@ export function OrderSheet({
             canSkip?.(b) !== false && (skipped.includes(b.id) || remaining.length > 1)
           }
         />
+
+        {/*
+          맨 아래 — 편집 화면의 「종목 추가」와 같은 모양이다. 여기서 더한 것은
+          이번 운동에만 들어가고, 루틴에 남길지는 완료 화면에서 묻는다.
+        */}
+        <PressBox
+          radius={16}
+          scaleTo={0.97}
+          dim={0.22}
+          disabled={!canAdd}
+          style={[{ marginTop: 12 }, !canAdd && { opacity: 0.38 }]}
+          accessibilityLabel={t('edit.a11yAddBlock')}
+          onPress={onAdd}
+        >
+          <Surface radius={16} style={styles.add}>
+            <View style={styles.center}>
+              <Text style={styles.addLabel}>{t('edit.addBlock')}</Text>
+            </View>
+          </Surface>
+        </PressBox>
       </ScrollView>
 
       <View style={{ height: Math.max(insets.bottom, 16) }} />
@@ -114,6 +147,9 @@ export function OrderSheet({
 }
 
 const styles = StyleSheet.create({
+  add: { height: 52 },
+  addLabel: { fontSize: 15, fontWeight: '600', color: C.textPrimary },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   title: {
     paddingHorizontal: GUTTER,
     paddingTop: 6,
