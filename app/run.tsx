@@ -25,6 +25,7 @@ import { PhaseFlood } from '../src/components/PhaseFlood';
 import { Ring } from '../src/components/Ring';
 import { clock, isSimple, phaseLabel, ringTitle, segLabel, subLabel } from '../src/engine/labels';
 import { useMorph } from '../src/morph';
+import { commitTick } from '../src/feedback';
 import { ensurePermission } from '../src/notify';
 import { countdownOf, useSession } from '../src/session';
 import { uid, useStore } from '../src/store';
@@ -54,6 +55,8 @@ const CONTROLS_GAP = 42;
 
 /** 「새로 만들기」로 붙이는 빈 종목 — 편집 화면의 기본값과 같다 */
 const NEW_EXTRA = { id: '', name: '', workSec: 30, restSec: 60, sets: 3 };
+/** 이보다 짧게 하고 끄면 완료 화면도 기록도 없이 닫는다 — 잘못 누른 것으로 본다 */
+const DISCARD_UNDER_SEC = 10;
 
 export default function Run() {
   const router = useRouter();
@@ -72,7 +75,7 @@ export default function Run() {
   }, []);
   /** 손가락이 처음 닿은 높이 — gestureState.y0는 붙잡은 뒤에야 채워져서 판단에 쓸 수 없다 */
   const grabY = useRef(0);
-  const { settings, savePreset, presets } = useStore();
+  const { settings, presets, savePreset } = useStore();
   const run = useSession();
   const preset = run.preset;
   const [ordering, setOrdering] = useState(false);
@@ -96,6 +99,22 @@ export default function Run() {
    * 저장될 때 넘어가는 객체가 갈리고 시트가 고치던 값을 처음으로 되돌린다.
    */
   const [editing, setEditing] = useState<Block | null>(null);
+  /**
+   * 「더 할게요 → 새로 만들기」로 만드는 종목 — 설정을 마친 뒤에 붙인다.
+   *
+   * 예전에는 기본값(30초·3세트) 종목을 그 자리에서 붙이고 「붙인 뒤 링 위 이름을
+   * 눌러 고치라」고 했는데, 붙이는 순간 곧장 시작돼서 고칠 새가 없었다.
+   */
+  const [newExtra, setNewExtra] = useState<Block | null>(null);
+  /** 그 시트가 「완료」로 닫혔는지 — 아니면 「완료할까요?」를 다시 묻는다 */
+  const extraAdded = useRef(false);
+  /**
+   * 새 종목이 어디로 가는가 — 「더 할게요」의 꼬리(tail)인지, 운동 및 순서 편집의
+   * 「종목 추가」(mid)인지. 같은 시트를 쓰고 붙이는 자리만 다르다.
+   */
+  const newTarget = useRef<'tail' | 'mid'>('tail');
+  /** 운동 및 순서 편집에서 「종목 추가」로 고르는 중 — 편집 시트 위에 겹쳐 뜬다 */
+  const [addingMid, setAddingMid] = useState(false);
   /** 「더보기」에서 고른 것 — 시트가 다 내려간 뒤에 실행한다 */
   const pending = useRef<'order' | 'skip' | 'extra' | 'finish' | null>(null);
   /**
@@ -110,7 +129,14 @@ export default function Run() {
    * PanResponder가 새로 만들어져 쥐고 있던 손짓이 끊긴다.
    */
   const sheetUp = useRef(false);
-  sheetUp.current = ordering || more || editing != null || asking || addingExtra;
+  sheetUp.current =
+    ordering ||
+    more ||
+    editing != null ||
+    asking ||
+    addingExtra ||
+    addingMid ||
+    newExtra != null;
   useEffect(() => {
     void ensurePermission();
   }, []);
@@ -182,14 +208,27 @@ export default function Run() {
   /** 그중 지금 자리. 다 끝났으면 끝을 가리킨다 */
   const cursor = run.seg ? (stageOf[run.idx] ?? -1) : stages.length;
 
-  /** 순서 시트에 늘어놓을 종목 — 손댈 수 있는 라운드의 차례대로 */
-  const orderBlocks = useMemo(
+  /**
+   * 순서 시트에 늘어놓을 종목 — 손댈 수 있는 라운드의 차례대로, 그 뒤에 덧붙인 종목.
+   *
+   * 덧붙인 종목은 라운드가 다 끝난 뒤에만 생기므로, 그때 라운드의 종목은 전부 지난
+   * 것이다. 그래서 굳은 자리는 「라운드 전부 + 덧붙인 것 중 지났거나 하고 있는 것」이다.
+   * 예전에는 덧붙인 종목이 이 목록에 아예 없어서 운동 중에 고칠 길이 없었다.
+   */
+  const roundBlocks = useMemo(
     () =>
       run.roundOrder
         .map((id) => preset?.blocks.find((b) => b.id === id))
         .filter((b) => !!b),
     [run.roundOrder, preset]
   );
+  const orderBlocks = useMemo(() => [...roundBlocks, ...run.extras], [roundBlocks, run.extras]);
+  const extraAt = run.extras.findIndex((b) => b.id === run.seg?.blockId);
+  const orderLocked =
+    run.extras.length === 0
+      ? run.lockedCount
+      : roundBlocks.length +
+        (extraAt >= 0 ? extraAt + 1 : !run.seg || run.seg.phase === 'COOLDOWN' ? run.extras.length : 0);
 
   useEffect(() => {
     if (!settings.keepScreenOn) return;
@@ -217,6 +256,8 @@ export default function Run() {
       full: run.done ? '1' : '',
       orders: run.orders ? JSON.stringify(run.orders) : '',
       skips: run.skips ? JSON.stringify(run.skips) : '',
+      // 운동 중에 고친 사본 — 완료 화면이 루틴에 남길지 묻고, 「다시 하기」가 이어받는다
+      edited: run.edited ? JSON.stringify(preset) : '',
     };
   };
 
@@ -299,7 +340,7 @@ export default function Run() {
   const opened = useRef(false);
   useFocusEffect(
     useCallback(() => {
-      if (morph.dragging.current) return;
+      if (morph.held()) return;
       if (opened.current) {
         morph.set(0);
         return;
@@ -335,6 +376,7 @@ export default function Run() {
           // 아직 펼쳐지는 중일 수 있다 — 손가락이 값을 넘겨받는다
           morph.stop();
           morph.dragging.current = true;
+          morph.set(0); // 쥔 시각을 찍는다(held) — 값은 펼친 자리 그대로
         },
         // 손가락 이동은 화면 높이로 나눠 0~1로 읽는다 — 아래로 끌수록 1에 가까워진다
         onPanResponderMove: (_e, g) => morph.set(Math.max(0, Math.min(1, g.dy / screenH))),
@@ -420,6 +462,19 @@ export default function Run() {
     });
   };
 
+  /** 다음 버튼을 꾹 — 지금 종목을 넘길지 이름을 대고 묻는다 */
+  const askSkipBlock = () => {
+    commitTick();
+    Alert.alert(
+      t('run.skipBlockTitle'),
+      t('run.skipBlockBody', { name: title.name ?? run.seg?.name ?? '' }),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('run.skipBlockConfirm'), onPress: run.skipBlock },
+      ]
+    );
+  };
+
   const confirmExit = () => {
     Alert.alert(t('run.exitTitle'), t('run.exitBody'), [
       { text: t('run.exitContinue'), style: 'cancel' },
@@ -427,6 +482,16 @@ export default function Run() {
         text: t('run.exitConfirm'),
         style: 'destructive',
         onPress: () => {
+          /*
+            시작하자마자 끈 것은 운동이 아니다 — 잘못 눌렀거나 루틴을 잘못 골랐다.
+            완료 화면도 기록도 없이 그냥 닫는다. 재는 것은 벽시계가 아니라 실제로
+            운동한 시간이다: 3초 하고 멈춘 채 한참 두었다가 꺼도 남길 것이 없다.
+          */
+          if (run.livedSec() < DISCARD_UNDER_SEC) {
+            run.stop();
+            dismiss();
+            return;
+          }
           /*
             도중에 끄더라도 완료 화면을 지난다 — 여기까지 얼마나 했는지 보여주고,
             바꾼 종목 차례를 루틴에 남길지 묻는 자리가 거기다. 세션은 완료 화면이
@@ -538,7 +603,11 @@ export default function Run() {
               */
               <View style={styles.nameAbove}>
                 <PressBox
-                  onPress={() => setEditing(preset.blocks.find((b) => b.id === run.seg?.blockId) ?? null)}
+                  onPress={() =>
+                    setEditing(
+                      [...preset.blocks, ...run.extras].find((b) => b.id === run.seg?.blockId) ?? null
+                    )
+                  }
                   haptic="tap"
                   scaleTo={0.96}
                   dim={0}
@@ -593,7 +662,17 @@ export default function Run() {
               <MainGlyph color={color} paused={run.paused} />
             </PressBox>
 
-            <ControlButton label={segLabel(run.next, run.seg, preset)} onPress={run.skipNext}>
+            {/*
+              꾹 누르면 지금 종목을 통째로 넘길지 묻는다 — 더보기 → 「지금 종목 넘기기」와
+              같은 일이다. 운동 중에 시트를 두 겹 여는 것보다 손이 이미 가 있는 버튼이
+              가깝다. 넘길 종목이 없는 자리(웜업·준비·쿨다운, 휴식 중)에서는 아무 일도
+              없다 — 그때는 짧게 누르는 넘기기가 이미 같은 일을 한다.
+            */}
+            <ControlButton
+              label={segLabel(run.next, run.seg, preset)}
+              onPress={run.skipNext}
+              onLongPress={run.canSkipBlock ? askSkipBlock : undefined}
+            >
               <NextIcon size={34} />
             </ControlButton>
           </View>
@@ -626,6 +705,20 @@ export default function Run() {
                 </PressBox>
               )}
             </View>
+            {/*
+              막대를 누르면 운동 및 순서 편집이 열린다 — 막대가 그리는 것이 바로 그
+              차례다. 더보기를 거치지 않는 지름길이다. 눌린 티는 내지 않는다(읽는
+              자리라 버튼처럼 보이면 안 된다). 막대가 얇아 위아래로 손가락 자리를 넓힌다.
+            */}
+            <PressBox
+              onPress={simple ? undefined : () => setOrdering(true)}
+              disabled={simple}
+              haptic="tap"
+              scaleTo={1}
+              dim={0}
+              hitSlop={12}
+              accessibilityLabel={t('run.reorder')}
+            >
             <View style={styles.track}>
               {stages.map((s, i) => {
                 const dur = Math.max(0.001, s.end - s.start);
@@ -651,6 +744,7 @@ export default function Run() {
                 );
               })}
             </View>
+            </PressBox>
             <View style={styles.barLabels}>
               <Text style={[styles.barLabel, TABULAR]}>
                 {t('run.elapsed', { time: clock(run.elapsed) })}
@@ -716,17 +810,19 @@ export default function Run() {
         떨어진다(session.tsx의 정체 되찾기가 못 찾는 경우가 이것이다). 이번
         판에서만 빼려면 「더보기 → 종목 넘기기」가 있고, 루틴에서 아주 지우는
         것은 편집 화면(연필)의 일이다.
+
+        고친 것은 **이 운동에만** 들어간다(세션의 사본). 루틴에 남길지는 운동을
+        마친 뒤 완료 화면에서 묻는다 — 해보기 전에는 좋은 값인지 모른다.
+        링 위 이름을 눌러도, 「운동 및 순서 편집」에서 종목을 눌러도 여기로 온다.
+        순서 시트 위에 겹쳐 뜬다 — 시트는 Modal이 아니라 Portal이라 겹쳐도 된다.
       */}
       <BlockSheet
         block={editing}
         canDelete={false}
         onClose={() => setEditing(null)}
         onSave={(b) => {
-          savePreset({
-            ...preset,
-            blocks: preset.blocks.map((x) => (x.id === b.id ? b : x)),
-            updatedAt: Date.now(),
-          });
+          // 루틴의 종목이면 사본에, 덧붙인 종목이면 꼬리에 들어간다
+          run.editBlock(b);
           setEditing(null);
         }}
         onDelete={() => setEditing(null)}
@@ -769,11 +865,19 @@ export default function Run() {
         timers={presets.filter((p) => isSimple(p))}
         blocks={preset.blocks}
         blocksTitle={t('run.moreFromRoutine')}
-        onClose={() => setAddingExtra(false)}
+        onClose={() => {
+          setAddingExtra(false);
+          // 고르지 않고 닫았다 — 끝난 자리에 시트 없이 남지 않게 「완료할까요?」로 돌아간다
+          requestAnimationFrame(() => setAsking(true));
+        }}
         onCreateNew={() => {
           setAddingExtra(false);
-          // 빈 종목을 붙이고, 값은 붙인 뒤 링 위의 이름을 눌러 고친다
-          run.addExtra({ ...NEW_EXTRA, id: uid(), name: t('defaults.block') });
+          // 붙이기 전에 값부터 정한다 — 편집 화면에서 종목을 더할 때와 같은 시트다
+          extraAdded.current = false;
+          newTarget.current = 'tail';
+          requestAnimationFrame(() =>
+            setNewExtra({ ...NEW_EXTRA, id: uid(), name: t('defaults.block') })
+          );
         }}
         onPickTimer={(block) => {
           setAddingExtra(false);
@@ -787,10 +891,84 @@ export default function Run() {
         onClose={() => setOrdering(false)}
         onClosed={askIfPending}
         blocks={orderBlocks}
-        lockedCount={run.lockedCount}
         skipped={run.roundSkips}
-        onReorder={run.reorder}
+        lockedCount={orderLocked}
+        onReorder={(ids) => {
+          const tail = new Set(run.extras.map((b) => b.id));
+          run.reorder(ids.filter((id) => !tail.has(id)));
+          if (tail.size) run.reorderExtras(ids.filter((id) => tail.has(id)));
+        }}
         onSkipped={run.setSkipped}
+        canSkip={(b) => !run.extras.some((x) => x.id === b.id)}
+        onEdit={setEditing}
+        onAdd={() => setAddingMid(true)}
+        canAdd={run.canAddBlock}
+        currentId={
+          run.seg?.phase === 'WORK' || run.seg?.phase === 'SET_REST' ? run.seg.blockId : undefined
+        }
+      />
+
+      {/*
+        운동 및 순서 편집의 「종목 추가」 — 편집 화면과 같은 고르기 시트다. 편집 시트는
+        그대로 둔 채 위에 겹쳐 뜨고, 새로 만들기는 값을 정한 뒤 붙는다.
+      */}
+      <BlockPickerSheet
+        visible={addingMid}
+        timers={presets.filter((p) => isSimple(p))}
+        onClose={() => setAddingMid(false)}
+        onCreateNew={() => {
+          setAddingMid(false);
+          extraAdded.current = false;
+          newTarget.current = 'mid';
+          requestAnimationFrame(() =>
+            setNewExtra({ ...NEW_EXTRA, id: uid(), name: t('defaults.block') })
+          );
+        }}
+        onPickTimer={(block) => {
+          setAddingMid(false);
+          // 새 id를 준다 — 원본 타이머와 얽히지 않게(편집 화면과 같은 규칙)
+          run.addBlock({ ...block, id: uid() });
+        }}
+      />
+
+      {/*
+        「더 할게요 → 새로 만들기」 — 값을 정하고 「완료」를 눌러야 붙는다.
+        닫기만 하면 아무것도 붙지 않고 「완료할까요?」로 돌아간다.
+      */}
+      <BlockSheet
+        block={newExtra}
+        isNew
+        canDelete={false}
+        onClose={() => setNewExtra(null)}
+        onSave={(b, alsoTimer) => {
+          extraAdded.current = true;
+          if (newTarget.current === 'mid') run.addBlock(b);
+          else run.addExtra(b);
+          // 편집 화면과 같은 규칙 — 체크했으면 같은 값으로 타이머도 하나 남긴다
+          if (alsoTimer) {
+            const now = Date.now();
+            savePreset({
+              id: uid(),
+              kind: 'timer',
+              name: b.name,
+              warmupSec: 0,
+              prepareSec: 10,
+              blocks: [{ ...b, id: uid() }],
+              blockRestSec: 30,
+              rounds: 1,
+              roundRestSec: 90,
+              cooldownSec: 0,
+              createdAt: now,
+              updatedAt: now,
+            });
+          }
+          setNewExtra(null);
+        }}
+        onDelete={() => setNewExtra(null)}
+        onClosed={() => {
+          // 「더 할게요」에서 왔는데 아무것도 안 붙였으면 「완료할까요?」로 돌아간다
+          if (newTarget.current === 'tail' && !extraAdded.current) setAsking(true);
+        }}
       />
     </>
   );
@@ -862,15 +1040,19 @@ function MissingPreset() {
 function ControlButton({
   label,
   onPress,
+  onLongPress,
   children,
 }: {
   label: string;
   onPress: () => void;
+  /** 꾹 누르기 — 있으면 짧게 누르기(onPress)는 오지 않는다 */
+  onLongPress?: () => void;
   children: React.ReactNode;
 }) {
   return (
     <PressBox
       onPress={onPress}
+      onLongPress={onLongPress}
       haptic="tap"
       hitSlop={8}
       scaleTo={0.88}

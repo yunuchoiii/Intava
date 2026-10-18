@@ -1,5 +1,9 @@
 /**
- * 실행 중 종목 — 남은 차례를 바꾸고, 오늘 안 할 것을 뺀다.
+ * 운동 및 순서 편집 — 실행 중에 종목을 고치고, 남은 차례를 바꾸고, 오늘 안 할 것을 뺀다.
+ *
+ * 행을 누르면 그 종목의 이름·운동·휴식·세트·메모를 고친다(편집 화면과 같은 시트).
+ * 고친 것은 **이 운동에만** 들어가고 루틴은 그대로다 — 남길지는 완료 화면이 묻는다.
+ * 지나간 종목도 고칠 수 있다. 이번 운동에는 이미 지났지만 루틴에 남길 값일 수 있다.
  *
  * 지나간 종목과 지금 하고 있는 종목은 위에 흐리게 굳어 있다. 세션은 흐른 시간을
  * 구간 배열에 대입해 지금 자리를 찾기 때문에, 지나간 배치가 바뀌면 그 자리가
@@ -16,6 +20,8 @@ import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlockList } from './BlockList';
+import { PressBox } from './PressBox';
+import { Surface } from './Surface';
 import { Sheet } from './Sheet';
 import { useDragAutoScroll } from './useDragAutoScroll';
 import { t } from '../i18n';
@@ -33,6 +39,16 @@ type Props = {
   skipped: string[];
   onReorder: (ids: string[]) => void;
   onSkipped: (ids: string[]) => void;
+  /** 체크로 뺄 수 있는 종목인가 — 덧붙인 종목은 빼는 대상이 아니다(라운드에 속하지 않는다) */
+  canSkip?: (block: Block) => boolean;
+  /** 행을 눌렀다 — 그 종목을 고치는 시트를 연다 */
+  onEdit: (block: Block) => void;
+  /** 맨 아래 「종목 추가」 — 이번 운동에만 더한다 */
+  onAdd: () => void;
+  /** 더할 자리가 있는가 — 쿨다운·다 끝난 자리에서는 흐리게 둔다 */
+  canAdd: boolean;
+  /** 지금 하고 있는 종목 — 이름 옆에 「운동 중」 */
+  currentId?: string;
   /** 완전히 내려간 뒤 — 미뤄둔 일을 여기서 처리한다 (RunMoreSheet와 같은 규칙) */
   onClosed?: () => void;
 };
@@ -45,6 +61,11 @@ export function OrderSheet({
   skipped,
   onReorder,
   onSkipped,
+  onEdit,
+  onAdd,
+  canAdd,
+  currentId,
+  canSkip,
   onClosed,
 }: Props) {
   const insets = useSafeAreaInsets();
@@ -73,7 +94,7 @@ export function OrderSheet({
 
       <ScrollView
         {...auto.props}
-        style={{ maxHeight: 400 }}
+        style={{ maxHeight: 460 }}
         contentContainerStyle={{ paddingHorizontal: GUTTER, paddingBottom: 8 }}
         scrollEnabled={!dragging}
         showsVerticalScrollIndicator={false}
@@ -82,6 +103,9 @@ export function OrderSheet({
           blocks={blocks}
           lockedCount={lockedCount}
           onDragActive={setDragging}
+          onPress={onEdit}
+          showHandle
+          currentId={currentId}
           autoScroll={auto}
           onReorder={(next) => onReorder(next.map((b) => b.id))}
           skipped={skipped}
@@ -91,8 +115,30 @@ export function OrderSheet({
             "운동을 그만두겠다"는 뜻이라면 그 길은 ✕이지 이 체크박스가 아니다.
             도로 넣는 것은 언제나 된다.
           */
-          canToggleSkip={(b) => skipped.includes(b.id) || remaining.length > 1}
+          canToggleSkip={(b) =>
+            canSkip?.(b) !== false && (skipped.includes(b.id) || remaining.length > 1)
+          }
         />
+
+        {/*
+          맨 아래 — 편집 화면의 「종목 추가」와 같은 모양이다. 여기서 더한 것은
+          이번 운동에만 들어가고, 루틴에 남길지는 완료 화면에서 묻는다.
+        */}
+        <PressBox
+          radius={16}
+          scaleTo={0.97}
+          dim={0.22}
+          disabled={!canAdd}
+          style={[{ marginTop: 12 }, !canAdd && { opacity: 0.38 }]}
+          accessibilityLabel={t('edit.a11yAddBlock')}
+          onPress={onAdd}
+        >
+          <Surface radius={16} style={styles.add}>
+            <View style={styles.center}>
+              <Text style={styles.addLabel}>{t('edit.addBlock')}</Text>
+            </View>
+          </Surface>
+        </PressBox>
       </ScrollView>
 
       <View style={{ height: Math.max(insets.bottom, 16) }} />
@@ -101,6 +147,9 @@ export function OrderSheet({
 }
 
 const styles = StyleSheet.create({
+  add: { height: 52 },
+  addLabel: { fontSize: 15, fontWeight: '600', color: C.textPrimary },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   title: {
     paddingHorizontal: GUTTER,
     paddingTop: 6,

@@ -36,11 +36,13 @@ import {
   buildPlan,
   livedSpans,
   segmentAt,
+  shiftLived,
   summarizeLived,
   NO_LIVED,
   type Lived,
   type Plan,
   type RoundOrders,
+  type RoundJoins,
   type RoundSkips,
 } from './engine/segments';
 import { blockSummary, shapeLabel } from './engine/labels';
@@ -59,6 +61,20 @@ export function countdownOf(p: { countdownSec?: number } | null | undefined): nu
 
 type Stored = {
   presetId: string;
+  /**
+   * 이 실행이 도는 루틴 — **시작할 때 베껴 둔 사본이다.** 저장소의 루틴을 따라가지 않는다.
+   *
+   * 예전에는 저장소의 루틴을 그대로 읽어서, 편집 화면에서 고치는 족족 지금 하던
+   * 운동까지 발밑에서 바뀌었다. 이제 둘은 따로 간다.
+   *   · 운동 중 편집(더보기 → 운동 및 순서 편집)은 이 사본만 고친다 — 루틴에 남길지는
+   *     완료 화면에서 묻는다.
+   *   · 편집 화면은 루틴만 고친다 — 지금 운동에도 반영할지는 나갈 때 묻는다(adopt).
+   *
+   * 없으면(이 필드가 생기기 전에 시작한 세션) 저장소의 루틴으로 메운다.
+   */
+  preset?: Preset;
+  /** 운동 중에 사본을 고쳤는가 — 완료 화면이 루틴에 저장할지 물을 근거다 */
+  edited?: boolean;
   zeroAt: number;
   /**
    * 진짜로 시작한 벽시계 시각 — 기록의 "오전 7:18 시작"이 이것이다.
@@ -95,6 +111,8 @@ type Stored = {
   extras?: Block[];
   /** 실제로 지나온 몫 — 넘긴 구간은 빠진다 */
   lived?: Lived;
+  /** 운동 중에 더한 종목이 몇 라운드부터 도는지 (segments.ts의 RoundJoins) */
+  joins?: RoundJoins;
 };
 
 export type RunSnapshot = {
@@ -109,8 +127,41 @@ export type RunSnapshot = {
 };
 
 export type Session = RunSnapshot & {
-  /** 실행 중인 프리셋 — 없으면 세션이 없다 */
+  /** 실행 중인 프리셋(이 실행의 사본) — 없으면 세션이 없다 */
   preset: Preset | null;
+  /** 운동 중에 사본을 고쳤는가 — 완료 화면이 루틴에 남길지 묻는다 */
+  edited: boolean;
+  /**
+   * 운동 중 편집 — 이 실행의 사본만 고친다. 저장소의 루틴은 그대로다.
+   * 지금 하던 자리는 계획이 다시 펴질 때 정체로 되찾는다.
+   */
+  editPreset: (p: Preset) => void;
+  /**
+   * 편집 화면에서 고친 루틴을 지금 운동에도 반영한다 — 사본을 통째로 갈아 끼운다.
+   * 운동 중에 고친 것은 이것으로 덮이므로 「고쳤다」 표시도 내린다.
+   */
+  adopt: (p: Preset) => void;
+  /** 「운동 더 하기」로 덧붙인 종목 — 계획의 꼬리. 루틴의 종목과 따로 산다 */
+  extras: Block[];
+  /**
+   * 종목 하나를 고친다 — 루틴의 종목이면 사본에(편집 표시도 켠다), 덧붙인 종목이면
+   * 꼬리에 넣는다. 덧붙인 종목은 루틴에 남기지 않으므로 편집 표시를 켜지 않는다.
+   */
+  editBlock: (b: Block) => void;
+  /**
+   * 덧붙인 종목의 차례를 새로 정한다 — ids는 꼬리 **전체**다. 이미 지났거나 하고
+   * 있는 앞자리는 부르는 쪽(순서 시트)이 잠가 둔다.
+   */
+  reorderExtras: (ids: string[]) => void;
+  /**
+   * 운동 중에 종목을 더한다 — 이번 운동에만(완료 화면에서 루틴에 남길지 묻는다).
+   *
+   * 라운드를 도는 중이면 사본의 종목에 넣어 **손댈 수 있는 라운드부터** 끝에 선다.
+   * 라운드가 다 끝나 덧붙인 종목을 하는 중이면 그 꼬리 끝에 붙인다.
+   * 쿨다운이나 다 끝난 자리에서는 더할 곳이 없다(canAddBlock).
+   */
+  addBlock: (b: Block) => void;
+  canAddBlock: boolean;
   plan: Plan | null;
   total: number;
   next: Segment | undefined;
@@ -157,7 +208,18 @@ export type Session = RunSnapshot & {
    * 대신 id만 넘기고 완료 화면이 저장소에서 꺼내 보게 한다.
    */
   settle: () => { lived: Lived; recordId?: string };
-  start: (presetId: string, orders?: RoundOrders, skips?: RoundSkips) => void;
+  /**
+   * 지금까지 **실제로 운동한** 초 — 멈춘 시간과 건너뛴 구간은 빠진다.
+   * 기록을 남기지 않고 읽기만 한다(settle과 달리).
+   */
+  livedSec: () => number;
+  /**
+   * id가 아니라 **루틴 자체**를 받는다 — 이것을 베껴 이 실행의 사본으로 삼는다.
+   * 편집 화면은 저장 직후 곧장 시작하는데, 그때 저장소는 아직 옛 값이라 id로
+   * 찾으면 방금 고친 것이 아니라 그 전 것이 돈다. edited는 완료 화면의 「다시
+   * 하기」가 고친 사본을 이어받을 때 쓴다.
+   */
+  start: (preset: Preset, orders?: RoundOrders, skips?: RoundSkips, edited?: boolean) => void;
   toggle: () => void;
   skipNext: () => void;
   skipPrev: () => void;
@@ -214,6 +276,9 @@ const EMPTY: RunSnapshot = {
   done: false,
 };
 
+/** 덧붙인 종목이 없을 때 — 매번 새 배열이면 받는 쪽 메모가 매 초 깨진다 */
+const NO_EXTRAS: Block[] = [];
+
 const SessionContext = createContext<Session | null>(null);
 
 /**
@@ -233,6 +298,7 @@ export type SessionStable = {
   restoredFromStorage: boolean;
   start: Session['start'];
   stop: Session['stop'];
+  adopt: Session['adopt'];
 };
 
 const StableContext = createContext<SessionStable | null>(null);
@@ -241,6 +307,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const { presets, settings, markRun, addRecord } = useStore();
   const [stored, setStored] = useState<Stored | null>(null);
   const [snap, setSnap] = useState<RunSnapshot>(EMPTY);
+  /** controls가 매 초 새로 만들어지지 않게 지금 구간은 참조로 본다(editRef와 같은 이유) */
+  const snapRef = useRef(snap);
+  snapRef.current = snap;
   const [syncId, setSyncId] = useState(0);
 
   const settingsRef = useRef(settings);
@@ -249,13 +318,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   storedRef.current = stored;
 
   const preset = useMemo(
-    () => presets.find((p) => p.id === stored?.presetId) ?? null,
-    [presets, stored?.presetId]
+    () => stored?.preset ?? presets.find((p) => p.id === stored?.presetId) ?? null,
+    [presets, stored?.preset, stored?.presetId]
   );
-  /** 프리셋 내용이 바뀌면 구간을 다시 편다 — 실행 중 편집을 위해 updatedAt까지 본다 */
+  /** 사본이 바뀌면(운동 중 편집·adopt) 구간을 다시 편다 */
   const plan = useMemo(
-    () => (preset ? buildPlan(preset, stored?.orders, stored?.skips, stored?.extras) : null),
-    [preset, stored?.orders, stored?.skips, stored?.extras]
+    () =>
+      preset
+        ? buildPlan(preset, stored?.orders, stored?.skips, stored?.extras, stored?.joins)
+        : null,
+    [preset, stored?.orders, stored?.skips, stored?.extras, stored?.joins]
   );
   const planRef = useRef(plan);
   planRef.current = plan;
@@ -523,7 +595,16 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           const offset = Math.min(oldElapsed - found.seg.start, Math.max(0, match.dur - 0.05));
           const next = match.start + offset;
           if (Math.abs(next - oldElapsed) >= 0.01) {
-            persist({ ...s, zeroAt: at - next * 1000 });
+            /*
+              지나온 셈(lived)도 같은 만큼 옮긴다. 셈은 시간축 위의 자리로 적혀 있어서,
+              앞 종목에 세트를 하나 더하면 지금 자리는 뒤로 밀리는데 셈은 옛 자리에
+              남는다 — 다음 정산에서 그 사이를 통째로 「운동했다」로 센다.
+            */
+            persist({
+              ...s,
+              zeroAt: at - next * 1000,
+              lived: s.lived && shiftLived(s.lived, next - oldElapsed),
+            });
             setSyncId((n) => n + 1);
           }
         }
@@ -693,17 +774,82 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   editRef.current = edit;
 
   const controls = useMemo(() => ({
-    start: (presetId: string, orders?: RoundOrders, skips?: RoundSkips) => {
+    start: (preset: Preset, orders?: RoundOrders, skips?: RoundSkips, edited?: boolean) => {
       lastIdx.current = -1;
       lastTick.current = '';
       doneFired.current = false;
       recorded.current = false;
       recordedId.current = undefined;
-      markRun(presetId);
-      // 완료 화면의 "다시 하기"는 방금 돌던 구성을 그대로 물려받는다 — 차례도, 뺀 것도
+      markRun(preset.id);
+      // 완료 화면의 "다시 하기"는 방금 돌던 구성을 그대로 물려받는다 — 차례도, 뺀 것도, 고친 것도
       const now = Date.now();
-      persist({ presetId, zeroAt: now, startedAt: now, pausedAt: null, orders, skips });
+      persist({
+        presetId: preset.id,
+        preset,
+        edited: edited || undefined,
+        zeroAt: now,
+        startedAt: now,
+        pausedAt: null,
+        orders,
+        skips,
+      });
       setSyncId((n) => n + 1);
+    },
+    editPreset: (p: Preset) => {
+      const s = storedRef.current;
+      if (!s) return;
+      persist({ ...s, preset: p, edited: true });
+    },
+    editBlock: (b: Block) => {
+      const s = storedRef.current;
+      const p = presetRef.current;
+      if (!s || !p) return;
+      if (p.blocks.some((x) => x.id === b.id)) {
+        persist({ ...s, preset: { ...p, blocks: p.blocks.map((x) => (x.id === b.id ? b : x)) }, edited: true });
+      } else if (s.extras?.some((x) => x.id === b.id)) {
+        persist({ ...s, extras: s.extras.map((x) => (x.id === b.id ? b : x)) });
+      }
+    },
+    reorderExtras: (ids: string[]) => {
+      const s = storedRef.current;
+      if (!s?.extras) return;
+      const byId = new Map(s.extras.map((b) => [b.id, b]));
+      const next = ids.map((id) => byId.get(id)).filter((b) => !!b);
+      // 모자라거나 남는 것이 있으면 손대지 않는다 — 덧붙인 종목이 사라지면 안 된다
+      if (next.length !== s.extras.length) return;
+      persist({ ...s, extras: next });
+      void reschedule();
+    },
+    addBlock: (b: Block) => {
+      const s = storedRef.current;
+      const p = presetRef.current;
+      if (!s || !p) return;
+      const seg = snapRef.current.seg;
+      if (!seg || seg.phase === 'COOLDOWN') return;
+      // 꼬리를 하는 중이다 — 라운드는 다 지났으니 꼬리 끝에 잇는다
+      if (seg.blockId && s.extras?.some((x) => x.id === seg.blockId)) {
+        persist({ ...s, extras: [...s.extras, b] });
+        void reschedule();
+        return;
+      }
+      const from = editRef.current.round;
+      /*
+        차례를 바꿔 둔 라운드에는 새 id를 끝에 적는다. 계획은 차례에 없는 종목을
+        알아서 뒤에 붙이지만, 시트는 그 차례를 그대로 보여주므로 거기서 빠진다.
+      */
+      const orders = s.orders?.map((ids, i) => (i + 1 >= from ? [...ids, b.id] : ids));
+      persist({
+        ...s,
+        preset: { ...p, blocks: [...p.blocks, b] },
+        orders,
+        edited: true,
+        joins: { ...s.joins, [b.id]: from },
+      });
+    },
+    adopt: (p: Preset) => {
+      const s = storedRef.current;
+      if (!s || s.presetId !== p.id) return;
+      persist({ ...s, preset: p, edited: undefined });
     },
     /**
      * 남은 차례를 바꾼다 — 시간은 건드리지 않는다.
@@ -808,6 +954,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       }
       // 두 번 불려도 같은 기록을 가리킨다 — 완료 화면이 뒤늦게 물어도 답이 있다
       return { lived, recordId: recordedId.current };
+    },
+    livedSec: () => {
+      const s = storedRef.current;
+      const p = planRef.current;
+      if (!s || !p) return 0;
+      return advanceLived(s.lived, p, elapsedNow()).total;
     },
     toggle: () => {
       const s = storedRef.current;
@@ -965,10 +1117,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<Session>(() => ({
     ...snap,
     preset,
+    edited: !!stored?.edited,
+    extras: stored?.extras ?? NO_EXTRAS,
     plan,
     total: plan?.total ?? 0,
     next: plan?.segs[snap.idx + 1],
     prev: snap.idx > 0 ? plan?.segs[snap.idx - 1] : undefined,
+    canAddBlock: !!snap.seg && snap.seg.phase !== 'COOLDOWN',
     // 종목에 속한 자리에서만 넘길 것이 남아 있다 — skipBlock의 문지기와 같은 조건
     canSkipBlock:
       !!snap.seg?.blockId && (snap.seg.phase === 'WORK' || snap.seg.phase === 'SET_REST'),
@@ -980,7 +1135,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     roundSkips: edit.skip,
     lockedCount: edit.locked,
     ...controls,
-  }), [snap, preset, plan, syncId, restoredFromStorage, stored?.orders, stored?.skips, edit, controls]);
+  }), [snap, preset, stored?.edited, stored?.extras, plan, syncId, restoredFromStorage, stored?.orders, stored?.skips, edit, controls]);
 
   const stable = useMemo<SessionStable>(
     () => ({
@@ -989,6 +1144,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       restoredFromStorage,
       start: controls.start,
       stop: controls.stop,
+      adopt: controls.adopt,
     }),
     [preset, snap.done, restoredFromStorage, controls]
   );

@@ -13,7 +13,7 @@
 
 set -e
 
-DEVICE="00008140-000A45E91863C01C" # yunu's iPhone
+DEVICE="00008160-001A1D1C3680000A" # yunu's iPhone 18 Pro
 CONFIG="${1:-Release}"
 
 echo "▸ ${CONFIG} 빌드 — 낮은 우선순위로 실행합니다 (다른 작업에 영향 최소화)"

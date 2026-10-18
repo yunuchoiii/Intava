@@ -30,6 +30,7 @@ import { blockSummary } from '../engine/labels';
 import { t } from '../i18n';
 import { ABS, C, E2, TABULAR } from '../theme';
 import { Checkbox } from './Checkbox';
+import { GripIcon } from './Icons';
 import type { AutoScroll } from './useDragAutoScroll';
 import type { Block } from '../types';
 
@@ -39,7 +40,7 @@ const LONG_PRESS_MS = 280;
 
 type Props = {
   blocks: Block[];
-  /** 없으면 행은 눌리지 않는다 — 실행 중 순서 시트에는 열어볼 편집 화면이 없다 */
+  /** 없으면 행은 눌리지 않는다 */
   onPress?: (block: Block) => void;
   onReorder: (next: Block[]) => void;
   /** 끌고 있는 동안 부모 스크롤을 멈추기 위한 신호 */
@@ -63,6 +64,16 @@ type Props = {
   onToggleSkip?: (id: string) => void;
   /** 체크를 못 바꾸는 행 — 마지막 하나를 마저 뺄 수는 없다 */
   canToggleSkip?: (block: Block) => boolean;
+  /**
+   * 행 오른쪽에 끌기 손잡이(⠿)를 세운다 — 운동 및 순서 편집.
+   *
+   * 이때는 굳은 행이라도 **글자는 흐리게 하지 않고 손잡이만** 흐린다. 그 행도
+   * 눌러서 고칠 수는 있으므로, 통째로 흐리면 손댈 수 없는 것으로 읽힌다. 못 하는
+   * 것은 옮기기뿐이고 그건 손잡이가 말한다.
+   */
+  showHandle?: boolean;
+  /** 지금 하고 있는 종목 — 이름 옆에 「운동 중」이 작게 선다 */
+  currentId?: string;
 };
 
 export function BlockList({
@@ -75,6 +86,8 @@ export function BlockList({
   skipped,
   onToggleSkip,
   canToggleSkip,
+  showHandle,
+  currentId,
 }: Props) {
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   const [dragTo, setDragTo] = useState<number | null>(null);
@@ -130,6 +143,8 @@ export function BlockList({
               : undefined
           }
           showCheckbox={!!onToggleSkip}
+          showHandle={showHandle}
+          current={b.id === currentId}
           dragFrom={dragFrom}
           dragTo={dragTo}
           busy={() => settling.current}
@@ -175,6 +190,9 @@ type RowProps = {
   busy: () => boolean;
   /** 내려앉기 시작 — 확정될 때까지 목록을 잠근다 */
   onSettleStart: () => void;
+  showHandle?: boolean;
+  /** 지금 하고 있는 종목인가 */
+  current?: boolean;
   /** 체크박스 자리를 낼 것인가 — 자리는 나되 누를 수 있는지는 onToggleSkip이 정한다 */
   showCheckbox?: boolean;
   /** 이번에 빼기로 한 행인가 */
@@ -448,7 +466,7 @@ function Row(props: RowProps) {
         <Pressable
           style={[
             styles.rowText,
-            props.locked && styles.lockedRow,
+            props.locked && !props.showHandle && styles.lockedRow,
             props.skipped && !props.locked && styles.skippedRow,
           ]}
           onPress={props.onPress ? () => live.current.onPress?.() : undefined}
@@ -461,13 +479,31 @@ function Row(props: RowProps) {
             count > 1 && !props.locked ? t('edit.a11yReorder', { name: block.name }) : undefined
           }
         >
-          <Text style={styles.name}>{block.name}</Text>
+          <View style={styles.nameLine}>
+            <Text style={styles.name} numberOfLines={1}>
+              {block.name}
+            </Text>
+            {props.current && <Text style={styles.nowTag}>{t('run.nowTag')}</Text>}
+          </View>
           {/* 메모는 요약 뒤에 잇는다 — 행 높이가 못 박혀 있어 줄을 늘릴 수 없다. 길면 메모 쪽이 잘린다 */}
           <Text style={[styles.summary, TABULAR]} numberOfLines={1}>
             {blockSummary(block.workSec, block.restSec, block.sets)}
             {block.memo?.trim() ? ` · ${block.memo.trim()}` : null}
           </Text>
         </Pressable>
+
+        {props.showHandle && (
+          /*
+            보여주는 손잡이다 — 집어 드는 것은 지금처럼 행 어디를 꾹 눌러도 된다.
+            옮길 수 없는 행(지났거나 하고 있는 것)은 손잡이만 흐린다.
+          */
+          <View
+            style={[styles.handle, (props.locked || count - props.floor <= 1) && styles.handleOff]}
+            pointerEvents="none"
+          >
+            <GripIcon size={22} color={C.textSecondary} />
+          </View>
+        )}
       </View>
     </Animated.View>
   );
@@ -504,6 +540,20 @@ const styles = StyleSheet.create({
     backgroundColor: C.surface,
     ...E2,
   },
-  name: { fontSize: 18, lineHeight: 24, fontWeight: '600', color: C.textPrimary },
+  nameLine: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  name: { flexShrink: 1, fontSize: 18, lineHeight: 24, fontWeight: '600', color: C.textPrimary },
+  /** 「운동 중」 — 이름 옆 작은 꼬리표. 지금 자리가 목록에서 바로 읽혀야 한다 */
+  nowTag: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: C.textPrimary,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.14)',
+  },
+  handle: { paddingLeft: 12, paddingVertical: 8, justifyContent: 'center' },
+  handleOff: { opacity: 0.3 },
   summary: { marginTop: 5, fontSize: 14, lineHeight: 19, color: C.textSecondary },
 });

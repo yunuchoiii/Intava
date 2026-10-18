@@ -115,6 +115,7 @@ export function MiniTimer() {
           morph.stop();
           owning.current = true;
           morph.dragging.current = true;
+          morph.set(1); // 쥔 시각을 찍는다(held) — 값은 접힌 자리 그대로
           router.push('/run');
         },
         onPanResponderMove: (_e, g) => morph.set(Math.max(0, Math.min(1, 1 + g.dy / screenH))),
@@ -123,11 +124,13 @@ export function MiniTimer() {
           if (-g.dy > 110 || -g.vy > 0.7) {
             morph.animate(0, { velocity: (g.vy * 1000) / screenH });
           } else {
+            morph.collapsedAt.current = Date.now();
             morph.animate(1, { duration: 220, onDone: () => router.back() });
           }
         },
         onPanResponderTerminate: () => {
           release();
+          morph.collapsedAt.current = Date.now();
           morph.animate(1, { duration: 220, onDone: () => router.back() });
         },
       }),

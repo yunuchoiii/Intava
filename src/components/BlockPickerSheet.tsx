@@ -88,34 +88,45 @@ export function BlockPickerSheet({
             </PressBox>
           </View>
 
-          {blocks && blocks.length > 0 && (
-            <>
-              <Text style={styles.section}>{blocksTitle}</Text>
+          {/*
+            아래 두 목록은 **한 스크롤에** 담는다. 위의 제목과 「새 종목 만들기」는
+            늘 손 닿는 자리에 고정한다.
+
+            예전에는 타이머 목록에만 스크롤(최대 320)이 걸려 있고 「이 루틴의 종목」은
+            그 밖에 늘어서 있었다. 종목이 여덟 개를 넘는 루틴에서 시트가 화면 높이에
+            잘리자 그 아래로 내려갈 길이 없었다. flexShrink로 시트가 허락하는 높이까지만
+            자라게 한다(BlockSheet와 같은 방식).
+          */}
+          <ScrollView
+            style={{ flexShrink: 1 }}
+            contentContainerStyle={{ paddingBottom: 8 }}
+            showsVerticalScrollIndicator={false}
+          >
+            {blocks && blocks.length > 0 && (
+              <>
+                <Text style={styles.section}>{blocksTitle}</Text>
+                <View style={{ paddingHorizontal: GUTTER - 12 }}>
+                  {blocks.map((b) => row('b:' + b.id, b.name, b, () => onPickTimer(b)))}
+                </View>
+              </>
+            )}
+
+            <Text style={styles.section}>{t('pickBlock.fromTimer')}</Text>
+
+            {timers.length === 0 ? (
+              <Text style={styles.empty}>{t('pickBlock.empty')}</Text>
+            ) : (
               <View style={{ paddingHorizontal: GUTTER - 12 }}>
-                {blocks.map((b) => row('b:' + b.id, b.name, b, () => onPickTimer(b)))}
+                {timers.map((timer) => {
+                  const src = timer.blocks[0];
+                  if (!src) return null;
+                  return row('t:' + timer.id, timer.name, src, () =>
+                    onPickTimer({ ...src, name: timer.name })
+                  );
+                })}
               </View>
-            </>
-          )}
-
-          <Text style={styles.section}>{t('pickBlock.fromTimer')}</Text>
-
-          {timers.length === 0 ? (
-            <Text style={styles.empty}>{t('pickBlock.empty')}</Text>
-          ) : (
-            <ScrollView
-              style={{ maxHeight: 320 }}
-              contentContainerStyle={{ paddingHorizontal: GUTTER - 12, paddingBottom: 8 }}
-              showsVerticalScrollIndicator={false}
-            >
-              {timers.map((timer) => {
-                const src = timer.blocks[0];
-                if (!src) return null;
-                return row('t:' + timer.id, timer.name, src, () =>
-                  onPickTimer({ ...src, name: timer.name })
-                );
-              })}
-            </ScrollView>
-          )}
+            )}
+          </ScrollView>
 
       <View style={{ height: Math.max(insets.bottom, 16) }} />
     </Sheet>

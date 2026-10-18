@@ -16,7 +16,7 @@ import { useStore } from '../src/store';
 import { useToast } from '../src/components/Toast';
 import { t } from '../src/i18n';
 import { GUTTER, PHASE_COLOR, TABULAR } from '../src/theme';
-import type { Preset } from '../src/types';
+import { presetFingerprint, type Preset } from '../src/types';
 
 export default function Done() {
   /**
@@ -26,7 +26,7 @@ export default function Done() {
    * 어떤 차례로 돌았는지(orders). **세션에서 읽지 않는다.** 이 화면은 뜨자마자
    * 세션을 비우기 때문에(미니 바가 남으면 안 된다) 그 뒤에는 물어볼 데가 없다.
    */
-  const { id, lived, record, full, orders, skips } = useLocalSearchParams<{
+  const { id, lived, record, full, orders, skips, edited } = useLocalSearchParams<{
     id: string;
     lived?: string;
     /** 방금 남긴 기록의 id — 종목별 몫과 구간 이력은 거기서 꺼낸다 */
@@ -34,13 +34,27 @@ export default function Done() {
     full?: string;
     orders?: string;
     skips?: string;
+    /** 운동 중에 고친 루틴 사본(JSON) — 고친 것이 없으면 비어 있다 */
+    edited?: string;
   }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { getPreset, savePreset, records } = useStore();
   const toast = useToast();
   const session = useSession();
-  const preset = getPreset(id);
+  const saved = getPreset(id);
+  /** 운동 중에 고친 사본 — 루틴과 다르게 돌았을 수 있다 */
+  const tweaked = useMemo<Preset | undefined>(() => {
+    if (!edited) return undefined;
+    try {
+      const p = JSON.parse(edited) as Preset;
+      return p?.id === id && Array.isArray(p.blocks) ? p : undefined;
+    } catch {
+      return undefined;
+    }
+  }, [edited, id]);
+  /** 화면에 그리는 것은 실제로 돈 쪽이다 */
+  const preset = tweaked ?? saved;
   /** 종목별 표는 접어 둔 채로 시작한다 — 먼저 보는 것은 아래 숫자 넷이다 */
   const [blocksOpen, setBlocksOpen] = useState(false);
 
@@ -96,38 +110,57 @@ export default function Done() {
     [record, records]
   );
 
-  /** 마지막에 돌던 차례가 저장된 루틴과 다른가 */
-  const changed = useMemo(() => {
-    if (!preset || !rounds) return null;
-    const last = rounds[rounds.length - 1];
-    if (!last) return null;
-    const natural = preset.blocks.map((b) => b.id);
-    if (last.length !== natural.length || last.every((x, i) => x === natural[i])) return null;
-    return last;
-  }, [preset, rounds]);
+  /**
+   * 루틴에 남길 모양 — 운동 중에 고친 종목과 마지막에 돌던 차례를 합친 것.
+   * 저장된 루틴과 같으면 null이다(물을 것이 없다).
+   *
+   * 둘을 따로 묻지 않는다. 운동을 마친 사람에게 창을 두 번 띄우면 두 번째는 읽지
+   * 않고 누른다. 뺀 종목은 여기 들어가지 않는다(dropped의 주석).
+   */
+  const proposal = useMemo<Preset | null>(() => {
+    if (!saved || !preset) return null;
+    let blocks = preset.blocks;
+    const last = rounds?.[rounds.length - 1];
+    if (last) {
+      const byId = new Map(blocks.map((b) => [b.id, b]));
+      const picked = last.map((bid) => byId.get(bid)).filter((b) => !!b);
+      blocks = [...picked, ...blocks.filter((b) => !picked.includes(b))];
+    }
+    /*
+      순서는 실행 사본이 아니라 **블록 배열 자체**로 견준다 — 지문에는 종목 차례가
+      들어 있어 따로 셀 필요가 없다. 날짜 도장(createdAt·lastRunAt)은 저장소 것을
+      그대로 둔다 — 사본은 시작할 때 베낀 것이라 그 뒤 값이 옛것이다.
+    */
+    const next: Preset = {
+      ...saved,
+      ...preset,
+      blocks,
+      createdAt: saved.createdAt,
+      lastRunAt: saved.lastRunAt,
+    };
+    return presetFingerprint(next) === presetFingerprint(saved) ? null : next;
+  }, [saved, preset, rounds]);
 
   if (!preset) {
     return <View style={{ flex: 1, backgroundColor: PHASE_COLOR.DONE }} />;
   }
 
   /**
-   * 홈으로 — 바뀐 차례를 루틴에 남길지는 여기서 한 번만 묻는다.
-   * 시트에서 바꾸는 그 순간에는 좋은 차례인지 아직 모른다. 해보고 나서야 안다.
+   * 홈으로 — 운동 중에 바꾼 것(종목·차례)을 루틴에 남길지는 여기서 한 번만 묻는다.
+   * 시트에서 바꾸는 그 순간에는 좋은 값인지 아직 모른다. 해보고 나서야 안다.
    */
   const goHome = () => {
-    if (!changed) {
+    if (!proposal) {
       router.dismissTo('/');
       return;
     }
-    Alert.alert(t('doneScreen.saveOrderTitle'), t('doneScreen.saveOrderBody'), [
-      { text: t('doneScreen.saveOrderSkip'), onPress: () => router.dismissTo('/') },
+    Alert.alert(t('doneScreen.saveChangesTitle'), t('doneScreen.saveChangesBody'), [
+      { text: t('doneScreen.saveChangesSkip'), onPress: () => router.dismissTo('/') },
       {
-        text: t('doneScreen.saveOrderConfirm'),
+        text: t('doneScreen.saveChangesConfirm'),
         onPress: () => {
-          const byId = new Map(preset.blocks.map((b) => [b.id, b]));
-          const next = changed.map((bid) => byId.get(bid)).filter((b) => !!b);
-          savePreset({ ...preset, blocks: next });
-          toast(t('toast.orderSaved'));
+          savePreset(proposal);
+          toast(t('toast.changesSaved'));
           router.dismissTo('/');
         },
       },
@@ -277,7 +310,8 @@ export default function Done() {
         */}
         <PressBox
           onPress={() => {
-            session.start(preset.id, rounds, dropped);
+            // 고친 사본으로 돌았으면 그대로 다시 돈다 — 루틴에 남길지는 그 운동이 끝나고 묻는다
+            session.start(preset, rounds, dropped, !!tweaked);
             router.replace('/run');
           }}
           haptic="commit"

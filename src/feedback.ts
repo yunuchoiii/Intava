@@ -86,6 +86,18 @@ export function selectionTick(s?: Settings): void {
 }
 
 /**
+ * 실행 화면의 링을 돌려 시간을 맞출 때 — 1초 지날 때마다 한 톨, 이어지면 「드르륵」.
+ *
+ * 예전에는 selectionTick이었는데 iOS selection 햅틱은 가장 여린 것이라 링을
+ * 돌릴 때 거의 느껴지지 않았다. rigid 임팩트는 짧고 단단한 딸깍이라 빨리
+ * 돌려도 알갱이가 뭉개지지 않는다. (expo-haptics는 세기를 받지 않는다 —
+ * 스타일로만 고른다.)
+ */
+export function scrubTick(): void {
+  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
+}
+
+/**
  * 손끝의 대답 — 버튼을 누른 그 순간.
  *
  * 설정의 "진동"을 보지 않는다. 그 스위치는 **구간이 바뀔 때** 울릴지를 정하는

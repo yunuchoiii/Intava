@@ -427,7 +427,7 @@ function PresetRow({ preset, onLongPress }: { preset: Preset; onLongPress: () =>
             text: t('run.switchConfirm'),
             style: 'destructive',
             onPress: () => {
-              session.start(preset.id);
+              session.start(preset);
               router.push('/run');
             },
           },
@@ -436,7 +436,7 @@ function PresetRow({ preset, onLongPress }: { preset: Preset; onLongPress: () =>
       return;
     }
 
-    session.start(preset.id);
+    session.start(preset);
     router.push('/run');
   };
 

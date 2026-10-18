@@ -40,39 +40,10 @@ import { totalSec, workSec } from '../src/engine/segments';
 import { countdownOf, useSessionStable } from '../src/session';
 import { emptyPreset, uid, useStore } from '../src/store';
 import { C, GUTTER, TABULAR } from '../src/theme';
-import { kindOf, type Block, type Preset } from '../src/types';
+import { kindOf, presetFingerprint as fingerprint, type Block, type Preset } from '../src/types';
 
 /** 종목 추가와 저장 — 한 화면의 두 버튼이라 모서리를 한 값에 묶어둔다 */
 const ACTION_RADIUS = 16;
-
-/**
- * 손댄 것이 있는지 가리는 도장.
- *
- * 두 프리셋을 통째로 JSON으로 견주면 키 순서와 시각 도장(updatedAt·lastRunAt)에
- * 걸려 아무것도 안 고쳤는데 고쳤다고 나온다. 저장할 값만 정한 순서로 늘어놓는다.
- * 이름은 다듬어서 본다 — 뒤에 공백 하나 붙인 것을 편집으로 치지 않는다.
- *
- * **여기 빠진 값은 저장되지 않는다.** 기존 루틴은 저장 버튼 없이 지문이 달라질
- * 때만 쓰기 때문에, 편집 화면에 칸을 새로 놓으면 이 목록에도 같이 놓아야 한다 —
- * 「종목 사이 휴식」과 「마지막 세트 뒤 휴식」을 여기 안 적어서 화면에서는 바뀌는데
- * 나갔다 들어오면 되돌아가 있었다.
- */
-function fingerprint(p: Preset): string {
-  return JSON.stringify([
-    p.name.trim(),
-    p.warmupSec,
-    p.prepareSec,
-    p.rounds,
-    p.roundRestSec,
-    // 없는 값은 참이다(types.ts) — undefined와 true가 다른 지문이 되면 옛 루틴이
-    // 열자마자 바뀐 것으로 보인다
-    p.skipLastSetRest !== false,
-    p.blockRestSec,
-    p.cooldownSec,
-    p.countdownSec ?? 3,
-    p.blocks.map((b) => [b.id, b.name.trim(), b.workSec, b.restSec, b.sets, (b.memo ?? '').trim()]),
-  ]);
-}
 
 /** 저장할 모양으로 다듬는다 — 빈 이름은 기본 이름으로 메운다 */
 function normalizedOf(p: Preset, simple: boolean): Preset {
@@ -133,8 +104,10 @@ export default function Edit() {
    *
    * 타자 한 자마다 쓰면 저장이 너무 잦아 400ms 숨을 두고, 화면을 떠나는 순간과
    * 실행으로 넘어가는 순간에는 기다리지 않고 바로 확정한다(flush). 지문이 같으면
-   * 쓰지 않으므로 몇 번을 불려도 한 번만 저장된다. 실행 중인 루틴이면 저장마다
-   * 세션이 계획을 다시 펴는데, 지금 하던 자리는 세션이 정체로 되찾아 이어 준다.
+   * 쓰지 않으므로 몇 번을 불려도 한 번만 저장된다.
+   *
+   * 실행 중인 루틴이어도 **지금 하는 운동은 따라 바뀌지 않는다** — 세션은 시작할 때
+   * 베낀 사본으로 돈다. 반영할지는 이 화면을 나갈 때 묻는다(needsApply).
    */
   const draftRef = useRef(draft);
   draftRef.current = draft;
@@ -158,6 +131,37 @@ export default function Edit() {
   }, [isNew, commit]);
 
   /**
+   * 지금 이 루틴으로 운동하는 중이고, 고친 것이 그 운동과 다른가 — 나갈 때 물을 일이다.
+   *
+   * 저장 자체는 위의 자동 저장이 이미 했다. 묻는 것은 **지금 운동에도** 넣을지뿐이다.
+   * 고친 직후 바로 바뀌면 세트 한가운데서 계획이 발밑에서 바뀌므로, 한 번 확인받는다.
+   * 이 화면에서 아무것도 안 고쳤으면(dirty가 아니면) 묻지 않는다 — 운동 중에 고친
+   * 사본이 루틴과 다른 것은 이 화면이 끼어들 일이 아니다(완료 화면이 묻는다).
+   */
+  const onAirHere = running && session.preset?.id === draft.id;
+  const needsApply =
+    !isNew &&
+    onAirHere &&
+    dirty &&
+    !!session.preset &&
+    fingerprint(normalizedOf(draft, simple)) !== fingerprint(session.preset);
+
+  /** 루틴은 이미 저장됐다 — 지금 운동에도 넣을지 묻고, 어느 쪽이든 then으로 이어간다 */
+  const askApply = (then: () => void) => {
+    commit();
+    Alert.alert(t('edit.applyTitle'), t('edit.applyBody'), [
+      { text: t('edit.applyRoutineOnly'), onPress: then },
+      {
+        text: t('edit.applyConfirm'),
+        onPress: () => {
+          session.adopt(normalizedOf(draftRef.current, kindOf(draftRef.current) === 'timer'));
+          then();
+        },
+      },
+    ]);
+  };
+
+  /**
    * 우리 손으로 떠나는 길 — 저장·시작처럼 이미 결론이 난 것들이다.
    *
    * 아래 문지기(usePreventRemove)는 router.back()에도 똑같이 걸린다. 저장하고
@@ -177,7 +181,11 @@ export default function Edit() {
    * 직접 듣고 막아도 이미 늦은 이유다. usePreventRemove는 막고 있다는 사실을
    * 화면까지(preventNativeDismiss) 내려보내서 벗겨지는 것 자체를 붙든다.
    */
-  usePreventRemove(isNew && dirty && leaving == null, ({ data }) => {
+  usePreventRemove(((isNew && dirty) || needsApply) && leaving == null, ({ data }) => {
+    if (!isNew) {
+      askApply(() => navigation.dispatch(data.action));
+      return;
+    }
     Alert.alert(t('edit.discardTitle'), t('edit.discardBody'), [
       { text: t('edit.discardStay'), style: 'cancel' },
       {
@@ -257,12 +265,16 @@ export default function Edit() {
     savePreset(p);
     // 숨 속에 남은 자동 저장이 뒤따라 또 쓰지 않게 지문을 맞춰 둔다
     lastSaved.current = fingerprint(p);
-    session.start(p.id);
+    session.start(p);
     exit(goRun);
   };
 
   /** 도는 것을 보러 간다 — 남은 편집을 확정하고 떠난다(기존 것은 늘 저장되는 세상이다) */
   const openRunning = () => {
+    if (needsApply) {
+      askApply(() => exit(goRun));
+      return;
+    }
     if (!isNew) commit();
     exit(goRun);
   };
@@ -271,9 +283,8 @@ export default function Edit() {
    * ▶ — 홈의 행 ▶와 같은 규칙이다. 이미 도는 타이머가 있으면 그 자리에서
    * 갈아엎지 않는다.
    *
-   * 지금 편집 중인 바로 그것이 돌고 있으면 화면만 연다. 다시 시작하면 진행이
-   * 날아가고, 무엇보다 도는 프리셋을 저장으로 덮으면 계획이 발밑에서 바뀐다 —
-   * 그래서 이 갈래에서는 저장하지 않는다.
+   * 지금 편집 중인 바로 그것이 돌고 있으면 화면만 연다 — 다시 시작하면 진행이
+   * 날아간다. 고친 것이 있으면 지금 운동에도 넣을지 먼저 묻는다(openRunning).
    *
    * 다른 것이 돌고 있으면 무엇을 끝내고 무엇을 시작하는지 이름을 대고 묻는다.
    * 그때는 이 물음이 저장 여부까지 대신한다 — 되돌릴 수 없는 쪽이 더 큰 물음이라,

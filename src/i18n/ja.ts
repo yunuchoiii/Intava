@@ -85,6 +85,10 @@ export const ja: Catalog = {
     discardBody: '編集した内容は失われます。',
     discardStay: '編集を続ける',
     discardLeave: '戻る',
+    applyTitle: '進行中のワークアウトにも反映しますか？',
+    applyBody: '変更はルーティンに保存しました。今のワークアウトにも反映するか選んでください。',
+    applyRoutineOnly: 'ルーティンのみ',
+    applyConfirm: 'ワークアウトにも反映',
     startSaveTitle: '保存して開始しますか？',
     startSaveBody: '編集した内容を保存してから開始します。',
     startSaveConfirm: '保存して開始',
@@ -178,15 +182,20 @@ export const ja: Catalog = {
     elapsed: '{{time}} 経過',
     total: '合計 {{time}}',
     stageOf: '{{i}} / {{n}} 区間',
-    reorder: '順番を変える',
-    reorderNote: '残りの種目の順番を変えたり、今日は外したりします。',
+    reorder: '種目と順番の編集',
+    reorderNote: '種目の名前・セット・時間を変えたり、残りの順番を変えたり、今日は外したりします。',
     more: 'その他',
     moreTitle: 'その他',
     skipBlock: 'この種目をスキップ',
     skipBlockNote: '残りのセットを飛ばして次の休憩へ進みます。',
-    orderTitle: '種目の順番',
-    orderNote:
-      'チェックを外すと残りのラウンドから外れます。終わった種目と今の種目は動かすことも外すこともできません。',
+    /** 다음 버튼을 꾹 눌렀을 때 */
+    skipBlockTitle: '今の種目をスキップしますか？',
+    skipBlockBody: '{{name}} — 残りのセットを飛ばして次の休憩へ進みます。',
+    skipBlockConfirm: 'スキップ',
+    orderTitle: '種目と順番の編集',
+    orderNote: 'タップで編集、長押しで移動、チェックを外すと除外。今回のワークアウトだけに反映されます。',
+    /** 운동 및 순서 편집 — 지금 하는 종목 이름 옆 꼬리표 */
+    nowTag: '実行中',
     a11ySkip: '{{name}} を外す',
     a11yInclude: '{{name}} を戻す',
   },
@@ -247,10 +256,10 @@ export const ja: Catalog = {
     titleStopped: 'ワークアウト終了',
     /** 언제 — 완료 화면은 그날의 끝이라 시각만으로는 어느 날의 것인지 모른다 */
     spanDated: '{{date}} · {{from}} 〜 {{to}}',
-    saveOrderTitle: '新しい順番を保存しますか？',
-    saveOrderBody: '今回変更した種目の順番をこのルーティンに保存します。',
-    saveOrderSkip: '保存しない',
-    saveOrderConfirm: '保存',
+    saveChangesTitle: '変更をルーティンに保存しますか？',
+    saveChangesBody: '今回変更した種目と順番をこのルーティンに保存します。',
+    saveChangesSkip: '保存しない',
+    saveChangesConfirm: '保存',
   },
 
   notify: {
@@ -283,7 +292,7 @@ export const ja: Catalog = {
     updated: '変更を保存しました',
     deleted: '削除しました',
     duplicated: '複製しました',
-    orderSaved: '順番を保存しました',
+    changesSaved: 'ルーティンに保存しました',
   },
 
   records: {

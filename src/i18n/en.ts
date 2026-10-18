@@ -92,6 +92,10 @@ export const en: Catalog = {
     discardBody: 'Your edits will be lost.',
     discardStay: 'Keep editing',
     discardLeave: 'Leave',
+    applyTitle: 'Apply to the current workout?',
+    applyBody: 'Your changes are saved to the routine. Choose whether the workout in progress should use them too.',
+    applyRoutineOnly: 'Routine only',
+    applyConfirm: 'Apply to workout',
     startSaveTitle: 'Save and start?',
     startSaveBody: 'Your edits will be saved before starting.',
     startSaveConfirm: 'Save and start',
@@ -185,15 +189,20 @@ export const en: Catalog = {
     elapsed: '{{time}} elapsed',
     total: 'of {{time}}',
     stageOf: '{{i}} / {{n}}',
-    reorder: 'Reorder',
-    reorderNote: 'Change the order of what’s left, or drop one for today.',
+    reorder: 'Edit exercises & order',
+    reorderNote: 'Change names, sets and times, reorder what’s left, or drop one for today.',
     more: 'More',
     moreTitle: 'More',
     skipBlock: 'Skip this exercise',
     skipBlockNote: 'Skips the remaining sets and goes to the next rest.',
-    orderTitle: 'Exercise order',
-    orderNote:
-      'Unchecking drops an exercise from the remaining rounds. Finished exercises and the current one cannot be moved or dropped.',
+    /** 다음 버튼을 꾹 눌렀을 때 */
+    skipBlockTitle: 'Skip this exercise?',
+    skipBlockBody: '{{name}} — skips the remaining sets and goes to the next rest.',
+    skipBlockConfirm: 'Skip',
+    orderTitle: 'Edit exercises & order',
+    orderNote: 'Tap to edit, hold to move, uncheck to drop. Applies to this workout only.',
+    /** 운동 및 순서 편집 — 지금 하는 종목 이름 옆 꼬리표 */
+    nowTag: 'Now',
     a11ySkip: 'Drop {{name}}',
     a11yInclude: 'Put {{name}} back',
   },
@@ -254,10 +263,10 @@ export const en: Catalog = {
     titleStopped: 'Workout ended',
     /** 언제 — 완료 화면은 그날의 끝이라 시각만으로는 어느 날의 것인지 모른다 */
     spanDated: '{{date}} · {{from}} – {{to}}',
-    saveOrderTitle: 'Save the new order?',
-    saveOrderBody: 'The exercise order you changed this time will be saved to this routine.',
-    saveOrderSkip: "Don't save",
-    saveOrderConfirm: 'Save',
+    saveChangesTitle: 'Save changes to the routine?',
+    saveChangesBody: 'The exercises and order you changed this time will be saved to this routine.',
+    saveChangesSkip: "Don't save",
+    saveChangesConfirm: 'Save',
   },
 
   notify: {
@@ -290,7 +299,7 @@ export const en: Catalog = {
     updated: 'Changes saved',
     deleted: 'Deleted',
     duplicated: 'Duplicated',
-    orderSaved: 'Order saved',
+    changesSaved: 'Saved to routine',
   },
 
   records: {

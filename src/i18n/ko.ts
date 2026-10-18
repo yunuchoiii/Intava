@@ -98,6 +98,11 @@ export const ko = {
     discardBody: '편집한 내용이 사라집니다.',
     discardStay: '계속 편집',
     discardLeave: '나가기',
+    /** 이 루틴으로 운동하는 중에 고치고 나갈 때 — 루틴은 이미 저장됐다 */
+    applyTitle: '진행 중인 운동에도 적용할까요?',
+    applyBody: '바꾼 내용은 루틴에 저장했습니다. 지금 하고 있는 운동에도 반영할지 고르세요.',
+    applyRoutineOnly: '루틴에만 저장',
+    applyConfirm: '운동에도 적용',
     /** 시작하기는 저장을 겸한다 — 고친 것이 있으면 묻는다 */
     startSaveTitle: '저장하고 시작할까요?',
     startSaveBody: '편집한 내용을 저장한 뒤 시작합니다.',
@@ -198,17 +203,22 @@ export const ko = {
     total: '총 {{time}}',
     /** 머리줄 아래 — 전체 자리 중 몇 번째인지, 그리고 순서를 바꾸는 길 */
     stageOf: '{{i}} / {{n}} 구간',
-    reorder: '순서 바꾸기',
-    reorderNote: '남은 종목의 차례를 바꾸거나 오늘은 뺍니다.',
+    reorder: '운동 및 순서 편집',
+    reorderNote: '종목의 이름·세트·시간을 고치거나, 남은 차례를 바꾸거나, 오늘은 뺍니다.',
     /** 하단 진행 바 위 — 이 안에 순서 바꾸기와 종목 넘기기가 들어 있다 */
     more: '더보기',
     moreTitle: '더보기',
     skipBlock: '지금 종목 넘기기',
     skipBlockNote: '남은 세트를 건너뛰고 다음 휴식으로 갑니다.',
+    /** 다음 버튼을 꾹 눌렀을 때 */
+    skipBlockTitle: '지금 종목을 넘길까요?',
+    skipBlockBody: '{{name}} — 남은 세트를 건너뛰고 다음 휴식으로 갑니다.',
+    skipBlockConfirm: '넘기기',
     /** 실행 중 종목 순서 시트 */
-    orderTitle: '종목 순서',
-    orderNote:
-      '체크를 끄면 남은 라운드에서 빠집니다. 지나간 종목과 지금 하는 종목은 옮기거나 뺄 수 없습니다.',
+    orderTitle: '운동 및 순서 편집',
+    orderNote: '누르면 고치고, 꾹 눌러 옮기고, 체크를 끄면 뺍니다. 이번 운동에만 적용됩니다.',
+    /** 운동 및 순서 편집 — 지금 하는 종목 이름 옆 꼬리표 */
+    nowTag: '운동 중',
     a11ySkip: '{{name}} 빼기',
     a11yInclude: '{{name}} 다시 넣기',
   },
@@ -276,10 +286,10 @@ export const ko = {
     /** 언제부터 언제까지 — 기록 화면의 카드 머리와 같은 사실 */
     /** 언제 — 완료 화면은 그날의 끝이라 시각만으로는 어느 날의 것인지 모른다 */
     spanDated: '{{date}} · {{from}} ~ {{to}}',
-    saveOrderTitle: '바뀐 순서를 저장할까요?',
-    saveOrderBody: '이번에 변경된 종목 순서를 이 루틴에 저장합니다.',
-    saveOrderSkip: '저장 안 함',
-    saveOrderConfirm: '저장',
+    saveChangesTitle: '바뀐 내용을 루틴에 저장할까요?',
+    saveChangesBody: '이번 운동에서 바꾼 종목과 순서를 이 루틴에 저장합니다.',
+    saveChangesSkip: '저장 안 함',
+    saveChangesConfirm: '저장',
   },
 
   notify: {
@@ -314,7 +324,7 @@ export const ko = {
     updated: '수정했습니다',
     deleted: '삭제했습니다',
     duplicated: '복제했습니다',
-    orderSaved: '순서를 저장했습니다',
+    changesSaved: '루틴에 저장했습니다',
   },
 
   /** 운동 기록 — 월 캘린더와 그날의 상세 */

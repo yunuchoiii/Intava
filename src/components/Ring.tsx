@@ -29,7 +29,7 @@ import Reanimated, {
   withTiming,
 } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
-import { selectionTick } from '../feedback';
+import { scrubTick } from '../feedback';
 import { ABS, TABULAR } from '../theme';
 
 export const RING_SIZE = 330;
@@ -295,7 +295,7 @@ export function Ring({
           const sec = Math.ceil(next);
           if (sec !== lastSecond.current) {
             lastSecond.current = sec;
-            selectionTick();
+            scrubTick();
           }
           onScrub?.(next);
         },
