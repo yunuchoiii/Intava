@@ -269,9 +269,37 @@ export function notificationText(
         });
     return { title: named(t('notify.workTitle', { dur: durationShort(seg.dur) })), body };
   }
+  const nextLine = t('notify.bodyNext', {
+    what: next ? nextName(next, seg, preset) : t('phase.DONE'),
+  });
+  /*
+    휴식에도 운동 알림과 같은 「몇 세트 · 몇 라운드」 줄을 윗줄에 둔다 — 잠금화면만
+    보고 쉬는 동안 「지금 몇 번째였더라」가 가장 궁금하다. 운동 알림에서 본 숫자가
+    휴식에서 사라지면 휴식 30초 내내 그것을 셀 길이 없다.
+
+    세트는 **방금 끝낸 세트**다(실행 화면의 링 아랫줄 subLabel과 같다). 종목·라운드
+    사이 휴식은 그 종목의 마지막 세트를 들고 있어 「4 / 4세트」로 읽힌다. 덧붙인
+    종목 앞의 전환(꼬리)은 **다음** 종목의 1세트를 들고 있어 숫자가 거짓말이 되므로
+    뺀다 — 라운드 안의 전환은 늘 마지막 세트(set === sets)라 그것으로 가린다.
+  */
+  const counted =
+    seg.set != null &&
+    seg.sets != null &&
+    (seg.phase === 'SET_REST' ||
+      ((seg.phase === 'BLOCK_REST' || seg.phase === 'ROUND_REST') && seg.set === seg.sets));
+  const progress = !counted
+    ? null
+    : isSimple(preset)
+      ? t('notify.bodySets', { set: seg.set, sets: seg.sets })
+      : t('notify.bodySetsRounds', {
+          set: seg.set,
+          sets: seg.sets,
+          round: seg.round,
+          rounds: preset.rounds,
+        });
   return {
     title: named(describeSegment(seg)),
-    body: t('notify.bodyNext', { what: next ? nextName(next, seg, preset) : t('phase.DONE') }),
+    body: progress ? `${progress}\n${nextLine}` : nextLine,
   };
 }
 
