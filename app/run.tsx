@@ -23,7 +23,7 @@ import { OrderSheet } from '../src/components/OrderSheet';
 import { RunMoreSheet } from '../src/components/RunMoreSheet';
 import { PhaseFlood } from '../src/components/PhaseFlood';
 import { Ring } from '../src/components/Ring';
-import { clock, isSimple, phaseLabel, ringTitle, segLabel, subLabel } from '../src/engine/labels';
+import { clock, isSimple, planStages, ringTitle, segLabel, subLabel } from '../src/engine/labels';
 import { useMorph } from '../src/morph';
 import { commitTick } from '../src/feedback';
 import { ensurePermission } from '../src/notify';
@@ -148,62 +148,7 @@ export default function Run() {
    * 바뀔 수 있기 때문이다. 휴식은 자리로 세지 않는다 — 어디에서 어디로 가는
    * 사이일 뿐이라, 그 동안에는 **도착할** 자리를 지금으로 친다.
    */
-  const { stages, stageOf } = useMemo(() => {
-    const segs = run.plan?.segs ?? [];
-    const stages: { key: string; name: string; start: number; end: number }[] = [];
-    const stageOf: number[] = [];
-    let occ = '';
-    segs.forEach((s, i) => {
-      switch (s.phase) {
-        case 'WARMUP':
-        case 'PREPARE':
-        case 'COOLDOWN':
-          if (stages[stages.length - 1]?.key !== s.phase) {
-            stages.push({ key: s.phase, name: phaseLabel(s.phase), start: s.start, end: s.start });
-          }
-          break;
-        case 'WORK': {
-          const key = `${s.round}-${s.blk}`;
-          if (key !== occ) {
-            occ = key;
-            stages.push({ key, name: s.name ?? '', start: s.start, end: s.start });
-          }
-          break;
-        }
-      }
-      // 종목·라운드 사이 휴식은 아직 만들어지지 않은 다음 자리를 가리킨다
-      const ahead = s.phase === 'BLOCK_REST' || s.phase === 'ROUND_REST';
-      stageOf[i] = ahead ? stages.length : stages.length - 1;
-    });
-
-    /*
-      **가리킬 자리가 안 생긴 휴식은 있던 자리로 되돌린다.**
-
-      위에서 종목·라운드 사이 휴식은 «아직 만들어지지 않은 다음 자리»를 가리키게
-      했는데, 그 뒤에 정말로 자리가 생겼는지는 다 훑고 나서야 안다 — 마지막
-      라운드 휴식이나 꼬리 끝의 전환처럼 뒤가 비는 경우가 있다.
-
-      한때 `Math.min(stages.length - 1, ...)`을 그 자리에서 걸었는데, 그러면
-      «다음»이 늘 «지금»으로 눌려서 앞을 가리키는 일 자체가 없었다 — 주석은
-      가리킨다고 적혀 있는데 코드는 안 가리키고 있었다.
-    */
-    const last = stages.length - 1;
-    for (let i = 0; i < stageOf.length; i++) stageOf[i] = Math.min(stageOf[i], last);
-
-    /**
-     * 자리마다 시간 폭을 매긴다 — 하단 눈금이 이 폭으로 나뉜다.
-     * 어느 초도 빠지지 않아야 눈금이 진행 바 노릇을 한다. 휴식은 도착할 자리에
-     * 얹혀 있으므로, 자리의 폭은 그 자리에 속한 구간들의 처음부터 끝까지다.
-     */
-    segs.forEach((s, i) => {
-      const k = stageOf[i];
-      if (k < 0 || !stages[k]) return;
-      stages[k].start = Math.min(stages[k].start, s.start);
-      stages[k].end = Math.max(stages[k].end, s.start + s.dur);
-    });
-
-    return { stages, stageOf };
-  }, [run.plan]);
+  const { stages, stageOf } = useMemo(() => planStages(run.plan), [run.plan]);
 
   /** 그중 지금 자리. 다 끝났으면 끝을 가리킨다 */
   const cursor = run.seg ? (stageOf[run.idx] ?? -1) : stages.length;

@@ -262,6 +262,12 @@ export const zh: Catalog = {
     saveChangesConfirm: '保存',
   },
 
+  /** 라이브 액티비티 — 다이내믹 아일랜드 · 잠금화면 */
+  live: {
+    next: '下一个：{{what}}',
+    subWork: '{{sub}} · 下一个：{{next}}',
+  },
+
   notify: {
     channelCue: '热身 · 准备',
     channelWork: '开始运动',

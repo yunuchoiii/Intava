@@ -45,10 +45,13 @@ import {
   type RoundJoins,
   type RoundSkips,
 } from './engine/segments';
-import { blockSummary, shapeLabel } from './engine/labels';
+import { blockSummary, clock, liveText, planStages, shapeLabel } from './engine/labels';
 import { countdownFeedback, segmentFeedback } from './feedback';
+import { t } from './i18n';
+import { syncLiveActivity } from './live';
 import { cancelAll, scheduleUpcoming } from './notify';
 import { uid, useStore } from './store';
+import { LIVE_COLOR } from './theme';
 import type { Block, Preset, Segment } from './types';
 
 const KEY = 'intava:session';
@@ -359,6 +362,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const [restoredFromStorage, setRestoredFromStorage] = useState(false);
+  /**
+   * 저장소에서 세션을 되살리는 일이 끝났는가 — 있든 없든.
+   *
+   * 라이브 액티비티가 이것을 기다린다. 앱이 뜬 직후에는 세션이 아직 비어 있는데,
+   * 그걸 「세션 없음」으로 읽으면 아일랜드에 떠 있던 타이머를 꺼 버린다 — 바로
+   * 다음 순간 세션이 되살아나 새로 켜면서 깜빡인다.
+   */
+  const [loaded, setLoaded] = useState(false);
 
   /** 앱이 뜰 때 한 번 — 진행 중이던 세션을 되살린다 */
   useEffect(() => {
@@ -374,6 +385,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         setRestoredFromStorage(true);
       } catch {
         // 읽기 실패는 세션이 없는 것으로 본다
+      } finally {
+        if (alive) setLoaded(true);
       }
     })();
     return () => {
@@ -1113,6 +1126,62 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       void reschedule();
       },
   }), [persist, flush, seekTo, tick, reschedule, elapsedNow, snapshotAt, markRun, addRecord]);
+
+  /**
+   * 다이내믹 아일랜드 · 잠금화면의 라이브 액티비티를 세션에 맞춘다(src/live).
+   *
+   * 구간이 바뀔 때, 멈추고 재개할 때, 시간을 옮길 때(zeroAt)만 다시 계산한다. 그
+   * 사이의 숫자와 링은 iOS가 timerInterval로 스스로 내린다. 같은 내용이면 live가
+   * 걸러서 보내지 않는다.
+   *
+   * 링을 문지르는 동안(autoPaused)에는 보내지 않는다 — 손가락이 움직이는 프레임마다
+   * 기준 시각이 바뀌어 갱신이 쏟아진다. 손을 떼면(commitScrub) 재개되며 한 번 보낸다.
+   */
+  useEffect(() => {
+    if (!loaded) return;
+    if (!stored) {
+      syncLiveActivity(null);
+      return;
+    }
+    // 세션은 되살아났는데 루틴 목록이 아직이다 — 끄지 말고 기다린다
+    if (!plan || !preset) return;
+    if (autoPaused.current) return;
+    const e = elapsedNow();
+    const shot = snapshotAt(e);
+    const paused = stored.pausedAt != null;
+    const seg = shot.seg;
+    const { stages, stageOf } = planStages(plan);
+    const cursor = seg ? (stageOf[shot.idx] ?? -1) : stages.length;
+    const text = liveText(seg, plan.segs[shot.idx + 1], preset);
+    // 멈춘 동안에는 시각을 0으로 둔다 — 쓰지 않는 값이 바뀔 때마다 갱신이 나가지 않게
+    const moving = !paused && !shot.done;
+    syncLiveActivity({
+      ...text,
+      color: LIVE_COLOR[seg?.phase ?? 'DONE'],
+      start: moving && seg ? stored.zeroAt + seg.start * 1000 : 0,
+      end: moving && seg ? stored.zeroAt + (seg.start + seg.dur) * 1000 : 0,
+      paused,
+      remain: paused ? clock(shot.remain) : '',
+      fraction: paused ? Math.round(shot.ratio * 100) / 100 : 0,
+      stage: t('run.stageOf', {
+        i: Math.min(stages.length, Math.max(1, cursor + 1)),
+        n: stages.length,
+      }),
+      runStart: moving ? stored.zeroAt : 0,
+      runEnd: moving ? stored.zeroAt + plan.total * 1000 : 0,
+      runFraction: paused && plan.total > 0 ? Math.round((e / plan.total) * 100) / 100 : 0,
+      done: shot.done,
+    });
+  }, [
+    loaded,
+    stored,
+    plan,
+    preset,
+    snap.idx,
+    snap.done,
+    elapsedNow,
+    snapshotAt,
+  ]);
 
   const value = useMemo<Session>(() => ({
     ...snap,

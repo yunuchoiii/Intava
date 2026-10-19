@@ -88,6 +88,15 @@
       "expo-localization",
       "expo-sharing",
       [
+        "expo-widgets",
+        {
+          "bundleIdentifier": "com.intava.app.ExpoWidgetsTarget",
+          "groupIdentifier": "group.com.intava.app",
+          "enablePushNotifications": false,
+          "widgets": []
+        }
+      ],
+      [
         "expo-build-properties",
         {
           "ios": {

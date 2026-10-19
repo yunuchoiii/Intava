@@ -292,6 +292,12 @@ export const ko = {
     saveChangesConfirm: '저장',
   },
 
+  /** 라이브 액티비티 — 다이내믹 아일랜드 · 잠금화면 */
+  live: {
+    next: '다음: {{what}}',
+    subWork: '{{sub}} · 다음: {{next}}',
+  },
+
   notify: {
     channelCue: '웜업 · 준비',
     channelWork: '운동 시작',

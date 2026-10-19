@@ -269,6 +269,12 @@ export const en: Catalog = {
     saveChangesConfirm: 'Save',
   },
 
+  /** 라이브 액티비티 — 다이내믹 아일랜드 · 잠금화면 */
+  live: {
+    next: 'Next: {{what}}',
+    subWork: '{{sub}} · Next: {{next}}',
+  },
+
   notify: {
     channelCue: 'Warm-up · Prepare',
     channelWork: 'Work starts',

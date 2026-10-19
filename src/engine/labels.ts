@@ -7,6 +7,7 @@
  * 어순이 다른 언어에서 문장이 무너진다 — "3 / 8 세트"는 영어로 "Set 3 of 8"이다.
  */
 import { t } from '../i18n';
+import type { Plan } from './segments';
 import type { Phase, Preset, Segment } from '../types';
 
 export function phaseLabel(phase: Phase): string {
@@ -342,4 +343,118 @@ export function shapeLabel(p: Preset, extraBlocks = 0): string {
     blocks: t('count.blocks', { count: blocks }),
     rounds: t('count.rounds', { count: p.rounds }),
   });
+}
+
+/**
+ * 이 운동이 지나가는 자리들 — 웜업 · 준비 · 종목(라운드마다 다시) · 쿨다운.
+ *
+ * 실행 화면 하단 눈금과 「3 / 9 구간」, 라이브 액티비티의 같은 줄이 이것을 쓴다.
+ * 계획에서 뽑는다 — 프리셋이 아니라 **실제로 돌 차례**여야 하고, 그건 실행 중에
+ * 바뀔 수 있기 때문이다. 휴식은 자리로 세지 않는다 — 어디에서 어디로 가는
+ * 사이일 뿐이라, 그 동안에는 **도착할** 자리를 지금으로 친다.
+ *
+ * stageOf[i]는 구간 i가 속한 자리의 번호다.
+ */
+export function planStages(plan: Plan | null | undefined): {
+  stages: { key: string; name: string; start: number; end: number }[];
+  stageOf: number[];
+} {
+  const segs = plan?.segs ?? [];
+  const stages: { key: string; name: string; start: number; end: number }[] = [];
+  const stageOf: number[] = [];
+  let occ = '';
+  segs.forEach((s, i) => {
+    switch (s.phase) {
+      case 'WARMUP':
+      case 'PREPARE':
+      case 'COOLDOWN':
+        if (stages[stages.length - 1]?.key !== s.phase) {
+          stages.push({ key: s.phase, name: phaseLabel(s.phase), start: s.start, end: s.start });
+        }
+        break;
+      case 'WORK': {
+        const key = `${s.round}-${s.blk}`;
+        if (key !== occ) {
+          occ = key;
+          stages.push({ key, name: s.name ?? '', start: s.start, end: s.start });
+        }
+        break;
+      }
+    }
+    // 종목·라운드 사이 휴식은 아직 만들어지지 않은 다음 자리를 가리킨다
+    const ahead = s.phase === 'BLOCK_REST' || s.phase === 'ROUND_REST';
+    stageOf[i] = ahead ? stages.length : stages.length - 1;
+  });
+
+  /*
+    **가리킬 자리가 안 생긴 휴식은 있던 자리로 되돌린다.**
+
+    위에서 종목·라운드 사이 휴식은 «아직 만들어지지 않은 다음 자리»를 가리키게
+    했는데, 그 뒤에 정말로 자리가 생겼는지는 다 훑고 나서야 안다 — 마지막
+    라운드 휴식이나 꼬리 끝의 전환처럼 뒤가 비는 경우가 있다.
+
+    한때 `Math.min(stages.length - 1, ...)`을 그 자리에서 걸었는데, 그러면
+    «다음»이 늘 «지금»으로 눌려서 앞을 가리키는 일 자체가 없었다 — 주석은
+    가리킨다고 적혀 있는데 코드는 안 가리키고 있었다.
+  */
+  const last = stages.length - 1;
+  for (let i = 0; i < stageOf.length; i++) stageOf[i] = Math.min(stageOf[i], last);
+
+  /**
+   * 자리마다 시간 폭을 매긴다 — 하단 눈금이 이 폭으로 나뉜다.
+   * 어느 초도 빠지지 않아야 눈금이 진행 바 노릇을 한다. 휴식은 도착할 자리에
+   * 얹혀 있으므로, 자리의 폭은 그 자리에 속한 구간들의 처음부터 끝까지다.
+   */
+  segs.forEach((s, i) => {
+    const k = stageOf[i];
+    if (k < 0 || !stages[k]) return;
+    stages[k].start = Math.min(stages[k].start, s.start);
+    stages[k].end = Math.max(stages[k].end, s.start + s.dur);
+  });
+
+  return { stages, stageOf };
+}
+
+/**
+ * 라이브 액티비티(다이내믹 아일랜드 · 잠금화면)에 적을 세 줄 — 단계 · 이름 · 곁말.
+ *
+ * 디자인(인타바 다이내믹 아일랜드 1b)의 규칙이다.
+ *   · 운동 — 이름 자리에 지금 종목, 곁말에 「1 / 4 세트 · 다음: 휴식 30초」
+ *   · 휴식 — 이름 자리에 「다음: ○○」 예고, 곁말에 세트·라운드
+ * 쉬는 동안 궁금한 것은 방금 끝낸 것이 아니라 **일어나서 할 것**이라 이름 자리를
+ * 다음 종목에 내준다. 같은 종목의 세트 사이 휴식이어도 종목 이름을 댄다 — 잠금화면
+ * 알림의 nextName과 달리 여기에는 제목 줄이 따로 없어 이름이 두 번 서지 않는다.
+ *
+ * 타이머(종목 하나)는 종목 이름이 곧 타이머 이름이다.
+ */
+export function liveText(
+  seg: Segment | null,
+  next: Segment | undefined,
+  preset: Preset
+): { phase: string; name: string; sub: string } {
+  if (!seg) {
+    return { phase: phaseLabel('DONE'), name: preset.name, sub: t('sub.finished') };
+  }
+  const phase = phaseLabel(seg.phase);
+  const own = isSimple(preset) ? preset.name : (seg.name ?? preset.name);
+  const upcoming = (): string => {
+    if (!next) return phaseLabel('DONE');
+    if (next.phase === 'WORK' && next.name && !isSimple(preset)) return next.name;
+    return describeSegment(next);
+  };
+  switch (seg.phase) {
+    case 'WORK':
+      return {
+        phase,
+        name: own,
+        sub: t('live.subWork', { sub: subLabel(seg, preset), next: upcoming() }),
+      };
+    case 'SET_REST':
+    case 'BLOCK_REST':
+    case 'ROUND_REST':
+      return { phase, name: t('live.next', { what: upcoming() }), sub: subLabel(seg, preset) };
+    default:
+      // 웜업 · 준비 · 쿨다운 — 어느 종목의 것도 아니다. 루틴 이름을 세운다
+      return { phase, name: preset.name, sub: subLabel(seg, preset) };
+  }
 }

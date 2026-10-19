@@ -54,6 +54,24 @@ export const PHASE_COLOR: Record<Phase, string> = {
 };
 
 
+/**
+ * 라이브 액티비티의 단계 색 — 검은 다이내믹 아일랜드 위에서 읽히는 밝은 짝.
+ *
+ * PHASE_COLOR는 화면 **전체를 칠하는** 색이라 흰 글자가 올라앉도록 어둡다. 아일랜드는
+ * 거꾸로 검은 바탕에 링과 숫자만 단계 색으로 그리므로, 그대로 쓰면 빨강이 묻힌다.
+ * 운동·휴식은 디자인(인타바 다이내믹 아일랜드)의 값이고, 나머지는 같은 결로 밝혔다.
+ */
+export const LIVE_COLOR: Record<Phase, string> = {
+  WARMUP: '#FF9A4D',
+  PREPARE: '#FFB547',
+  WORK: '#FF4D5E',
+  SET_REST: '#2BD9C3',
+  BLOCK_REST: '#6E93FF',
+  ROUND_REST: '#A585FF',
+  COOLDOWN: '#7FB2D9',
+  DONE: '#3DDC97',
+};
+
 export const RADIUS = {
   tile: 14,
   tab: 18,

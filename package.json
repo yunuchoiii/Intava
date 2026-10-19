@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
+    "@expo/ui": "~57.0.25",
     "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "~57.0.30",
     "expo-application": "~57.0.3",
@@ -25,6 +26,7 @@
     "expo-status-bar": "~57.0.1",
     "expo-store-review": "~57.0.3",
     "expo-system-ui": "~57.0.4",
+    "expo-widgets": "~57.0.26",
     "i18next": "^26.3.6",
     "intl-pluralrules": "^2.0.1",
     "react": "19.2.3",
