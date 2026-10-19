@@ -178,7 +178,8 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
       <Text modifiers={[font({ size: 12, weight: 'bold' }), kerning(1.9), foregroundStyle(p.color)]}>
         {p.phase}
       </Text>
-      <Text modifiers={[font({ size: 16, weight: 'semibold' }), foregroundStyle('#FFFFFF'), lineLimit(1)]}>
+      {/* 이름 700, 아랫줄 600 — 아일랜드에서 한눈에 읽혀야 한다 */}
+      <Text modifiers={[font({ size: 16, weight: 'bold' }), foregroundStyle('#FFFFFF'), lineLimit(1)]}>
         {p.name}
       </Text>
       <Text modifiers={[font({ size: 12.5, weight: 'semibold' }), foregroundStyle('#FFFFFF8C'), lineLimit(1)]}>
