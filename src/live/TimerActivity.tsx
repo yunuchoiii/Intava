@@ -23,7 +23,7 @@
  * 디자인의 확장 상태에 있던 일시정지·건너뛰기 버튼은 아직 없다 — 이 버전의
  * expo-widgets는 라이브 액티비티의 버튼 입력을 문서로 약속하지 않는다.
  */
-import { HStack, ProgressView, Text, VStack, ZStack } from '@expo/ui/swift-ui';
+import { HStack, ProgressView, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
 import {
   activityBackgroundTint,
   font,
@@ -32,6 +32,7 @@ import {
   kerning,
   labelsHidden,
   lineLimit,
+  minimumScaleFactor,
   monospacedDigit,
   multilineTextAlignment,
   padding,
@@ -110,6 +111,29 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
     );
   };
 
+  /*
+    링이 들어갈 자리가 없으면 링을 **통째로 뺀다** — 반쯤 잘린 링보다 숫자 하나가 낫다.
+
+    'ViewThatFitsView'는 패치로 위젯 렌더러에 더한 이름이다(patches/expo-widgets+*.patch).
+    자식들을 차례로 대 보고 가로로 처음 들어가는 것 하나만 그린다(SwiftUI ViewThatFits).
+    @expo/ui에 해당 컴포넌트가 없어 문자열 타입으로 바로 만든다 — 위젯 런타임의 jsx는
+    문자열 타입을 그대로 노드로 넘긴다. 두 번째 후보는 폭 0짜리 빈칸이다.
+  */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const Fits: any = 'ViewThatFitsView';
+  const ringOrNothing = (size: number) => (
+    <Fits>
+      {ring(size)}
+      <Spacer minLength={0} modifiers={[frame({ width: 0, height: 0 })]} />
+    </Fits>
+  );
+
+  /*
+    숫자 — 폭을 **못 박지 않고 상한만** 둔다. 자리가 모자라면 줄어들어서라도 끝까지 보인다.
+
+    다른 라이브 액티비티(음악 등)가 같이 떠 있으면 iOS가 아일랜드를 둘로 나누어 이쪽
+    폭이 좁아진다. 46pt로 못 박았을 때 거기서 「2:5」까지만 보이고 잘렸다(실기기).
+  */
   const clock = (size: number, weight: 'bold' | 'heavy', width: number) =>
     still ? (
       <Text
@@ -117,7 +141,9 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
           font({ size, weight }),
           monospacedDigit(),
           foregroundStyle(p.color),
-          frame({ width, alignment: 'trailing' }),
+          lineLimit(1),
+          minimumScaleFactor(0.6),
+          frame({ maxWidth: width, alignment: 'trailing' }),
         ]}
       >
         {p.done ? '' : p.remain}
@@ -131,7 +157,9 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
           monospacedDigit(),
           foregroundStyle(p.color),
           multilineTextAlignment('trailing'),
-          frame({ width, alignment: 'trailing' }),
+          lineLimit(1),
+          minimumScaleFactor(0.6),
+          frame({ maxWidth: width, alignment: 'trailing' }),
         ]}
       />
     );
@@ -207,7 +235,7 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
         {bar}
       </VStack>
     ),
-    compactLeading: ring(22),
+    compactLeading: ringOrNothing(22),
     compactTrailing: clock(15, 'bold', 46),
     minimal: ring(22),
     expandedBottom: (

@@ -1,0 +1,34 @@
+diff --git a/node_modules/expo-widgets/ios/Widgets/DynamicView.swift b/node_modules/expo-widgets/ios/Widgets/DynamicView.swift
+index 17f6609..9addfd7 100644
+--- a/node_modules/expo-widgets/ios/Widgets/DynamicView.swift
++++ b/node_modules/expo-widgets/ios/Widgets/DynamicView.swift
+@@ -102,6 +102,14 @@ public struct WidgetsDynamicView: View, ExpoSwiftUI.AnyChild {
+       } else {
+         render(ExpoUI.Button.self, ExpoUI.ButtonProps.self, updateProps: updateChildren)
+       }
++    // [Intava patch] 자식들을 차례로 대 보고, 가로로 처음 들어가는 것 하나만 그린다(SwiftUI ViewThatFits).
++    // 다른 라이브 액티비티와 아일랜드를 나눠 쓰느라 칸이 좁아지면 링 대신 빈칸을 고르게 하려고 더했다.
++    case "ViewThatFitsView":
++      ViewThatFits(in: .horizontal) {
++        ForEach(Array(fitsChildren().enumerated()), id: \.offset) { _, child in
++          WidgetsDynamicView(name: name, kind: kind, node: child, entryIndex: entryIndex, environmentString: environmentString)
++        }
++      }
+     case "react.fragment":
+       render(FragmentView.self, FragmentProps.self, updateProps: updateChildren)
+     case "LinkView":
+@@ -159,6 +167,14 @@ public struct WidgetsDynamicView: View, ExpoSwiftUI.AnyChild {
+     }
+   }
+ 
++  // [Intava patch] ViewThatFitsView의 후보들
++  private func fitsChildren() -> [[String: Any]] {
++    guard let props = node["props"] as? [String: Any] else { return [] }
++    if let children = props["children"] as? [Any] { return flattenChildNodes(children) }
++    if let child = props["children"] as? [String: Any] { return [child] }
++    return []
++  }
++
+   private func flattenChildNodes(_ children: [Any]) -> [[String: Any]] {
+     return children.flatMap { child -> [[String: Any]] in
+       if let node = child as? [String: Any] {
