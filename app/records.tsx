@@ -590,7 +590,7 @@ const styles = StyleSheet.create({
   emptyHint: { marginTop: 8, fontSize: 13, lineHeight: 21, color: C.textTertiary },
 
   card: { marginTop: 0, borderRadius: 20, padding: 16, gap: 13 },
-  cardHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  cardHead: { flexDirection: 'row', alignItems: 'flex-end', gap: 10 },
   cardName: { fontSize: 17, fontWeight: '700', letterSpacing: -0.26, color: C.textPrimary },
   cardWhen: { marginTop: 5, fontSize: 12.5, color: C.textTertiary },
   cardType: { marginTop: 3, fontSize: 12.5, fontWeight: '600', color: C.textSecondary },
