@@ -90,8 +90,6 @@ export default function Edit() {
   const [picking, setPicking] = useState(false);
   const [startEndOpen, setStartEndOpen] = useState(false);
   const [pickingType, setPickingType] = useState(false);
-  /** 운동 종류 시트의 빨간 줄을 눌렀다 — 시트가 내려간 뒤 설정을 연다 */
-  const toSettings = useRef(false);
   const [nameFocused, setNameFocused] = useState(false);
   // 종목을 끌어 옮기는 동안에는 화면이 같이 스크롤되면 안 된다
   const [reordering, setReordering] = useState(false);
@@ -411,6 +409,24 @@ export default function Edit() {
       </Pressable>
     ) : null;
 
+  /*
+    「건강 앱에 운동 기록」이 꺼져 있으면 운동 종류 줄 바로 밑에 빨갛게 알린다 — 꺼진 채
+    종류만 고르면 왜 피트니스에 안 남는지 알 길이 없다. 누르면 편집을 확정하고 설정을 연다.
+  */
+  const healthOffRow =
+    Platform.OS === 'ios' && !settings.healthSync ? (
+      <Pressable
+        style={styles.healthOff}
+        onPress={() => {
+          if (!isNew) commit();
+          router.push('/settings');
+        }}
+        accessibilityRole="button"
+      >
+        <Text style={styles.healthOffText}>{t('edit.workoutTypeHealthOff')}</Text>
+      </Pressable>
+    ) : null;
+
   return (
     <Screen>
       <View style={{ flex: 1, paddingTop: insets.top + 6 }}>
@@ -534,6 +550,7 @@ export default function Edit() {
               <Collapsible open={startEndOpen}>{startEndRows}</Collapsible>
               {countdownRow}
               {workoutTypeRow}
+              {healthOffRow}
             </>
           ) : (
             <>
@@ -633,6 +650,7 @@ export default function Edit() {
               {startEndRows}
               {countdownRow}
               {workoutTypeRow}
+              {healthOffRow}
             </>
           )}
 
@@ -663,18 +681,6 @@ export default function Edit() {
         visible={pickingType}
         value={workoutTypeOf(draft)}
         onClose={() => setPickingType(false)}
-        healthOff={!settings.healthSync}
-        onOpenSettings={() => {
-          toSettings.current = true;
-          setPickingType(false);
-        }}
-        onClosed={() => {
-          // 시트가 다 내려간 뒤에 옮긴다 — 내려가는 몸짓 위에 화면이 쌓이지 않게
-          if (!toSettings.current) return;
-          toSettings.current = false;
-          if (!isNew) commit();
-          router.push('/settings');
-        }}
         onPick={(workoutType) => {
           patch({ workoutType });
           setPickingType(false);
@@ -805,6 +811,8 @@ const styles = StyleSheet.create({
   rowTitle: { fontSize: 18, fontWeight: '600', color: C.textPrimary },
   rowValueMuted: { fontSize: 16, color: C.textSecondary },
   typeChevron: { marginLeft: 8, fontSize: 20, color: C.textTertiary },
+  healthOff: { paddingTop: 10, paddingBottom: 4 },
+  healthOffText: { fontSize: 14, lineHeight: 20, color: C.danger },
   footer: {
     paddingHorizontal: GUTTER,
     paddingTop: 12,
