@@ -63,8 +63,7 @@ export const ko = {
   edit: {
     workoutType: '운동 종류',
     workoutTypeNote: '건강·피트니스 앱에 이 종류로 기록됩니다.',
-    workoutTypeHealthOff: '건강 앱에 운동 기록이 꺼져 있어 지금은 어디에도 기록되지 않습니다.',
-    workoutTypeOpenSettings: '설정 열기',
+    workoutTypeHealthOff: '"건강 앱에 운동 기록" 설정이 꺼져있습니다.',
     countdown: '카운트다운',
     countdownSeconds: '{{n}}초',
     countdownUnit: '초',

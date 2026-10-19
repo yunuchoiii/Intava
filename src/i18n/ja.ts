@@ -52,8 +52,7 @@ export const ja: Catalog = {
   edit: {
     workoutType: 'ワークアウトの種類',
     workoutTypeNote: 'ヘルスケアとフィットネスにこの種類で記録されます。',
-    workoutTypeHealthOff: '「ヘルスケアにワークアウトを記録」がオフのため、今は記録されません。',
-    workoutTypeOpenSettings: '設定を開く',
+    workoutTypeHealthOff: '「ヘルスケアにワークアウトを記録」がオフです。',
     countdown: 'カウントダウン',
     countdownSeconds: '{{n}}秒',
     countdownUnit: '秒',

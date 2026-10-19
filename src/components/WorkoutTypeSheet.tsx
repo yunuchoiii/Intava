@@ -4,7 +4,7 @@
  * 줄을 누르면 곧바로 고르고 닫힌다. 고를 것이 열 개뿐이라 확인 단계를 두지 않는다.
  *
  * 「건강 앱에 운동 기록」이 꺼져 있으면 여기서 고른 종류는 아무 데도 남지 않는다. 고르는
- * 그 자리에서 빨간 줄로 알리고, 누르면 설정으로 데려간다 — 모르고 고르면 왜 피트니스에
+ * 그 자리에서 빨간 줄로 알리고, 그 줄을 누르면 설정으로 데려간다 — 모르고 고르면 왜 피트니스에
  * 안 남는지 알 길이 없다.
  */
 import React from 'react';
@@ -51,9 +51,7 @@ export function WorkoutTypeSheet({
           style={styles.warnRow}
           accessibilityLabel={t('edit.workoutTypeHealthOff')}
         >
-          <Text style={styles.warn}>
-            {t('edit.workoutTypeHealthOff')} <Text style={styles.warnLink}>{t('edit.workoutTypeOpenSettings')} ›</Text>
-          </Text>
+          <Text style={styles.warn}>{t('edit.workoutTypeHealthOff')}</Text>
         </PressBox>
       )}
       <ScrollView
@@ -103,7 +101,6 @@ const styles = StyleSheet.create({
   },
   warnRow: { paddingHorizontal: GUTTER, paddingBottom: 12, marginTop: -2 },
   warn: { fontSize: 14, lineHeight: 20, color: C.danger },
-  warnLink: { fontWeight: '700', color: C.danger },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
