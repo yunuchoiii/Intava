@@ -87,6 +87,10 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
 
     **둘만 겹친다.** 넷이면 원래 선의 세 배쯤이라 너무 두꺼웠고, 링마다 깔리는 반투명
     바탕 링도 네 번 겹쳐 진해졌다 — 바탕은 지울 수 없어 겹 수가 곧 바탕의 농도다.
+
+    **간격은 3.5%로 좁게.** 반투명 바탕은 두 겹이 겹친 가운데만 진하고 가장자리는 한
+    겹이라, 간격만큼 경계가 번져 보이고 불투명한 컬러 호만 두꺼워 보였다(7%일 때).
+    간격을 줄이면 번지는 폭이 같이 줄어든다 — 두께 이득도 그만큼 작다.
   */
   const ring = (size: number) => {
     const hide: Record<string, boolean> = { hidesValueLabel: true };
@@ -94,7 +98,7 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
     return (
       <ZStack modifiers={[frame({ width: size, height: size })]}>
         {layers.map((k) => {
-          const d = size * (1 - 0.07 * k);
+          const d = size * (1 - 0.035 * k);
           const mods = [progressViewStyle('circular'), tint(p.color), frame({ width: d, height: d })];
           return still ? (
             <ProgressView key={k} value={p.done ? 0 : p.fraction} modifiers={mods} />
