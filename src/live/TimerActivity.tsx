@@ -23,7 +23,7 @@
  * 디자인의 확장 상태에 있던 일시정지·건너뛰기 버튼은 아직 없다 — 이 버전의
  * expo-widgets는 라이브 액티비티의 버튼 입력을 문서로 약속하지 않는다.
  */
-import { HStack, ProgressView, Text, VStack } from '@expo/ui/swift-ui';
+import { HStack, ProgressView, Text, VStack, ZStack } from '@expo/ui/swift-ui';
 import {
   activityBackgroundTint,
   font,
@@ -36,7 +36,6 @@ import {
   multilineTextAlignment,
   padding,
   progressViewStyle,
-  scaleEffect,
   tint,
   widgetURL,
 } from '@expo/ui/swift-ui/modifiers';
@@ -77,27 +76,31 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
   /*
     링 — 안에 숫자를 두지 않고, 선을 굵게.
 
-    SwiftUI의 원형 ProgressView(timerInterval:)는 남은 시간 글자를 링 **안에** 기본으로
-    붙인다. 숫자는 바로 옆에 크게 있으니 링 안의 것은 군더더기다 — labelsHidden으로 걷는다.
+    SwiftUI의 원형 ProgressView(timerInterval:)는 남은 시간 글자(currentValueLabel)를
+    링 **안에** 기본으로 붙인다. 옆에 큰 숫자가 있어 군더더기다. @expo/ui는 그 자리를
+    열어 두지 않아서(labelsHidden으로도 안 걷혔다) 패치로 `hidesValueLabel`을 더했다 —
+    patches/@expo+ui+*.patch. 타입에 없는 prop이라 펼쳐 넘긴다.
 
-    선 굵기는 이 부품이 정해 두고 바꾸게 하지 않는다. 그래서 **작게 그린 뒤 키운다** —
-    scaleEffect는 그려진 것을 통째로 늘리므로 선도 같은 배율로 굵어진다. 늘어난 만큼의
-    자리는 바깥 frame이 잡는다(scaleEffect는 배치를 바꾸지 않는다).
+    선 굵기는 이 부품이 정해 두고, 크기에 비례해 굵어진다 — 작게 그려 키워도
+    (scaleEffect) 비율이 그대로라 굵어지지 않았다. 그래서 **같은 시각으로 도는 링을
+    조금씩 작게 겹친다.** 간격이 선보다 좁으면 얇은 선들이 붙어 하나의 굵은 띠가 된다.
+    넷이면 원래 선의 대략 세 배다.
   */
   const ring = (size: number) => {
-    const drawn = Math.round(size * 0.6);
-    const mods = [
-      progressViewStyle('circular'),
-      labelsHidden(),
-      tint(p.color),
-      frame({ width: drawn, height: drawn }),
-      scaleEffect(size / drawn),
-      frame({ width: size, height: size }),
-    ];
-    return still ? (
-      <ProgressView value={p.done ? 0 : p.fraction} modifiers={mods} />
-    ) : (
-      <ProgressView timerInterval={seg} countsDown modifiers={mods} />
+    const hide: Record<string, boolean> = { hidesValueLabel: true };
+    const layers = [0, 1, 2, 3];
+    return (
+      <ZStack modifiers={[frame({ width: size, height: size })]}>
+        {layers.map((k) => {
+          const d = size * (1 - 0.075 * k);
+          const mods = [progressViewStyle('circular'), tint(p.color), frame({ width: d, height: d })];
+          return still ? (
+            <ProgressView key={k} value={p.done ? 0 : p.fraction} modifiers={mods} />
+          ) : (
+            <ProgressView key={k} timerInterval={seg} countsDown {...hide} modifiers={mods} />
+          );
+        })}
+      </ZStack>
     );
   };
 
