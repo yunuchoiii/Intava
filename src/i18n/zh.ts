@@ -50,6 +50,7 @@ export const zh: Catalog = {
   },
 
   edit: {
+    recordSection: '训练记录',
     workoutType: '训练类型',
     workoutTypeNote: '会以此类型记录到“健康”和“健身”。',
     workoutTypeHealthOff: '“将训练记录到健康”已关闭。',

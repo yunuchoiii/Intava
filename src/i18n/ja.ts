@@ -50,6 +50,7 @@ export const ja: Catalog = {
   },
 
   edit: {
+    recordSection: 'ワークアウト記録',
     workoutType: 'ワークアウトの種類',
     workoutTypeNote: 'ヘルスケアとフィットネスにこの種類で記録されます。',
     workoutTypeHealthOff: '「ヘルスケアにワークアウトを記録」がオフです。',

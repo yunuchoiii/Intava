@@ -426,6 +426,19 @@ export default function Edit() {
       </Pressable>
     ) : null;
 
+  /*
+    「운동 기록」 칸 — 이 루틴이 건강·피트니스와 운동 기록 화면에 무엇으로 남는지.
+    건강 앱은 iPhone에만 있어 iOS에서만 선다.
+  */
+  const recordSection =
+    Platform.OS === 'ios' ? (
+      <>
+        <Text style={styles.section}>{t('edit.recordSection')}</Text>
+        {workoutTypeRow}
+        {healthOffRow}
+      </>
+    ) : null;
+
   return (
     <Screen>
       <View style={{ flex: 1, paddingTop: insets.top + 6 }}>
@@ -547,8 +560,7 @@ export default function Edit() {
               </Pressable>
               <Collapsible open={startEndOpen}>{startEndRows}</Collapsible>
               {countdownRow}
-              {workoutTypeRow}
-              {healthOffRow}
+              {recordSection}
             </>
           ) : (
             <>
@@ -644,8 +656,7 @@ export default function Edit() {
               <Text style={styles.section}>{t('edit.startEnd')}</Text>
               {startEndRows}
               {countdownRow}
-              {workoutTypeRow}
-              {healthOffRow}
+              {recordSection}
             </>
           )}
 

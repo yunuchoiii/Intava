@@ -1074,6 +1074,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           completed: lived.at >= p.total - 0.01,
           // 붙인 종목까지 센다 — 두 종목을 했는데 「1종목」으로 남으면 안 된다
           shape: shapeLabel(preset, (s.extras ?? []).length),
+          workoutType: workoutTypeOf(preset),
           blocks: blocks.map((b) => ({
             name: b.name,
             spec: specOf.get(b.blockId) ?? '',

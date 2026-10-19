@@ -57,6 +57,7 @@ export const en: Catalog = {
   },
 
   edit: {
+    recordSection: 'Workout log',
     workoutType: 'Workout type',
     workoutTypeNote: 'Saved to Health and Fitness as this type.',
     workoutTypeHealthOff: '"Log workouts to Health" is off.',

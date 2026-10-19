@@ -61,6 +61,7 @@ export const ko = {
   },
 
   edit: {
+    recordSection: '운동 기록',
     workoutType: '운동 종류',
     workoutTypeNote: '건강·피트니스 앱에 이 종류로 기록됩니다.',
     workoutTypeHealthOff: '"건강 앱에 운동 기록" 설정이 꺼져있습니다.',

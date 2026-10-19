@@ -215,6 +215,11 @@ export type WorkoutRecord = {
   completed: boolean;
   /** "3종목 2라운드" — 실행 시점의 말을 베껴 둔 것 */
   shape: string;
+  /**
+   * 그날 루틴의 운동 종류(건강 앱에 남긴 그 종류) — 루틴을 나중에 바꿔도 기록은 그날 것이다.
+   * 이 필드가 생기기 전 기록에는 없다 — 그때는 표시하지 않는다.
+   */
+  workoutType?: WorkoutType;
   /** 실제로 지나온 종목만 */
   blocks: RecordBlock[];
   /** 구간 스트립을 그릴 만큼만 — 지나온 구간의 종류와 길이 */

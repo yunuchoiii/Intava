@@ -400,6 +400,12 @@ function SessionCard({
                 shape: record.shape,
               })}
             </Text>
+            {/* 운동 종류 — 건강 앱에 남긴 그 이름. 이 필드가 생기기 전 기록에는 없다 */}
+            {!!record.workoutType && (
+              <Text style={styles.cardType} numberOfLines={1}>
+                {t(`workoutType.${record.workoutType}`)}
+              </Text>
+            )}
           </View>
           <View style={[styles.tag, done ? styles.tagDone : styles.tagStopped]}>
             <Text style={[styles.tagText, { color: done ? C.volumeText : C.recWarn }]}>
@@ -567,6 +573,7 @@ const styles = StyleSheet.create({
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   cardName: { fontSize: 17, fontWeight: '700', letterSpacing: -0.26, color: C.textPrimary },
   cardWhen: { marginTop: 5, fontSize: 12.5, color: C.textTertiary },
+  cardType: { marginTop: 3, fontSize: 12.5, fontWeight: '600', color: C.textSecondary },
   tag: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, borderWidth: 1 },
   tagDone: { backgroundColor: 'rgba(31,179,161,0.14)', borderColor: 'rgba(31,179,161,0.32)' },
   tagStopped: { backgroundColor: 'rgba(232,161,92,0.14)', borderColor: 'rgba(232,161,92,0.32)' },
