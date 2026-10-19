@@ -319,8 +319,6 @@ export const en: Catalog = {
   tips: {
     rounds:
       'How many times to cycle through every exercise. Sets repeat within one exercise; rounds repeat the whole list.',
-    startEnd:
-      'Drop any of the three to zero and it disappears. While running, warm-up shows **orange**, prepare **amber**, and cool-down **slate blue**.',
     keepScreenOn: 'This app expects to be used with the screen off.',
   },
 

@@ -32,7 +32,6 @@ import { WhiteButton } from '../src/components/Buttons';
 import { Surface } from '../src/components/Surface';
 import { PressBox } from '../src/components/PressBox';
 import { BackIcon, PlayIcon } from '../src/components/Icons';
-import { InfoTip } from '../src/components/InfoTip';
 import { Screen } from '../src/components/Screen';
 import { ValueRow } from '../src/components/ValueRow';
 import { t } from '../src/i18n';
@@ -532,7 +531,7 @@ export default function Edit() {
               />
 
               <Pressable
-                style={[styles.linkRow, tip === 'startEnd' && styles.raised]}
+                style={styles.linkRow}
                 onPress={() => {
                   setStartEndOpen((v) => !v);
                   setOpen(null);
@@ -540,7 +539,6 @@ export default function Edit() {
               >
                 <View style={styles.titleWrap}>
                   <Text style={styles.rowTitle}>{t('edit.startEndRow')}</Text>
-                  <InfoTip text={t('tips.startEnd')} {...toInfoTip(tip, setTip, 'startEnd')} />
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Text style={[styles.rowValueMuted, TABULAR]}>{startEndSummary()}</Text>
@@ -643,10 +641,7 @@ export default function Edit() {
                 </>
               )}
 
-              <View style={[styles.sectionRow, tip === 'startEnd' && styles.raised]}>
-                <Text style={[styles.section, { marginTop: 0, marginBottom: 0 }]}>{t('edit.startEnd')}</Text>
-                <InfoTip text={t('tips.startEnd')} {...toInfoTip(tip, setTip, 'startEnd')} />
-              </View>
+              <Text style={styles.section}>{t('edit.startEnd')}</Text>
               {startEndRows}
               {countdownRow}
               {workoutTypeRow}
@@ -739,16 +734,6 @@ export default function Edit() {
   );
 }
 
-function toInfoTip(
-  tip: string | null,
-  setTip: React.Dispatch<React.SetStateAction<string | null>>,
-  key: string
-) {
-  return {
-    open: tip === key,
-    onToggle: () => setTip((t) => (t === key ? null : key)),
-  };
-}
 
 const styles = StyleSheet.create({
   topBar: {
@@ -786,7 +771,6 @@ const styles = StyleSheet.create({
     padding: 0,
     letterSpacing: -0.44,
   },
-  sectionRow: { flexDirection: 'row', alignItems: 'center', marginTop: 40, marginBottom: 10 },
   section: {
     marginTop: 40,
     marginBottom: 10,
@@ -806,7 +790,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: C.divider,
   },
-  raised: { zIndex: 30, elevation: 30 },
   titleWrap: { flexDirection: 'row', alignItems: 'center', flexShrink: 1 },
   rowTitle: { fontSize: 18, fontWeight: '600', color: C.textPrimary },
   rowValueMuted: { fontSize: 16, color: C.textSecondary },
