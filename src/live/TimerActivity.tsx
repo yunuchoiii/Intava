@@ -23,9 +23,10 @@
  * 디자인의 확장 상태에 있던 일시정지·건너뛰기 버튼은 아직 없다 — 이 버전의
  * expo-widgets는 라이브 액티비티의 버튼 입력을 문서로 약속하지 않는다.
  */
-import { HStack, ProgressView, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
+import { Capsule, HStack, ProgressView, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
 import {
   activityBackgroundTint,
+  background,
   font,
   foregroundStyle,
   frame,
@@ -76,8 +77,12 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
     iOS의 타이머 글자는 남은 시간을 내림해서 3·2·1 뒤에 0이 1초 서 있다가 다음 구간이
     29부터 보였다. 끝을 1초 미루면 내림이 곧 올림이 되어 3·2·1 → 30으로 넘어간다.
     링은 실제 시각 그대로 둔다(1초 어긋나면 링이 덜 비고 넘어간다).
+
+    시작도 1초 미룬다. 타이머 글자는 시작 전이면 구간 길이(끝−시작)를 그대로 보여서,
+    끝만 미루면 갱신이 시작 시각보다 먼저 그려질 때 30초 구간이 31로 한 번 떴다(실기기).
+    둘 다 미루면 길이가 30 그대로이고, 첫 1초 동안 보이는 값도 어차피 30이라 같다.
   */
-  const segText = { lower: new Date(p.start), upper: new Date(p.end + 1000) };
+  const segText = { lower: new Date(p.start + 1000), upper: new Date(p.end + 1000) };
   const whole = { lower: new Date(p.runStart), upper: new Date(p.runEnd) };
   const still = p.paused || p.done;
 
@@ -195,18 +200,25 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
     </VStack>
   );
 
+  /*
+    막대 바탕은 회색 캡슐을 따로 깐다 — 시스템 막대의 트랙은 아일랜드의 검은 바탕에서
+    거의 보이지 않아 남은 구간이 비어 보였다. 링 트랙과 비슷한 밝기로 맞춘다.
+  */
   const bar = (
     <HStack spacing={10}>
-      {still ? (
-        <ProgressView value={p.done ? 1 : p.runFraction} modifiers={[labelsHidden(), tint(p.color)]} />
-      ) : (
-        // 막대도 링처럼 흐른 시간 글자를 아래에 붙인다 — 걷는다
-        <ProgressView
-          timerInterval={whole}
-          countsDown={false}
-          modifiers={[labelsHidden(), tint(p.color)]}
-        />
-      )}
+      <ZStack>
+        <Capsule modifiers={[foregroundStyle('#FFFFFF38'), frame({ height: 4 })]} />
+        {still ? (
+          <ProgressView value={p.done ? 1 : p.runFraction} modifiers={[labelsHidden(), tint(p.color)]} />
+        ) : (
+          // 막대도 링처럼 흐른 시간 글자를 아래에 붙인다 — 걷는다
+          <ProgressView
+            timerInterval={whole}
+            countsDown={false}
+            modifiers={[labelsHidden(), tint(p.color)]}
+          />
+        )}
+      </ZStack>
       <Text modifiers={[font({ size: 12, weight: 'semibold' }), monospacedDigit(), foregroundStyle('#FFFFFF8C')]}>
         {p.stage}
       </Text>
@@ -228,13 +240,45 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
     </HStack>
   );
 
+  /*
+    바탕(잠금화면 배너만) — 링 뒤에서 단계 색이 원형으로 번져 나가 검정으로 사라진다.
+    숫자를 읽기 전에 색으로 지금이 운동인지 휴식인지 안다.
+
+    중심은 링 자리다: 왼쪽 여백 20 + 링 반지름 26 = 46pt, 배너 폭 약 360pt라 x≈0.13,
+    위 여백 20 + 반지름 26 ≈ 46pt, 배너 높이 약 120pt라 y≈0.38. 단계 색을 검정과
+    35·20·8%로 섞어 번지게 한다. 반지름 190pt는 링 둘레에만 맺혀 작아 보여 320pt로
+    키웠다(실기기). 펼친 아일랜드는 둘레의 iOS 여백 때문에 바탕이 네모로
+    갇혀 검정 그대로 둔다(실기기).
+  */
+  /*
+    단계 색을 검정 위에 k만큼 얹은 **불투명** 색 — 반투명 색을 쓰면 잠금화면이 그 틈으로
+    배경화면을 비춰 보였다(실기기). activityBackgroundTint의 검정도 아래에 깔리지 않았다.
+    위젯 함수 안이라 바깥 도우미를 못 쓴다(문자열로 옮겨져 돈다).
+  */
+  const dim = (k: number) => {
+    const h = p.color.replace('#', '');
+    const ch = (i: number) =>
+      Math.round(parseInt(h.slice(i, i + 2), 16) * k)
+        .toString(16)
+        .padStart(2, '0');
+    return `#${ch(0)}${ch(2)}${ch(4)}`;
+  };
+  const glow = background({
+    type: 'radialGradient',
+    colors: [dim(0.35), dim(0.2), dim(0.08), '#000000'],
+    center: { x: 0.13, y: 0.38 },
+    startRadius: 0,
+    endRadius: 320,
+  });
+
   return {
     // 잠금화면 · 알림 센터 — 확장 상태와 같은 짜임을 한 장에
     banner: (
       <VStack
         spacing={14}
         modifiers={[
-          padding({ horizontal: 20, vertical: 16 }),
+          padding({ horizontal: 20, top: 20, bottom: 16 }),
+          glow,
           activityBackgroundTint('#000000'),
           widgetURL('intava://run'),
         ]}
@@ -281,6 +325,7 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
     compactTrailing: clock(15, 'bold', 46),
     minimal: ring(22),
     expandedBottom: (
+      // 아일랜드는 검은 바탕 그대로 — 둘레에 iOS 여백이 있어 단계 색 바탕을 깔면 검은 테두리 안에 네모로 갇혔다(실기기)
       <VStack spacing={14} modifiers={[padding({ horizontal: 6, top: 2, bottom: 4 })]}>
         {row}
         {bar}
