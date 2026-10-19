@@ -50,6 +50,8 @@ export const zh: Catalog = {
   },
 
   edit: {
+    workoutType: '训练类型',
+    workoutTypeNote: '会以此类型记录到“健康”和“健身”。',
     countdown: '倒计时',
     countdownSeconds: '{{n}}秒',
     countdownUnit: '秒',
@@ -157,6 +159,11 @@ export const zh: Catalog = {
     keepAwake: '运行时保持屏幕常亮',
     liveActivity: '灵动岛与锁定屏幕计时器',
     liveActivityNote: '训练时在 App 外也显示剩余时间和当前阶段。',
+    health: '健康',
+    healthSync: '将训练记录到健康',
+    healthSyncNote: '结束后（即使提前结束）会以循环中选择的类型保存到“健康”，也会显示在“健身”中。',
+    healthDeniedTitle: '健康权限已关闭',
+    healthDeniedBody: '请在“设置”→“健康”→“数据访问与设备”→ intava 中开启写入体能训练。',
   },
 
   run: {
@@ -268,6 +275,20 @@ export const zh: Catalog = {
   live: {
     next: '下一个：{{what}}',
     subWork: '{{sub}} · 下一个：{{next}}',
+  },
+
+  /** 건강·피트니스 운동 종류 */
+  workoutType: {
+    hiit: '高强度间歇训练',
+    functionalStrength: '功能性力量训练',
+    traditionalStrength: '传统力量训练（器械）',
+    core: '核心训练',
+    cross: '交叉训练',
+    mixedCardio: '混合有氧',
+    jumpRope: '跳绳',
+    flexibility: '柔韧性',
+    yoga: '瑜伽',
+    pilates: '普拉提',
   },
 
   notify: {

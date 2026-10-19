@@ -11,6 +11,30 @@ export type Block = {
   memo?: string;
 };
 
+/**
+ * 건강 앱에 남길 운동 종류 — HealthKit의 HKWorkoutActivityType에 대응하는 키.
+ * 숫자가 아니라 키로 들고 다니고, 네이티브(modules/intava-workout)가 바꾼다.
+ */
+export const WORKOUT_TYPES = [
+  'hiit',
+  'functionalStrength',
+  'traditionalStrength',
+  'core',
+  'cross',
+  'mixedCardio',
+  'jumpRope',
+  'flexibility',
+  'yoga',
+  'pilates',
+] as const;
+export type WorkoutType = (typeof WORKOUT_TYPES)[number];
+
+/** 루틴의 운동 종류 — 없거나 모르는 값이면 고강도 인터벌 */
+export function workoutTypeOf(p: { workoutType?: string } | null | undefined): WorkoutType {
+  const v = p?.workoutType;
+  return (WORKOUT_TYPES as readonly string[]).includes(v ?? '') ? (v as WorkoutType) : 'hiit';
+}
+
 /** 루틴 / 타이머 */
 export type Preset = {
   id: string;
@@ -48,6 +72,11 @@ export type Preset = {
    * 앱 전체에 한 번, 길이는 여기서 루틴마다.
    */
   countdownSec?: number;
+  /**
+   * 건강·피트니스 앱에 이 운동을 무엇으로 남길지(WorkoutType). 없으면 고강도 인터벌.
+   * 운동 세션(아일랜드를 살리는 그것)도 이 종류로 켠다.
+   */
+  workoutType?: WorkoutType;
   rounds: number;
   roundRestSec: number;
   cooldownSec: number;
@@ -90,6 +119,7 @@ export function presetFingerprint(p: Preset): string {
     p.blockRestSec,
     p.cooldownSec,
     p.countdownSec ?? 3,
+    workoutTypeOf(p),
     p.blocks.map((b) => [b.id, b.name.trim(), b.workSec, b.restSec, b.sets, (b.memo ?? '').trim()]),
   ]);
 }
@@ -116,6 +146,12 @@ export type Settings = {
    * 기본은 켜짐 — 앱 밖에서 지금 구간을 보는 길이 이것뿐이다. 끄면 떠 있던 것도 걷는다.
    */
   liveActivity: boolean;
+  /**
+   * 운동을 마치면(끝까지든 도중에 끄든, 기록이 남는 운동이면) 건강 앱에 운동 한 건을
+   * 남긴다 — 피트니스 앱에도 보인다. 기본은 꺼짐: 건강 데이터에 쓰는 일은 사용자가
+   * 고르는 쪽이어야 한다. 켜는 순간 권한을 묻는다.
+   */
+  healthSync: boolean;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -128,6 +164,7 @@ export const DEFAULT_SETTINGS: Settings = {
   volume: 0.8,
   duckMusic: false,
   liveActivity: true,
+  healthSync: false,
 };
 
 export type Phase =

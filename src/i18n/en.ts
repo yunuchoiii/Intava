@@ -57,6 +57,8 @@ export const en: Catalog = {
   },
 
   edit: {
+    workoutType: 'Workout type',
+    workoutTypeNote: 'Saved to Health and Fitness as this type.',
     countdown: 'Countdown',
     countdownSeconds: '{{n}} sec',
     countdownUnit: 'sec',
@@ -164,6 +166,11 @@ export const en: Catalog = {
     keepAwake: 'Keep screen on while running',
     liveActivity: 'Dynamic Island & Lock Screen timer',
     liveActivityNote: 'Shows the time left and the current interval outside the app while you work out.',
+    health: 'Health',
+    healthSync: 'Log workouts to Health',
+    healthSyncNote: 'When you finish (even early), the workout is saved to Health as the type chosen in the routine. It also shows in Fitness.',
+    healthDeniedTitle: 'Health access is off',
+    healthDeniedBody: 'In Settings → Health → Data Access & Devices → intava, turn on writing workouts.',
   },
 
   run: {
@@ -275,6 +282,20 @@ export const en: Catalog = {
   live: {
     next: 'Next: {{what}}',
     subWork: '{{sub}} · Next: {{next}}',
+  },
+
+  /** 건강·피트니스 운동 종류 */
+  workoutType: {
+    hiit: 'High Intensity Interval Training',
+    functionalStrength: 'Functional Strength Training',
+    traditionalStrength: 'Traditional Strength Training',
+    core: 'Core Training',
+    cross: 'Cross Training',
+    mixedCardio: 'Mixed Cardio',
+    jumpRope: 'Jump Rope',
+    flexibility: 'Flexibility',
+    yoga: 'Yoga',
+    pilates: 'Pilates',
   },
 
   notify: {

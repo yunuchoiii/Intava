@@ -50,7 +50,10 @@ import { countdownFeedback, segmentFeedback } from './feedback';
 import { t } from './i18n';
 import { liveNeedsRetry, syncLiveActivity } from './live';
 import {
+  pauseWorkoutSession,
   requestWorkoutAuthorization,
+  resumeWorkoutSession,
+  saveWorkoutRecord,
   startWorkoutSession,
   stopWorkoutSession,
   workoutAuthUndetermined,
@@ -59,7 +62,7 @@ import {
 import { cancelAll, scheduleUpcoming } from './notify';
 import { uid, useStore } from './store';
 import { LIVE_COLOR } from './theme';
-import type { Block, Preset, Segment } from './types';
+import { workoutTypeOf, type Block, type Preset, type Segment, type WorkoutType } from './types';
 
 const KEY = 'intava:session';
 
@@ -483,6 +486,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const loadedRef = useRef(false);
   loadedRef.current = loaded;
 
+  /** 운동 세션을 켤 까닭이 있는가 — 아일랜드(뒤에서 갱신)나 건강 기록 */
+  const wantsWorkout = useCallback(
+    () => settingsRef.current.liveActivity || settingsRef.current.healthSync,
+    []
+  );
+  /** 끝나면 건강 앱에 남길 운동 — settle이 채우고, 세션이 끝날 때 쓰고 비운다 */
+  const healthPending = useRef<{ type: WorkoutType; start: number; end: number } | null>(null);
+
   /**
    * 다이내믹 아일랜드 · 잠금화면의 라이브 액티비티를 지금 상태에 맞춘다(src/live).
    *
@@ -881,8 +892,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         창을 읽는 사이 첫 구간이 흘러가 버리지 않게. 닫히면 그 순간을 0초로 다시 잡는다.
         이미 답한 뒤라면(두 번째 운동부터) 창이 없으니 바로 흐른다.
       */
-      // 아일랜드를 꺼 두었으면 운동 세션도 켜지 않으니 물을 것도 없다
-      const asking = settingsRef.current.liveActivity && workoutAuthUndetermined();
+      // 아일랜드도 건강 기록도 꺼 두었으면 운동 세션을 켜지 않으니 물을 것도 없다
+      healthPending.current = null;
+      const asking = wantsWorkout() && workoutAuthUndetermined();
       persist({
         presetId: preset.id,
         preset,
@@ -1044,6 +1056,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
             blockSummary(b.workSec, b.restSec, b.sets),
           ])
         );
+        // 건강 앱에 남길 운동 — 세션이 끝날 때(완료 화면이 세션을 비울 때) 쓴다
+        healthPending.current = {
+          type: workoutTypeOf(preset),
+          start: s.startedAt ?? s.zeroAt,
+          end: Date.now(),
+        };
         addRecord({
           id: recordId,
           presetId: preset.id,
@@ -1082,8 +1100,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         persist({ ...s, zeroAt: s.zeroAt + paused, pausedAt: null });
         lastIdx.current = snapshotAt(elapsedNow()).idx;
         lastTick.current = '';
+        resumeWorkoutSession();
       } else {
         persist({ ...s, pausedAt: Date.now() });
+        // 멈춘 동안은 건강 앱의 운동 시간에서도 빠지게
+        pauseWorkoutSession();
       }
       setSyncId((n) => n + 1);
       tick();
@@ -1244,17 +1265,34 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const hasSessionRef = useRef(hasSession);
   hasSessionRef.current = hasSession;
   const ensureWorkout = useCallback(() => {
-    if (!hasSessionRef.current || !settingsRef.current.liveActivity) return;
+    if (!hasSessionRef.current || !wantsWorkout()) return;
     if (AppState.currentState !== 'active') return;
     const st = workoutSessionState();
     if (st === 2 || st === 4) return; // 실행 중 · 일시정지
-    void startWorkoutSession();
-  }, []);
+    void startWorkoutSession(workoutTypeOf(presetRef.current));
+  }, [wantsWorkout]);
+  const wantNow = settings.liveActivity || settings.healthSync;
   useEffect(() => {
     if (!loaded) return;
-    if (hasSession && settings.liveActivity) ensureWorkout();
-    else void stopWorkoutSession();
-  }, [loaded, hasSession, settings.liveActivity, ensureWorkout]);
+    if (hasSession && wantNow) {
+      ensureWorkout();
+      return;
+    }
+    /*
+      세션이 끝났다 — 기록이 남은 운동(settle을 지났다)이고 건강 기록을 켜 두었으면
+      건강 앱에 남긴다. 운동 세션이 있었으면 그것을 저장으로 닫고, 없었으면(iOS 26 미만,
+      세션을 못 켰던 운동) 시작·끝 시각으로 한 건 써넣는다. 10초 안에 꺼서 기록이 없는
+      운동은 남기지 않는다(healthPending이 비어 있다).
+    */
+    const pending = healthPending.current;
+    healthPending.current = null;
+    const save = !!pending && settingsRef.current.healthSync;
+    void stopWorkoutSession(save).then((r) => {
+      if (save && pending && r === 'none') {
+        void saveWorkoutRecord(pending.type, pending.start, pending.end);
+      }
+    });
+  }, [loaded, hasSession, wantNow, ensureWorkout]);
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') ensureWorkout();

@@ -24,6 +24,11 @@ import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 import { preview } from '../src/audio';
 import { exportBackup, pickBackup } from '../src/backup';
+import {
+  requestWorkoutAuthorization,
+  workoutAuthorized,
+  workoutAvailable,
+} from '../modules/intava-workout';
 import { ExportSheet, type ExportPick } from '../src/components/ExportSheet';
 import { useStore } from '../src/store';
 import { t } from '../src/i18n';
@@ -292,6 +297,34 @@ export default function SettingsScreen() {
               onChange={(liveActivity) => setSettings({ liveActivity })}
               last
             />
+          )}
+
+          {/*
+            건강 앱 — HealthKit을 쓸 수 있는 기기(iPhone)에서만 선다.
+            켜는 순간 권한을 묻고, 허용되지 않으면 켜지 않은 채로 둔다 — 켜 있는데 아무것도
+            안 쓰이는 스위치는 거짓말이다. iOS는 한 번 거절하면 다시 묻지 않으므로 어디서
+            켜는지 알려 준다.
+          */}
+          {workoutAvailable() && (
+            <>
+              <Text style={styles.section}>{t('settings.health')}</Text>
+              <ToggleRow
+                title={t('settings.healthSync')}
+                note={t('settings.healthSyncNote')}
+                value={settings.healthSync}
+                onChange={(on) => {
+                  if (!on) {
+                    setSettings({ healthSync: false });
+                    return;
+                  }
+                  void requestWorkoutAuthorization().then(() => {
+                    if (workoutAuthorized()) setSettings({ healthSync: true });
+                    else Alert.alert(t('settings.healthDeniedTitle'), t('settings.healthDeniedBody'));
+                  });
+                }}
+                last
+              />
+            </>
           )}
 
           {/*

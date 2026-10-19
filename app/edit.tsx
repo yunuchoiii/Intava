@@ -10,6 +10,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
   Keyboard,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -40,7 +41,14 @@ import { totalSec, workSec } from '../src/engine/segments';
 import { countdownOf, useSessionStable } from '../src/session';
 import { emptyPreset, uid, useStore } from '../src/store';
 import { C, GUTTER, TABULAR } from '../src/theme';
-import { kindOf, presetFingerprint as fingerprint, type Block, type Preset } from '../src/types';
+import {
+  kindOf,
+  presetFingerprint as fingerprint,
+  workoutTypeOf,
+  type Block,
+  type Preset,
+} from '../src/types';
+import { WorkoutTypeSheet } from '../src/components/WorkoutTypeSheet';
 
 /** 종목 추가와 저장 — 한 화면의 두 버튼이라 모서리를 한 값에 묶어둔다 */
 const ACTION_RADIUS = 16;
@@ -81,6 +89,7 @@ export default function Edit() {
   const [sheet, setSheet] = useState<{ block: Block; isNew: boolean } | null>(null);
   const [picking, setPicking] = useState(false);
   const [startEndOpen, setStartEndOpen] = useState(false);
+  const [pickingType, setPickingType] = useState(false);
   const [nameFocused, setNameFocused] = useState(false);
   // 종목을 끌어 옮기는 동안에는 화면이 같이 스크롤되면 안 된다
   const [reordering, setReordering] = useState(false);
@@ -376,6 +385,30 @@ export default function Edit() {
     />
   );
 
+  /**
+   * 운동 종류 — 건강·피트니스 앱에 이 루틴을 무엇으로 남길지(기본 고강도 인터벌).
+   * 운동 중 켜는 iOS 운동 세션도 이 종류다. 건강 앱은 iPhone에만 있어 iOS에서만 선다.
+   */
+  const workoutTypeRow =
+    Platform.OS === 'ios' ? (
+      <Pressable
+        style={styles.linkRow}
+        onPress={() => {
+          setOpen(null);
+          setPickingType(true);
+        }}
+        accessibilityRole="button"
+      >
+        <Text style={styles.rowTitle}>{t('edit.workoutType')}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 1, marginLeft: 12 }}>
+          <Text style={styles.rowValueMuted} numberOfLines={1}>
+            {t(`workoutType.${workoutTypeOf(draft)}`)}
+          </Text>
+          <Text style={styles.typeChevron}>›</Text>
+        </View>
+      </Pressable>
+    ) : null;
+
   return (
     <Screen>
       <View style={{ flex: 1, paddingTop: insets.top + 6 }}>
@@ -498,6 +531,7 @@ export default function Edit() {
               </Pressable>
               <Collapsible open={startEndOpen}>{startEndRows}</Collapsible>
               {countdownRow}
+              {workoutTypeRow}
             </>
           ) : (
             <>
@@ -596,6 +630,7 @@ export default function Edit() {
               </View>
               {startEndRows}
               {countdownRow}
+              {workoutTypeRow}
             </>
           )}
 
@@ -621,6 +656,16 @@ export default function Edit() {
           )}
         </View>
       </View>
+
+      <WorkoutTypeSheet
+        visible={pickingType}
+        value={workoutTypeOf(draft)}
+        onClose={() => setPickingType(false)}
+        onPick={(workoutType) => {
+          patch({ workoutType });
+          setPickingType(false);
+        }}
+      />
 
       <BlockPickerSheet
         visible={picking}
@@ -745,6 +790,7 @@ const styles = StyleSheet.create({
   titleWrap: { flexDirection: 'row', alignItems: 'center', flexShrink: 1 },
   rowTitle: { fontSize: 18, fontWeight: '600', color: C.textPrimary },
   rowValueMuted: { fontSize: 16, color: C.textSecondary },
+  typeChevron: { marginLeft: 8, fontSize: 20, color: C.textTertiary },
   footer: {
     paddingHorizontal: GUTTER,
     paddingTop: 12,

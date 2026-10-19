@@ -50,6 +50,8 @@ export const ja: Catalog = {
   },
 
   edit: {
+    workoutType: 'ワークアウトの種類',
+    workoutTypeNote: 'ヘルスケアとフィットネスにこの種類で記録されます。',
     countdown: 'カウントダウン',
     countdownSeconds: '{{n}}秒',
     countdownUnit: '秒',
@@ -157,6 +159,11 @@ export const ja: Catalog = {
     keepAwake: '実行中に画面を消さない',
     liveActivity: 'ダイナミックアイランド・ロック画面タイマー',
     liveActivityNote: 'ワークアウト中、アプリの外でも残り時間と今の区間を表示します。',
+    health: 'ヘルスケア',
+    healthSync: 'ヘルスケアにワークアウトを記録',
+    healthSyncNote: '終えると（途中で終えても）ルーティンで選んだ種類でヘルスケアに保存します。フィットネスにも表示されます。',
+    healthDeniedTitle: 'ヘルスケアへのアクセスがオフです',
+    healthDeniedBody: '設定 → ヘルスケア → データアクセスとデバイス → intava で、ワークアウトの書き込みをオンにしてください。',
   },
 
   run: {
@@ -268,6 +275,20 @@ export const ja: Catalog = {
   live: {
     next: '次: {{what}}',
     subWork: '{{sub}} · 次: {{next}}',
+  },
+
+  /** 건강·피트니스 운동 종류 */
+  workoutType: {
+    hiit: '高強度インターバルトレーニング',
+    functionalStrength: '機能的筋力トレーニング',
+    traditionalStrength: '筋力トレーニング（ウエイト）',
+    core: '体幹トレーニング',
+    cross: 'クロストレーニング',
+    mixedCardio: 'ミックスカーディオ',
+    jumpRope: '縄跳び',
+    flexibility: '柔軟性',
+    yoga: 'ヨガ',
+    pilates: 'ピラティス',
   },
 
   notify: {
