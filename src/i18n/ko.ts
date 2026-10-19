@@ -61,6 +61,10 @@ export const ko = {
   },
 
   edit: {
+    recordSection: '운동 기록',
+    workoutType: '운동 종류',
+    workoutTypeNote: '건강·피트니스 앱에 이 종류로 기록됩니다.',
+    workoutTypeHealthOff: '"건강 앱에 운동 기록" 설정이 꺼져있습니다.',
     countdown: '카운트다운',
     countdownSeconds: '{{n}}초',
     countdownUnit: '초',
@@ -174,6 +178,20 @@ export const ko = {
     duckMusic: '알림음 나올 때 음악 줄이기',
     screen: '화면',
     keepAwake: '실행 중 화면 꺼짐 방지',
+    liveActivity: '다이내믹 아일랜드 · 잠금화면 타이머',
+    liveActivityNote: '운동 중 앱 밖에서도 남은 시간과 지금 구간을 보여줍니다.',
+    health: '건강',
+    healthSync: '건강 앱에 운동 기록',
+    healthSyncNote: '운동을 마치면(도중에 끝내도) 루틴에서 고른 운동 종류로 건강 앱에 남깁니다. 피트니스 앱에도 보입니다.',
+    healthDeniedTitle: '건강 앱 권한이 꺼져 있습니다',
+    healthDeniedBody: '설정 → 건강 → 데이터 접근 및 기기 → intava에서 운동 쓰기를 켜 주세요.',
+    feedbackSection: '문의',
+    feedback: '개발자에게 알리기',
+    feedbackNote: '버그나 바라는 점을 메일로 바로 보냅니다.',
+    feedbackSubject: '[인타바] 개발자에게',
+    feedbackBody: '여기에 내용을 적어 주세요.',
+    feedbackNoMailTitle: '메일 앱을 열 수 없습니다',
+    feedbackNoMailBody: '아래 주소로 보내 주세요.\n{{email}}',
   },
 
   run: {
@@ -292,6 +310,26 @@ export const ko = {
     saveChangesConfirm: '저장',
   },
 
+  /** 라이브 액티비티 — 다이내믹 아일랜드 · 잠금화면 */
+  live: {
+    next: '다음: {{what}}',
+    subWork: '{{sub}} · 다음: {{next}}',
+  },
+
+  /** 건강·피트니스 운동 종류 */
+  workoutType: {
+    hiit: '고강도 인터벌 트레이닝',
+    functionalStrength: '기능성 근력 운동',
+    traditionalStrength: '근력 운동(웨이트)',
+    core: '코어 트레이닝',
+    cross: '크로스 트레이닝',
+    mixedCardio: '혼합 유산소',
+    jumpRope: '줄넘기',
+    flexibility: '유연성',
+    yoga: '요가',
+    pilates: '필라테스',
+  },
+
   notify: {
     channelCue: '웜업 · 준비',
     channelWork: '운동 시작',
@@ -313,8 +351,6 @@ export const ko = {
   tips: {
     rounds:
       '종목 전체를 몇 바퀴 돌지 정합니다. 세트는 한 종목 안에서의 반복이고, 라운드는 종목 전체의 반복입니다.',
-    startEnd:
-      '세 구간 모두 0으로 내리면 사라집니다. 실행 중에는 웜업이 **주황**, 준비가 **앰버**, 쿨다운이 **회색빛 파랑** 화면으로 보입니다.',
     keepScreenOn: '이 앱은 화면이 꺼진 채로 쓰이는 것을 정상으로 봅니다.',
   },
 

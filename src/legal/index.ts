@@ -14,6 +14,9 @@ import type { LegalKind, LegalPack } from './types';
 
 const PACKS: Record<string, LegalPack> = { ko, en, ja, zh };
 
+/** 개발자 연락처 — 지원 문서와 설정의 「개발자에게 알리기」가 같이 쓴다 */
+export const DEVELOPER_EMAIL = 'chltjdnjs529@gmail.com';
+
 export function legalDoc(kind: LegalKind) {
   return (PACKS[currentLanguage()] ?? en)[kind];
 }

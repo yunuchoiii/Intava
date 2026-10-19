@@ -45,11 +45,24 @@ import {
   type RoundJoins,
   type RoundSkips,
 } from './engine/segments';
-import { blockSummary, shapeLabel } from './engine/labels';
+import { blockSummary, clock, liveText, planStages, shapeLabel } from './engine/labels';
 import { countdownFeedback, segmentFeedback } from './feedback';
+import { t } from './i18n';
+import { liveNeedsRetry, syncLiveActivity } from './live';
+import {
+  pauseWorkoutSession,
+  requestWorkoutAuthorization,
+  resumeWorkoutSession,
+  saveWorkoutRecord,
+  startWorkoutSession,
+  stopWorkoutSession,
+  workoutAuthUndetermined,
+  workoutSessionState,
+} from '../modules/intava-workout';
 import { cancelAll, scheduleUpcoming } from './notify';
 import { uid, useStore } from './store';
-import type { Block, Preset, Segment } from './types';
+import { LIVE_COLOR } from './theme';
+import { workoutTypeOf, type Block, type Preset, type Segment, type WorkoutType } from './types';
 
 const KEY = 'intava:session';
 
@@ -359,6 +372,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const [restoredFromStorage, setRestoredFromStorage] = useState(false);
+  /**
+   * 저장소에서 세션을 되살리는 일이 끝났는가 — 있든 없든.
+   *
+   * 라이브 액티비티가 이것을 기다린다. 앱이 뜬 직후에는 세션이 아직 비어 있는데,
+   * 그걸 「세션 없음」으로 읽으면 아일랜드에 떠 있던 타이머를 꺼 버린다 — 바로
+   * 다음 순간 세션이 되살아나 새로 켜면서 깜빡인다.
+   */
+  const [loaded, setLoaded] = useState(false);
 
   /** 앱이 뜰 때 한 번 — 진행 중이던 세션을 되살린다 */
   useEffect(() => {
@@ -374,6 +395,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         setRestoredFromStorage(true);
       } catch {
         // 읽기 실패는 세션이 없는 것으로 본다
+      } finally {
+        if (alive) setLoaded(true);
       }
     })();
     return () => {
@@ -460,6 +483,80 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     timer.current = null;
   };
 
+  const loadedRef = useRef(false);
+  loadedRef.current = loaded;
+
+  /** 운동 세션을 켤 까닭이 있는가 — 아일랜드(뒤에서 갱신)나 건강 기록 */
+  const wantsWorkout = useCallback(
+    () => settingsRef.current.liveActivity || settingsRef.current.healthSync,
+    []
+  );
+  /** 끝나면 건강 앱에 남길 운동 — settle이 채우고, 세션이 끝날 때 쓰고 비운다 */
+  const healthPending = useRef<{ type: WorkoutType; start: number; end: number } | null>(null);
+
+  /**
+   * 다이내믹 아일랜드 · 잠금화면의 라이브 액티비티를 지금 상태에 맞춘다(src/live).
+   *
+   * **화면을 그리는 길(useEffect)에 묶지 않는다.** 처음에는 snap.idx를 의존성으로 건
+   * effect에서 보냈는데, 실기기에서 앱이 뒤에 있을 때 구간이 넘어가도 아일랜드가
+   * 0:00에 멈춰 있었다 — 재생/일시정지를 눌러 stored가 바뀌어야 풀렸다. 이제는
+   * tick이 구간 전환을 알아채는 그 자리에서 바로 부르고(refs로 읽는다), 실패한 갱신은
+   * tick이 몇 초 뒤 다시 보내며(liveNeedsRetry), 앞으로 돌아오면 무조건 한 번 보낸다.
+   *
+   * 숫자와 링은 iOS가 timerInterval로 스스로 내리므로 그 사이에는 보낼 것이 없다.
+   * 같은 내용이면 live가 걸러 보내지 않는다(force가 아니면).
+   *
+   * 링을 문지르는 동안(autoPaused)에는 보내지 않는다 — 손가락이 움직이는 프레임마다
+   * 기준 시각이 바뀌어 갱신이 쏟아진다. 손을 떼면(commitScrub) 재개되며 한 번 보낸다.
+   */
+  const liveSync = useCallback(
+    (force = false) => {
+      if (!loadedRef.current) return;
+      const stored = storedRef.current;
+      const plan = planRef.current;
+      const preset = presetRef.current;
+      // 설정에서 껐으면 떠 있던 것까지 걷는다
+      if (!stored || !settingsRef.current.liveActivity) {
+        syncLiveActivity(null);
+        return;
+      }
+      // 세션은 되살아났는데 루틴 목록이 아직이다 — 끄지 말고 기다린다
+      if (!plan || !preset) return;
+      if (autoPaused.current) return;
+      const e = elapsedNow();
+      const shot = snapshotAt(e);
+      const paused = stored.pausedAt != null;
+      const seg = shot.seg;
+      const { stages, stageOf } = planStages(plan);
+      const cursor = seg ? (stageOf[shot.idx] ?? -1) : stages.length;
+      const text = liveText(seg, plan.segs[shot.idx + 1], preset);
+      // 멈춘 동안에는 시각을 0으로 둔다 — 쓰지 않는 값이 바뀔 때마다 갱신이 나가지 않게
+      const moving = !paused && !shot.done;
+      syncLiveActivity(
+        {
+          ...text,
+          color: LIVE_COLOR[seg?.phase ?? 'DONE'],
+          start: moving && seg ? stored.zeroAt + seg.start * 1000 : 0,
+          end: moving && seg ? stored.zeroAt + (seg.start + seg.dur) * 1000 : 0,
+          paused,
+          remain: paused ? clock(shot.remain) : '',
+          fraction: paused ? Math.round(shot.ratio * 100) / 100 : 0,
+          stage: t('run.stageOf', {
+            i: Math.min(stages.length, Math.max(1, cursor + 1)),
+            n: stages.length,
+          }),
+          runStart: moving ? stored.zeroAt : 0,
+          runEnd: moving ? stored.zeroAt + plan.total * 1000 : 0,
+          runFraction:
+            paused && plan.total > 0 ? Math.round((e / plan.total) * 100) / 100 : 0,
+          done: shot.done,
+        },
+        force
+      );
+    },
+    [elapsedNow, snapshotAt]
+  );
+
   /**
    * 고정 간격으로 돌지 않는다. **다음 초 경계**에 정확히 깨어나도록 매번
    * 다시 계산해서 예약한다 — 250ms 간격으로 훑으면 숫자가 바뀌는 시점과
@@ -496,6 +593,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       if (!doneFired.current) {
         doneFired.current = true;
         segmentFeedback('DONE', settingsRef.current);
+        liveSync();
       }
       return;
     }
@@ -504,6 +602,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       lastIdx.current = shot.idx;
       lastTick.current = '';
       segmentFeedback(shot.seg!.phase, settingsRef.current);
+      // 아일랜드도 이 자리에서 — 화면이 다시 그려지기를 기다리지 않는다
+      liveSync();
+    } else if (liveNeedsRetry()) {
+      liveSync();
     }
 
     // 각 구간 마지막 N초 — N, …, 2, 1에 한 번씩 (N은 루틴마다, 기본 3)
@@ -521,7 +623,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     const waitMs = Math.max(20, (frac > 0.02 ? frac : 1) * 1000);
     clearTimer();
     timer.current = setTimeout(tick, waitMs);
-  }, [elapsedNow, snapshotAt]);
+  }, [elapsedNow, snapshotAt, liveSync]);
 
   /**
    * 세션이 살아 있는 동안만 — 오디오 세션도 여기서 잡는다(화면이 아니라 세션이 기준).
@@ -645,6 +747,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         setSyncId((n) => n + 1);
         tick();
         void reschedule();
+        // 뒤에 있는 동안 갱신이 빠졌을 수 있다 — 앞으로 오면 내용이 같아도 한 번 보낸다
+        liveSync(true);
       } else {
         /*
           **앞을 떠나는 순간이 가장 위험하다.**
@@ -674,7 +778,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       */
     });
     return () => sub.remove();
-  }, [tick, reschedule]);
+  }, [tick, reschedule, liveSync]);
 
   // ── 조작 ────────────────────────────────────────────────────────────────
 
@@ -783,17 +887,37 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       markRun(preset.id);
       // 완료 화면의 "다시 하기"는 방금 돌던 구성을 그대로 물려받는다 — 차례도, 뺀 것도, 고친 것도
       const now = Date.now();
+      /*
+        건강(운동) 권한 창이 처음 뜨는 운동이면, 창이 닫힐 때까지 0초에 멈춰 둔다 —
+        창을 읽는 사이 첫 구간이 흘러가 버리지 않게. 닫히면 그 순간을 0초로 다시 잡는다.
+        이미 답한 뒤라면(두 번째 운동부터) 창이 없으니 바로 흐른다.
+      */
+      // 아일랜드도 건강 기록도 꺼 두었으면 운동 세션을 켜지 않으니 물을 것도 없다
+      healthPending.current = null;
+      const asking = wantsWorkout() && workoutAuthUndetermined();
       persist({
         presetId: preset.id,
         preset,
         edited: edited || undefined,
         zeroAt: now,
         startedAt: now,
-        pausedAt: null,
+        pausedAt: asking ? now : null,
         orders,
         skips,
       });
       setSyncId((n) => n + 1);
+      if (asking) {
+        void requestWorkoutAuthorization().then(() => {
+          const s = storedRef.current;
+          // 그 사이 다른 운동을 시작했거나 끝냈으면 손대지 않는다
+          if (!s || s.startedAt !== now || s.pausedAt == null) return;
+          const t = Date.now();
+          persist({ ...s, zeroAt: t, startedAt: t, pausedAt: null });
+          setSyncId((n) => n + 1);
+          tick();
+          void reschedule();
+        });
+      }
     },
     editPreset: (p: Preset) => {
       const s = storedRef.current;
@@ -932,6 +1056,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
             blockSummary(b.workSec, b.restSec, b.sets),
           ])
         );
+        // 건강 앱에 남길 운동 — 세션이 끝날 때(완료 화면이 세션을 비울 때) 쓴다
+        healthPending.current = {
+          type: workoutTypeOf(preset),
+          start: s.startedAt ?? s.zeroAt,
+          end: Date.now(),
+        };
         addRecord({
           id: recordId,
           presetId: preset.id,
@@ -944,6 +1074,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           completed: lived.at >= p.total - 0.01,
           // 붙인 종목까지 센다 — 두 종목을 했는데 「1종목」으로 남으면 안 된다
           shape: shapeLabel(preset, (s.extras ?? []).length),
+          workoutType: workoutTypeOf(preset),
           blocks: blocks.map((b) => ({
             name: b.name,
             spec: specOf.get(b.blockId) ?? '',
@@ -970,8 +1101,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         persist({ ...s, zeroAt: s.zeroAt + paused, pausedAt: null });
         lastIdx.current = snapshotAt(elapsedNow()).idx;
         lastTick.current = '';
+        resumeWorkoutSession();
       } else {
         persist({ ...s, pausedAt: Date.now() });
+        // 멈춘 동안은 건강 앱의 운동 시간에서도 빠지게
+        pauseWorkoutSession();
       }
       setSyncId((n) => n + 1);
       tick();
@@ -1113,6 +1247,71 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       void reschedule();
       },
   }), [persist, flush, seekTo, tick, reschedule, elapsedNow, snapshotAt, markRun, addRecord]);
+
+  /*
+    운동 중에는 iOS 운동 세션(HKWorkoutSession, iPhone은 iOS 26+)을 켜 둔다 —
+    modules/intava-workout.
+
+    **라이브 액티비티 때문이다.** 인타바는 무음 오디오로만 뒤에서 살아 있었는데,
+    liveactivitiesd는 그런 앱의 갱신을 「only playing background media so is forbidden to
+    update activity」로 버린다(실기기 로그). 아일랜드가 뒤에서 0:00에 멈춰 있던 원인이다.
+    운동 세션이라는 정당한 실행 사유가 생기자 뒤·잠금 상태의 구간 전환 갱신이 전부
+    반영됐다(10-19 15:26~15:31, 20건 반영·0건 거절). 그래서 아일랜드를 꺼 두면 켜지 않는다.
+
+    **앱이 앞에 있을 때만 시작한다.** 뒤에서 시작하면 곧바로 「종료됨」이 되었다(실기기,
+    15:20:49). 그래서 세션이 생길 때 앞이면 바로, 아니면 앞으로 올 때 시작하고, 앞으로
+    올 때마다 살아 있는지 보아 끝나 있으면 다시 켠다.
+  */
+  const hasSession = stored != null;
+  const hasSessionRef = useRef(hasSession);
+  hasSessionRef.current = hasSession;
+  const ensureWorkout = useCallback(() => {
+    if (!hasSessionRef.current || !wantsWorkout()) return;
+    if (AppState.currentState !== 'active') return;
+    const st = workoutSessionState();
+    if (st === 2 || st === 4) return; // 실행 중 · 일시정지
+    void startWorkoutSession(workoutTypeOf(presetRef.current));
+  }, [wantsWorkout]);
+  const wantNow = settings.liveActivity || settings.healthSync;
+  useEffect(() => {
+    if (!loaded) return;
+    if (hasSession && wantNow) {
+      ensureWorkout();
+      return;
+    }
+    /*
+      세션이 끝났다 — 기록이 남은 운동(settle을 지났다)이고 건강 기록을 켜 두었으면
+      건강 앱에 남긴다. 운동 세션이 있었으면 그것을 저장으로 닫고, 없었으면(iOS 26 미만,
+      세션을 못 켰던 운동) 시작·끝 시각으로 한 건 써넣는다. 10초 안에 꺼서 기록이 없는
+      운동은 남기지 않는다(healthPending이 비어 있다).
+    */
+    const pending = healthPending.current;
+    healthPending.current = null;
+    const save = !!pending && settingsRef.current.healthSync;
+    void stopWorkoutSession(save).then((r) => {
+      if (save && pending && r === 'none') {
+        void saveWorkoutRecord(pending.type, pending.start, pending.end);
+      }
+    });
+  }, [loaded, hasSession, wantNow, ensureWorkout]);
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') ensureWorkout();
+    });
+    return () => sub.remove();
+  }, [ensureWorkout]);
+
+  /** 라이브 액티비티 갱신 계기들 — stored·계획이 바뀌거나 복원이 끝나면 한 번 보낸다 */
+  useEffect(() => {
+    if (!loaded) return;
+    liveSync();
+  }, [loaded, stored, plan, preset, liveSync]);
+
+  /** 설정에서 켜고 끄는 즉시 — 운동 중이면 바로 띄우거나 걷는다 */
+  useEffect(() => {
+    if (!loaded) return;
+    liveSync(true);
+  }, [loaded, settings.liveActivity, liveSync]);
 
   const value = useMemo<Session>(() => ({
     ...snap,

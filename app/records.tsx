@@ -345,12 +345,24 @@ function Stat({
   tone?: string;
   divider?: boolean;
 }) {
+  /*
+    제목이 위, 값이 아래 — 무엇의 숫자인지 먼저 읽힌다.
+
+    값은 21에서 17로 줄였다. 칸이 화면의 3분의 1이라 「13시간 20분」처럼 시와 분이 다
+    두 자리가 되면 21에서는 「13시간…」으로 잘렸다(실기기). 그보다 더 길어지는 날을 위해
+    잘라 내지 말고 줄여 맞춘다(adjustsFontSizeToFit).
+  */
   return (
     <View style={[styles.stat, divider && styles.statDivider]}>
-      <Text style={[styles.statValue, TABULAR, !!tone && { color: tone }]} numberOfLines={1}>
+      <Text style={styles.statLabel}>{label}</Text>
+      <Text
+        style={[styles.statValue, TABULAR, !!tone && { color: tone }]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.75}
+      >
         {value}
       </Text>
-      <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
 }
@@ -388,6 +400,12 @@ function SessionCard({
                 shape: record.shape,
               })}
             </Text>
+            {/* 운동 종류 — 건강 앱에 남긴 그 이름. 이 필드가 생기기 전 기록에는 없다 */}
+            {!!record.workoutType && (
+              <Text style={styles.cardType} numberOfLines={1}>
+                {t(`workoutType.${record.workoutType}`)}
+              </Text>
+            )}
           </View>
           <View style={[styles.tag, done ? styles.tagDone : styles.tagStopped]}>
             <Text style={[styles.tagText, { color: done ? C.volumeText : C.recWarn }]}>
@@ -413,11 +431,12 @@ function SessionCard({
         )}
 
         <View style={styles.cardStats}>
-          <CardStat value={clock(record.totalSec)} label={t('records.cardTotal')} />
+          <CardStat value={clock(record.totalSec)} label={t('records.cardTotal')} divider />
           <CardStat
             value={clock(record.workSec)}
             label={t('records.cardWork')}
             tone={C.recWork}
+            divider
           />
           <CardStat
             value={t('count.sets', { count: record.completedSets })}
@@ -445,13 +464,32 @@ function SessionCard({
   );
 }
 
-function CardStat({ value, label, tone }: { value: string; label: string; tone?: string }) {
+/*
+  카드의 세 숫자 — 상단 이달 요약(Stat)과 같은 짜임이다. 붙은 세 칸, 제목 위·값 아래,
+  칸 안에서 가운데. 두 자리가 따로 놀면 같은 앱의 숫자인데 읽는 법이 둘이 된다.
+*/
+function CardStat({
+  value,
+  label,
+  tone,
+  divider,
+}: {
+  value: string;
+  label: string;
+  tone?: string;
+  divider?: boolean;
+}) {
   return (
-    <View style={{ flex: 1 }}>
-      <Text style={[styles.cardStatValue, TABULAR, !!tone && { color: tone }]} numberOfLines={1}>
+    <View style={[styles.cardStat, divider && styles.statDivider]}>
+      <Text style={styles.cardStatLabel}>{label}</Text>
+      <Text
+        style={[styles.cardStatValue, TABULAR, !!tone && { color: tone }]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.75}
+      >
         {value}
       </Text>
-      <Text style={styles.cardStatLabel}>{label}</Text>
     </View>
   );
 }
@@ -491,8 +529,8 @@ const styles = StyleSheet.create({
   summary: { marginTop: 16, flexDirection: 'row', borderRadius: 18 },
   stat: { flex: 1, paddingVertical: 15, paddingHorizontal: 8, alignItems: 'center' },
   statDivider: { borderRightWidth: 1, borderRightColor: 'rgba(255,255,255,0.06)' },
-  statValue: { fontSize: 21, fontWeight: '700', letterSpacing: -0.52, color: C.textPrimary },
-  statLabel: { marginTop: 6, fontSize: 11.5, color: C.textTertiary },
+  statValue: { marginTop: 6, fontSize: 17, fontWeight: '700', letterSpacing: -0.34, color: C.textPrimary },
+  statLabel: { fontSize: 11.5, color: C.textTertiary },
 
   /*
     요약과 달력은 다른 이야기다 — 위는 한 달을 한 줄로 줄인 것이고, 아래는
@@ -555,6 +593,7 @@ const styles = StyleSheet.create({
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   cardName: { fontSize: 17, fontWeight: '700', letterSpacing: -0.26, color: C.textPrimary },
   cardWhen: { marginTop: 5, fontSize: 12.5, color: C.textTertiary },
+  cardType: { marginTop: 3, fontSize: 12.5, fontWeight: '600', color: C.textSecondary },
   tag: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, borderWidth: 1 },
   tagDone: { backgroundColor: 'rgba(31,179,161,0.14)', borderColor: 'rgba(31,179,161,0.32)' },
   tagStopped: { backgroundColor: 'rgba(232,161,92,0.14)', borderColor: 'rgba(232,161,92,0.32)' },
@@ -562,9 +601,18 @@ const styles = StyleSheet.create({
 
   strip: { flexDirection: 'row', gap: 3, height: 8 },
 
-  cardStats: { flexDirection: 'row', gap: 14 },
-  cardStatValue: { fontSize: 17, fontWeight: '700', letterSpacing: -0.34, color: C.textPrimary },
-  cardStatLabel: { marginTop: 4, fontSize: 11, color: C.textTertiary },
+  cardStats: {
+    flexDirection: 'row',
+    borderRadius: 14,
+    borderCurve: 'continuous',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    overflow: 'hidden',
+  },
+  cardStat: { flex: 1, paddingVertical: 11, paddingHorizontal: 6, alignItems: 'center' },
+  cardStatValue: { marginTop: 4, fontSize: 17, fontWeight: '700', letterSpacing: -0.34, color: C.textPrimary },
+  cardStatLabel: { fontSize: 11, color: C.textTertiary },
 
   blockList: {
     borderRadius: 13,

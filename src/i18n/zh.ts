@@ -50,6 +50,10 @@ export const zh: Catalog = {
   },
 
   edit: {
+    recordSection: '训练记录',
+    workoutType: '训练类型',
+    workoutTypeNote: '会以此类型记录到“健康”和“健身”。',
+    workoutTypeHealthOff: '“将训练记录到健康”已关闭。',
     countdown: '倒计时',
     countdownSeconds: '{{n}}秒',
     countdownUnit: '秒',
@@ -155,6 +159,20 @@ export const zh: Catalog = {
     duckMusic: '提示音响起时降低音乐',
     screen: '屏幕',
     keepAwake: '运行时保持屏幕常亮',
+    liveActivity: '灵动岛与锁定屏幕计时器',
+    liveActivityNote: '训练时在 App 外也显示剩余时间和当前阶段。',
+    health: '健康',
+    healthSync: '将训练记录到健康',
+    healthSyncNote: '结束后（即使提前结束）会以循环中选择的类型保存到“健康”，也会显示在“健身”中。',
+    healthDeniedTitle: '健康权限已关闭',
+    healthDeniedBody: '请在“设置”→“健康”→“数据访问与设备”→ intava 中开启写入体能训练。',
+    feedbackSection: '联系',
+    feedback: '告诉开发者',
+    feedbackNote: '通过邮件直接发送问题或建议。',
+    feedbackSubject: '[Intava] 反馈',
+    feedbackBody: '请在这里写下内容。',
+    feedbackNoMailTitle: '无法打开邮件',
+    feedbackNoMailBody: '请发送到以下地址。\n{{email}}',
   },
 
   run: {
@@ -262,6 +280,26 @@ export const zh: Catalog = {
     saveChangesConfirm: '保存',
   },
 
+  /** 라이브 액티비티 — 다이내믹 아일랜드 · 잠금화면 */
+  live: {
+    next: '下一个：{{what}}',
+    subWork: '{{sub}} · 下一个：{{next}}',
+  },
+
+  /** 건강·피트니스 운동 종류 */
+  workoutType: {
+    hiit: '高强度间歇训练',
+    functionalStrength: '功能性力量训练',
+    traditionalStrength: '传统力量训练（器械）',
+    core: '核心训练',
+    cross: '交叉训练',
+    mixedCardio: '混合有氧',
+    jumpRope: '跳绳',
+    flexibility: '柔韧性',
+    yoga: '瑜伽',
+    pilates: '普拉提',
+  },
+
   notify: {
     channelCue: '热身 · 准备',
     channelWork: '开始运动',
@@ -281,8 +319,6 @@ export const zh: Catalog = {
 
   tips: {
     rounds: '设定把所有动作走几遍。组是一个动作内部的重复，轮是整组动作的重复。',
-    startEnd:
-      '三项都调到0就会消失。运行时热身显示**橙色**，准备显示**琥珀色**，放松显示**灰蓝色**。',
     keepScreenOn: '这个应用默认你会在息屏状态下使用。',
   },
 

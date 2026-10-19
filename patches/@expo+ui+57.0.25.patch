@@ -1,0 +1,33 @@
+diff --git a/node_modules/@expo/ui/ios/ProgressView.swift b/node_modules/@expo/ui/ios/ProgressView.swift
+index 99cd99b..c4bdf9f 100644
+--- a/node_modules/@expo/ui/ios/ProgressView.swift
++++ b/node_modules/@expo/ui/ios/ProgressView.swift
+@@ -7,6 +7,8 @@ public final class ProgressViewProps: UIBaseViewProps {
+   @Field var timerInterval: ClosedRangeDate?
+   @Field var countsDown: Bool?
+   @Field var value: Double?
++  // [Intava patch] 원형 스타일에서 남은 시간 글자(currentValueLabel)를 링 안에 그리지 않는다
++  @Field var hidesValueLabel: Bool?
+ }
+ 
+ public struct ProgressView: ExpoSwiftUI.View {
+@@ -27,8 +29,17 @@ public struct ProgressView: ExpoSwiftUI.View {
+       let upper = timerInterval.upper,
+       lower <= upper,
+       #available(iOS 16.0, tvOS 16.0, *) {
+-      SwiftUI.ProgressView(timerInterval: ClosedRange(uncheckedBounds: (lower: lower, upper: upper)), countsDown: props.countsDown ?? true) {
+-        Children()
++      if props.hidesValueLabel == true {
++        SwiftUI.ProgressView(
++          timerInterval: ClosedRange(uncheckedBounds: (lower: lower, upper: upper)),
++          countsDown: props.countsDown ?? true,
++          label: { Children() },
++          currentValueLabel: { EmptyView() }
++        )
++      } else {
++        SwiftUI.ProgressView(timerInterval: ClosedRange(uncheckedBounds: (lower: lower, upper: upper)), countsDown: props.countsDown ?? true) {
++          Children()
++        }
+       }
+     } else if let value = props.value {
+       SwiftUI.ProgressView(value: value) {
