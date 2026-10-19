@@ -243,6 +243,40 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
         {bar}
       </VStack>
     ),
+    /*
+      애플 워치 스마트 스택(그리고 CarPlay) — 잠금화면 배너를 그대로 쓰면 좁은 화면에
+      욱여넣어져 이름이 「새…」, 숫자가 「0…」으로 잘렸다(실기기). 워치에는 링 · 단계와
+      이름 두 줄 · 큰 숫자만 한 줄로 둔다. 막대와 곁말은 뺀다.
+    */
+    bannerSmall: (
+      <HStack
+        spacing={10}
+        alignment="center"
+        modifiers={[padding({ horizontal: 10, vertical: 8 }), activityBackgroundTint('#000000')]}
+      >
+        {ring(34)}
+        <VStack
+          alignment="leading"
+          spacing={1}
+          modifiers={[frame({ maxWidth: 10000, alignment: 'leading' })]}
+        >
+          <Text modifiers={[font({ size: 11, weight: 'bold' }), kerning(1.2), foregroundStyle(p.color)]}>
+            {p.phase}
+          </Text>
+          <Text
+            modifiers={[
+              font({ size: 15, weight: 'bold' }),
+              foregroundStyle('#FFFFFF'),
+              lineLimit(1),
+              minimumScaleFactor(0.75),
+            ]}
+          >
+            {p.name}
+          </Text>
+        </VStack>
+        {clock(26, 'heavy', 70)}
+      </HStack>
+    ),
     compactLeading: ringOrNothing(22),
     compactTrailing: clock(15, 'bold', 46),
     minimal: ring(22),
