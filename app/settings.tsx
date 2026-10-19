@@ -281,8 +281,18 @@ export default function SettingsScreen() {
             note={t('tips.keepScreenOn')}
             value={settings.keepScreenOn}
             onChange={(keepScreenOn) => setSettings({ keepScreenOn })}
-            last
+            last={Platform.OS !== 'ios'}
           />
+          {/* 라이브 액티비티는 iOS에만 있다 */}
+          {Platform.OS === 'ios' && (
+            <ToggleRow
+              title={t('settings.liveActivity')}
+              note={t('settings.liveActivityNote')}
+              value={settings.liveActivity}
+              onChange={(liveActivity) => setSettings({ liveActivity })}
+              last
+            />
+          )}
 
           {/*
             루틴은 이 기기 안에만 있다 — 앱을 지우거나 기기를 바꾸면 사라진다.

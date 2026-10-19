@@ -497,7 +497,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       const stored = storedRef.current;
       const plan = planRef.current;
       const preset = presetRef.current;
-      if (!stored) {
+      // 설정에서 껐으면 떠 있던 것까지 걷는다
+      if (!stored || !settingsRef.current.liveActivity) {
         syncLiveActivity(null);
         return;
       }
@@ -1204,6 +1205,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     if (!loaded) return;
     liveSync();
   }, [loaded, stored, plan, preset, liveSync]);
+
+  /** 설정에서 켜고 끄는 즉시 — 운동 중이면 바로 띄우거나 걷는다 */
+  useEffect(() => {
+    if (!loaded) return;
+    liveSync(true);
+  }, [loaded, settings.liveActivity, liveSync]);
 
   const value = useMemo<Session>(() => ({
     ...snap,

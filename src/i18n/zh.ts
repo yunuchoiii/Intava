@@ -155,6 +155,8 @@ export const zh: Catalog = {
     duckMusic: '提示音响起时降低音乐',
     screen: '屏幕',
     keepAwake: '运行时保持屏幕常亮',
+    liveActivity: '灵动岛与锁定屏幕计时器',
+    liveActivityNote: '训练时在 App 外也显示剩余时间和当前阶段。',
   },
 
   run: {

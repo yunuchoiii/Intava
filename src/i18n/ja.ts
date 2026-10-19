@@ -155,6 +155,8 @@ export const ja: Catalog = {
     duckMusic: '通知音のあいだ音楽を下げる',
     screen: '画面',
     keepAwake: '実行中に画面を消さない',
+    liveActivity: 'ダイナミックアイランド・ロック画面タイマー',
+    liveActivityNote: 'ワークアウト中、アプリの外でも残り時間と今の区間を表示します。',
   },
 
   run: {

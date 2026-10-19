@@ -162,6 +162,8 @@ export const en: Catalog = {
     duckMusic: 'Lower music for cues',
     screen: 'Screen',
     keepAwake: 'Keep screen on while running',
+    liveActivity: 'Dynamic Island & Lock Screen timer',
+    liveActivityNote: 'Shows the time left and the current interval outside the app while you work out.',
   },
 
   run: {

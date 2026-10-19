@@ -174,6 +174,8 @@ export const ko = {
     duckMusic: '알림음 나올 때 음악 줄이기',
     screen: '화면',
     keepAwake: '실행 중 화면 꺼짐 방지',
+    liveActivity: '다이내믹 아일랜드 · 잠금화면 타이머',
+    liveActivityNote: '운동 중 앱 밖에서도 남은 시간과 지금 구간을 보여줍니다.',
   },
 
   run: {

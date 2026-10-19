@@ -111,6 +111,11 @@ export type Settings = {
    * 사용자가 고르는 쪽이어야 한다. 켜도 알림음 앞뒤로만 눌린다.
    */
   duckMusic: boolean;
+  /**
+   * 운동 중 다이내믹 아일랜드 · 잠금화면에 타이머를 띄운다(라이브 액티비티, src/live).
+   * 기본은 켜짐 — 앱 밖에서 지금 구간을 보는 길이 이것뿐이다. 끄면 떠 있던 것도 걷는다.
+   */
+  liveActivity: boolean;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -122,6 +127,7 @@ export const DEFAULT_SETTINGS: Settings = {
   keepScreenOn: false,
   volume: 0.8,
   duckMusic: false,
+  liveActivity: true,
 };
 
 export type Phase =
