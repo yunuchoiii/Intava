@@ -22,6 +22,22 @@ import type { TimerActivityProps } from './TimerActivity';
 let factory: LiveActivityFactory<TimerActivityProps> | null | undefined;
 let current: LiveActivity<TimerActivityProps> | null = null;
 let lastSent = '';
+/**
+ * 마지막 갱신이 실패했는가 — 그렇다면 내용이 같아도 다시 보낸다(liveNeedsRetry).
+ *
+ * 실기기에서 앱이 뒤에 있을 때 구간 전환 갱신이 반영되지 않아 아일랜드가 0:00에
+ * 멈춘 채 남았다. 예전에는 실패하면 기억만 지우고 다음 구간 전환을 기다렸는데,
+ * 앱을 열어도 구간이 그대로면 계기가 없어 재생/일시정지를 눌러야 풀렸다.
+ */
+let failed = false;
+let lastTry = 0;
+/** 실패 뒤 이만큼은 쉬었다 다시 보낸다 — 시스템이 거절하는 중에 매 초 두드리지 않게 */
+const RETRY_MS = 3000;
+
+/** 다시 보낼 때가 됐는가 — 세션의 매 초 tick이 묻는다 */
+export function liveNeedsRetry(): boolean {
+  return failed && Date.now() - lastTry >= RETRY_MS;
+}
 /** 끄는 중 — 끝나기 전에 다시 켜 달라는 요청이 오면 끝난 뒤에 새로 만든다 */
 let ending: Promise<void> | null = null;
 
@@ -42,12 +58,13 @@ function getFactory(): LiveActivityFactory<TimerActivityProps> | null {
  * 지금 상태를 아일랜드에 반영한다. props가 null이면 끈다.
  * 몇 번을 불러도 내용이 같으면 아무것도 보내지 않는다.
  */
-export function syncLiveActivity(props: TimerActivityProps | null): void {
+export function syncLiveActivity(props: TimerActivityProps | null, force = false): void {
   const f = getFactory();
   if (!f) return;
 
   if (!props) {
     lastSent = '';
+    failed = false;
     const target = current;
     current = null;
     // 앱이 죽었다 살아나 이어받지 못한 것까지 함께 걷는다
@@ -74,8 +91,10 @@ export function syncLiveActivity(props: TimerActivityProps | null): void {
   }
 
   const key = JSON.stringify(props);
-  if (key === lastSent) return;
+  if (!force && !failed && key === lastSent) return;
   lastSent = key;
+  lastTry = Date.now();
+  failed = false;
 
   const send = () => {
     try {
@@ -85,17 +104,18 @@ export function syncLiveActivity(props: TimerActivityProps | null): void {
       }
       if (current) {
         void current.update(props).catch(() => {
-          // 시스템이 이미 걷었다(사용자가 밀어 지웠거나 8시간이 지났다) — 다음 번에 새로 만든다
+          // 거절됐거나 시스템이 이미 걷었다 — 몇 초 뒤 tick이 다시 보낸다. 걷힌 것이면
+          // 그때 getInstances가 비어 새로 만든다
           current = null;
-          lastSent = '';
+          failed = true;
         });
       } else {
         current = f.start(props, 'intava://run');
       }
     } catch {
-      // 설정에서 라이브 액티비티를 껐거나 시스템이 거절했다 — 앱은 그대로 돈다
+      // 설정에서 라이브 액티비티를 껐거나 시스템이 시작을 거절했다 — 앱은 그대로 돈다.
+      // 다시 두드리지 않는다(failed를 세우지 않는다): 꺼 둔 사람에게 3초마다 묻는 꼴이다
       current = null;
-      lastSent = '';
     }
   };
 
