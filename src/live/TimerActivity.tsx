@@ -71,6 +71,13 @@ export type TimerActivityProps = {
 const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
   'widget';
   const seg = { lower: new Date(p.start), upper: new Date(p.end) };
+  /*
+    숫자만 끝을 1초 늦춘다 — 앱 타이머와 같은 올림(clock의 Math.ceil)으로 맞추려고.
+    iOS의 타이머 글자는 남은 시간을 내림해서 3·2·1 뒤에 0이 1초 서 있다가 다음 구간이
+    29부터 보였다. 끝을 1초 미루면 내림이 곧 올림이 되어 3·2·1 → 30으로 넘어간다.
+    링은 실제 시각 그대로 둔다(1초 어긋나면 링이 덜 비고 넘어간다).
+  */
+  const segText = { lower: new Date(p.start), upper: new Date(p.end + 1000) };
   const whole = { lower: new Date(p.runStart), upper: new Date(p.runEnd) };
   const still = p.paused || p.done;
 
@@ -150,7 +157,7 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
       </Text>
     ) : (
       <Text
-        timerInterval={seg}
+        timerInterval={segText}
         countsDown
         modifiers={[
           font({ size, weight }),
