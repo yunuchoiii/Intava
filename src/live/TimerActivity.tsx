@@ -26,6 +26,7 @@
 import { Capsule, HStack, ProgressView, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
 import {
   activityBackgroundTint,
+  background,
   font,
   foregroundStyle,
   frame,
@@ -76,8 +77,12 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
     iOS의 타이머 글자는 남은 시간을 내림해서 3·2·1 뒤에 0이 1초 서 있다가 다음 구간이
     29부터 보였다. 끝을 1초 미루면 내림이 곧 올림이 되어 3·2·1 → 30으로 넘어간다.
     링은 실제 시각 그대로 둔다(1초 어긋나면 링이 덜 비고 넘어간다).
+
+    시작도 1초 미룬다. 타이머 글자는 시작 전이면 구간 길이(끝−시작)를 그대로 보여서,
+    끝만 미루면 갱신이 시작 시각보다 먼저 그려질 때 30초 구간이 31로 한 번 떴다(실기기).
+    둘 다 미루면 길이가 30 그대로이고, 첫 1초 동안 보이는 값도 어차피 30이라 같다.
   */
-  const segText = { lower: new Date(p.start), upper: new Date(p.end + 1000) };
+  const segText = { lower: new Date(p.start + 1000), upper: new Date(p.end + 1000) };
   const whole = { lower: new Date(p.runStart), upper: new Date(p.runEnd) };
   const still = p.paused || p.done;
 
@@ -235,13 +240,25 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
     </HStack>
   );
 
+  /*
+    바탕(잠금화면 배너만) — 위는 검정, 아래로 갈수록 단계 색이 옅게 번진다. 지금이 운동인지 휴식인지
+    숫자를 읽기 전에 색으로 먼저 안다. 단계 색은 #RRGGBB, 끝에 붙인 4D가 불투명도 30%다.
+  */
+  const glow = background({
+    type: 'linearGradient',
+    colors: ['#000000', `${p.color}4D`],
+    startPoint: { x: 0.5, y: 0 },
+    endPoint: { x: 0.5, y: 1 },
+  });
+
   return {
     // 잠금화면 · 알림 센터 — 확장 상태와 같은 짜임을 한 장에
     banner: (
       <VStack
         spacing={14}
         modifiers={[
-          padding({ horizontal: 20, vertical: 16 }),
+          padding({ horizontal: 20, top: 20, bottom: 16 }),
+          glow,
           activityBackgroundTint('#000000'),
           widgetURL('intava://run'),
         ]}
@@ -288,6 +305,7 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
     compactTrailing: clock(15, 'bold', 46),
     minimal: ring(22),
     expandedBottom: (
+      // 아일랜드는 검은 바탕 그대로 — 둘레에 iOS 여백이 있어 단계 색 바탕을 깔면 검은 테두리 안에 네모로 갇혔다(실기기)
       <VStack spacing={14} modifiers={[padding({ horizontal: 6, top: 2, bottom: 4 })]}>
         {row}
         {bar}
