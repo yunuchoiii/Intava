@@ -52,6 +52,8 @@ export const zh: Catalog = {
   edit: {
     workoutType: '训练类型',
     workoutTypeNote: '会以此类型记录到“健康”和“健身”。',
+    workoutTypeHealthOff: '“将训练记录到健康”已关闭，目前不会记录。',
+    workoutTypeOpenSettings: '打开设置',
     countdown: '倒计时',
     countdownSeconds: '{{n}}秒',
     countdownUnit: '秒',

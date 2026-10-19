@@ -90,6 +90,8 @@ export default function Edit() {
   const [picking, setPicking] = useState(false);
   const [startEndOpen, setStartEndOpen] = useState(false);
   const [pickingType, setPickingType] = useState(false);
+  /** 운동 종류 시트의 빨간 줄을 눌렀다 — 시트가 내려간 뒤 설정을 연다 */
+  const toSettings = useRef(false);
   const [nameFocused, setNameFocused] = useState(false);
   // 종목을 끌어 옮기는 동안에는 화면이 같이 스크롤되면 안 된다
   const [reordering, setReordering] = useState(false);
@@ -661,6 +663,18 @@ export default function Edit() {
         visible={pickingType}
         value={workoutTypeOf(draft)}
         onClose={() => setPickingType(false)}
+        healthOff={!settings.healthSync}
+        onOpenSettings={() => {
+          toSettings.current = true;
+          setPickingType(false);
+        }}
+        onClosed={() => {
+          // 시트가 다 내려간 뒤에 옮긴다 — 내려가는 몸짓 위에 화면이 쌓이지 않게
+          if (!toSettings.current) return;
+          toSettings.current = false;
+          if (!isNew) commit();
+          router.push('/settings');
+        }}
         onPick={(workoutType) => {
           patch({ workoutType });
           setPickingType(false);

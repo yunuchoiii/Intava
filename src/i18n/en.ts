@@ -59,6 +59,8 @@ export const en: Catalog = {
   edit: {
     workoutType: 'Workout type',
     workoutTypeNote: 'Saved to Health and Fitness as this type.',
+    workoutTypeHealthOff: 'Log workouts to Health is off, so nothing is recorded right now.',
+    workoutTypeOpenSettings: 'Open Settings',
     countdown: 'Countdown',
     countdownSeconds: '{{n}} sec',
     countdownUnit: 'sec',
