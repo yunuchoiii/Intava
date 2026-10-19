@@ -184,6 +184,13 @@ export const ko = {
     healthSyncNote: '운동을 마치면(도중에 끝내도) 루틴에서 고른 운동 종류로 건강 앱에 남깁니다. 피트니스 앱에도 보입니다.',
     healthDeniedTitle: '건강 앱 권한이 꺼져 있습니다',
     healthDeniedBody: '설정 → 건강 → 데이터 접근 및 기기 → intava에서 운동 쓰기를 켜 주세요.',
+    feedbackSection: '문의',
+    feedback: '개발자에게 알리기',
+    feedbackNote: '버그나 바라는 점을 메일로 바로 보냅니다.',
+    feedbackSubject: '[인타바] 개발자에게',
+    feedbackBody: '여기에 내용을 적어 주세요.',
+    feedbackNoMailTitle: '메일 앱을 열 수 없습니다',
+    feedbackNoMailBody: '아래 주소로 보내 주세요.\n{{email}}',
   },
 
   run: {

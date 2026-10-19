@@ -165,6 +165,13 @@ export const ja: Catalog = {
     healthSyncNote: '終えると（途中で終えても）ルーティンで選んだ種類でヘルスケアに保存します。フィットネスにも表示されます。',
     healthDeniedTitle: 'ヘルスケアへのアクセスがオフです',
     healthDeniedBody: '設定 → ヘルスケア → データアクセスとデバイス → intava で、ワークアウトの書き込みをオンにしてください。',
+    feedbackSection: 'お問い合わせ',
+    feedback: '開発者に知らせる',
+    feedbackNote: '不具合や要望をメールですぐに送ります。',
+    feedbackSubject: '[Intava] 開発者へ',
+    feedbackBody: 'ここに内容を書いてください。',
+    feedbackNoMailTitle: 'メールアプリを開けません',
+    feedbackNoMailBody: '次のアドレスに送ってください。\n{{email}}',
   },
 
   run: {

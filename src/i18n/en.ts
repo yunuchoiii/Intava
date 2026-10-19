@@ -172,6 +172,13 @@ export const en: Catalog = {
     healthSyncNote: 'When you finish (even early), the workout is saved to Health as the type chosen in the routine. It also shows in Fitness.',
     healthDeniedTitle: 'Health access is off',
     healthDeniedBody: 'In Settings → Health → Data Access & Devices → intava, turn on writing workouts.',
+    feedbackSection: 'Contact',
+    feedback: 'Tell the developer',
+    feedbackNote: 'Send a bug or a wish straight by email.',
+    feedbackSubject: '[Intava] Feedback',
+    feedbackBody: 'Write your message here.',
+    feedbackNoMailTitle: 'Can\'t open Mail',
+    feedbackNoMailBody: 'Please write to this address.\n{{email}}',
   },
 
   run: {

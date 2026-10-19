@@ -165,6 +165,13 @@ export const zh: Catalog = {
     healthSyncNote: '结束后（即使提前结束）会以循环中选择的类型保存到“健康”，也会显示在“健身”中。',
     healthDeniedTitle: '健康权限已关闭',
     healthDeniedBody: '请在“设置”→“健康”→“数据访问与设备”→ intava 中开启写入体能训练。',
+    feedbackSection: '联系',
+    feedback: '告诉开发者',
+    feedbackNote: '通过邮件直接发送问题或建议。',
+    feedbackSubject: '[Intava] 反馈',
+    feedbackBody: '请在这里写下内容。',
+    feedbackNoMailTitle: '无法打开邮件',
+    feedbackNoMailBody: '请发送到以下地址。\n{{email}}',
   },
 
   run: {
