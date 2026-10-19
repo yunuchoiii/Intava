@@ -345,12 +345,24 @@ function Stat({
   tone?: string;
   divider?: boolean;
 }) {
+  /*
+    제목이 위, 값이 아래 — 무엇의 숫자인지 먼저 읽힌다.
+
+    값은 21에서 17로 줄였다. 칸이 화면의 3분의 1이라 「13시간 20분」처럼 시와 분이 다
+    두 자리가 되면 21에서는 「13시간…」으로 잘렸다(실기기). 그보다 더 길어지는 날을 위해
+    잘라 내지 말고 줄여 맞춘다(adjustsFontSizeToFit).
+  */
   return (
     <View style={[styles.stat, divider && styles.statDivider]}>
-      <Text style={[styles.statValue, TABULAR, !!tone && { color: tone }]} numberOfLines={1}>
+      <Text style={styles.statLabel}>{label}</Text>
+      <Text
+        style={[styles.statValue, TABULAR, !!tone && { color: tone }]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.75}
+      >
         {value}
       </Text>
-      <Text style={styles.statLabel}>{label}</Text>
     </View>
   );
 }
@@ -491,8 +503,8 @@ const styles = StyleSheet.create({
   summary: { marginTop: 16, flexDirection: 'row', borderRadius: 18 },
   stat: { flex: 1, paddingVertical: 15, paddingHorizontal: 8, alignItems: 'center' },
   statDivider: { borderRightWidth: 1, borderRightColor: 'rgba(255,255,255,0.06)' },
-  statValue: { fontSize: 21, fontWeight: '700', letterSpacing: -0.52, color: C.textPrimary },
-  statLabel: { marginTop: 6, fontSize: 11.5, color: C.textTertiary },
+  statValue: { marginTop: 6, fontSize: 17, fontWeight: '700', letterSpacing: -0.34, color: C.textPrimary },
+  statLabel: { fontSize: 11.5, color: C.textTertiary },
 
   /*
     요약과 달력은 다른 이야기다 — 위는 한 달을 한 줄로 줄인 것이고, 아래는
