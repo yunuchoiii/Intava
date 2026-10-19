@@ -1270,7 +1270,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     if (AppState.currentState !== 'active') return;
     const st = workoutSessionState();
     if (st === 2 || st === 4) return; // 실행 중 · 일시정지
-    void startWorkoutSession(workoutTypeOf(presetRef.current));
+    void startWorkoutSession(workoutTypeOf(presetRef.current)).then(() => {
+      // 앱이 다시 실행돼 세션을 새로 세웠으면 실행 중으로 시작한다 — 멈춰 둔 운동이면 맞춰 멈춘다
+      if (storedRef.current?.pausedAt != null) pauseWorkoutSession();
+    });
   }, [wantsWorkout]);
   const wantNow = settings.liveActivity || settings.healthSync;
   useEffect(() => {

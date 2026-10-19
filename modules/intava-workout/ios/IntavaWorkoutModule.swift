@@ -44,9 +44,15 @@ public class IntavaWorkoutModule: Module {
       시작 — 이미 돌고 있으면 그대로, iOS에 남은 세션이 있으면 이어받고, 없으면 새로 만든다.
 
       세션은 기기에 하나만 돈다. 앱이 다시 실행되면(설치·강제 종료) 이전 세션이 iOS 쪽에
-      남아 있어, 새로 만들면 곧바로 「종료됨」이 되었다(실기기 15:20:49). 그래서 먼저
-      recoverActiveWorkoutSession으로 이어받는다. 뒤에서 시작해도 곧바로 끝나므로 JS는
-      앱이 앞에 있을 때만 부른다.
+      남아 있어, 그냥 새로 만들면 곧바로 「종료됨」이 되었다(실기기 15:20:49).
+
+      남은 세션을 이어받기만 해서도 안 된다. 앞 프로세스가 죽을 때 healthd가 실행 보증을
+      다시 잡지 못하면(「Failed to acquire reconnection assertion」) 이어받은 세션은 돌고
+      있어도 새 프로세스에 「Running workout session」 보증이 붙지 않아, 아일랜드 갱신이
+      다시 「only playing background media」로 버려졌다(실기기 10-19 16:17:30~). 앱에서는
+      보증이 붙었는지 알 길이 없으므로, 남은 세션은 원래 시작 시각만 넘겨받고 끝낸 뒤
+      같은 시각으로 새로 시작한다. 뒤에서 시작해도 곧바로 끝나므로 JS는 앱이 앞에 있을
+      때만 부른다.
     */
     AsyncFunction("start") { (type: String) async -> String in
       guard #available(iOS 26.0, *) else { return "unsupported" }
@@ -58,22 +64,24 @@ public class IntavaWorkoutModule: Module {
       }
       do {
         try await self.store.requestAuthorization(toShare: [HKObjectType.workoutType()], read: [])
-        if let recovered = try? await self.store.recoverActiveWorkoutSession(),
-           recovered.state == .running || recovered.state == .paused {
-          self.session = recovered
-          self.builder = recovered.associatedWorkoutBuilder()
-          return "recovered"
+        var startAt = Date()
+        var outcome = "started"
+        if let old = try? await self.store.recoverActiveWorkoutSession() {
+          if old.state == .running || old.state == .paused {
+            startAt = old.startDate ?? startAt
+            outcome = "restarted"
+          }
+          await Self.endAndWait(old)
         }
         let config = Self.configuration(type)
         let s = try HKWorkoutSession(healthStore: self.store, configuration: config)
         let b = s.associatedWorkoutBuilder()
         b.dataSource = HKLiveWorkoutDataSource(healthStore: self.store, workoutConfiguration: config)
-        let now = Date()
-        s.startActivity(with: now)
-        try await b.beginCollection(at: now)
+        s.startActivity(with: startAt)
+        try await b.beginCollection(at: startAt)
         self.session = s
         self.builder = b
-        return "started"
+        return outcome
       } catch {
         return "error \(error.localizedDescription)"
       }
@@ -150,6 +158,19 @@ public class IntavaWorkoutModule: Module {
       guard #available(iOS 26.0, *), let s = self.session as? HKWorkoutSession else { return -1 }
       return s.state.rawValue
     }
+  }
+
+  /** 남은 세션을 기록 없이 끝내고, 「종료됨」이 될 때까지 잠깐(최대 3초) 기다린다 — 그 전에 새로 만들면 새 것이 끝난다 */
+  @available(iOS 26.0, *)
+  private static func endAndWait(_ s: HKWorkoutSession) async {
+    let b = s.associatedWorkoutBuilder()
+    if s.state != .ended && s.state != .stopped {
+      s.end()
+    }
+    for _ in 0..<30 where s.state != .ended {
+      try? await Task.sleep(nanoseconds: 100_000_000)
+    }
+    b.discardWorkout()
   }
 
   private static func configuration(_ type: String) -> HKWorkoutConfiguration {
