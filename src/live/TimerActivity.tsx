@@ -23,18 +23,20 @@
  * 디자인의 확장 상태에 있던 일시정지·건너뛰기 버튼은 아직 없다 — 이 버전의
  * expo-widgets는 라이브 액티비티의 버튼 입력을 문서로 약속하지 않는다.
  */
-import { HStack, ProgressView, Spacer, Text, VStack } from '@expo/ui/swift-ui';
+import { HStack, ProgressView, Text, VStack } from '@expo/ui/swift-ui';
 import {
   activityBackgroundTint,
   font,
   foregroundStyle,
   frame,
   kerning,
+  labelsHidden,
   lineLimit,
   monospacedDigit,
   multilineTextAlignment,
   padding,
   progressViewStyle,
+  scaleEffect,
   tint,
   widgetURL,
 } from '@expo/ui/swift-ui/modifiers';
@@ -72,19 +74,32 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
   const whole = { lower: new Date(p.runStart), upper: new Date(p.runEnd) };
   const still = p.paused || p.done;
 
-  const ring = (size: number) =>
-    still ? (
-      <ProgressView
-        value={p.done ? 0 : p.fraction}
-        modifiers={[progressViewStyle('circular'), tint(p.color), frame({ width: size, height: size })]}
-      />
+  /*
+    링 — 안에 숫자를 두지 않고, 선을 굵게.
+
+    SwiftUI의 원형 ProgressView(timerInterval:)는 남은 시간 글자를 링 **안에** 기본으로
+    붙인다. 숫자는 바로 옆에 크게 있으니 링 안의 것은 군더더기다 — labelsHidden으로 걷는다.
+
+    선 굵기는 이 부품이 정해 두고 바꾸게 하지 않는다. 그래서 **작게 그린 뒤 키운다** —
+    scaleEffect는 그려진 것을 통째로 늘리므로 선도 같은 배율로 굵어진다. 늘어난 만큼의
+    자리는 바깥 frame이 잡는다(scaleEffect는 배치를 바꾸지 않는다).
+  */
+  const ring = (size: number) => {
+    const drawn = Math.round(size * 0.6);
+    const mods = [
+      progressViewStyle('circular'),
+      labelsHidden(),
+      tint(p.color),
+      frame({ width: drawn, height: drawn }),
+      scaleEffect(size / drawn),
+      frame({ width: size, height: size }),
+    ];
+    return still ? (
+      <ProgressView value={p.done ? 0 : p.fraction} modifiers={mods} />
     ) : (
-      <ProgressView
-        timerInterval={seg}
-        countsDown
-        modifiers={[progressViewStyle('circular'), tint(p.color), frame({ width: size, height: size })]}
-      />
+      <ProgressView timerInterval={seg} countsDown modifiers={mods} />
     );
+  };
 
   const clock = (size: number, weight: 'bold' | 'heavy', width: number) =>
     still ? (
@@ -112,8 +127,17 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
       />
     );
 
+  /*
+    가운데 글자 — 양쪽(링·숫자)을 뺀 너비를 **다 쓴다.** maxWidth를 크게 주면 SwiftUI는
+    남은 자리만큼만 늘린다(무한대는 JSON으로 못 넘겨 큰 수로 갈음한다). 그래야 곁말이
+    「3 / 3 세트 · 1 / 2 라…」처럼 잘리지 않는다.
+  */
   const lines = (
-    <VStack alignment="leading" spacing={3}>
+    <VStack
+      alignment="leading"
+      spacing={3}
+      modifiers={[frame({ maxWidth: 10000, alignment: 'leading' })]}
+    >
       <Text modifiers={[font({ size: 12, weight: 'bold' }), kerning(1.9), foregroundStyle(p.color)]}>
         {p.phase}
       </Text>
@@ -129,13 +153,33 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
   const bar = (
     <HStack spacing={10}>
       {still ? (
-        <ProgressView value={p.done ? 1 : p.runFraction} modifiers={[tint(p.color)]} />
+        <ProgressView value={p.done ? 1 : p.runFraction} modifiers={[labelsHidden(), tint(p.color)]} />
       ) : (
-        <ProgressView timerInterval={whole} countsDown={false} modifiers={[tint(p.color)]} />
+        // 막대도 링처럼 흐른 시간 글자를 아래에 붙인다 — 걷는다
+        <ProgressView
+          timerInterval={whole}
+          countsDown={false}
+          modifiers={[labelsHidden(), tint(p.color)]}
+        />
       )}
       <Text modifiers={[font({ size: 12, weight: 'semibold' }), monospacedDigit(), foregroundStyle('#FFFFFF8C')]}>
         {p.stage}
       </Text>
+    </HStack>
+  );
+
+  /*
+    링 · 가운데 글자 · 숫자를 **한 줄에** 세운다 — 셋이 세로 가운데로 맞는다.
+
+    아일랜드의 확장 영역을 왼쪽(링)·가운데(글자)·오른쪽(숫자)으로 나눠 쓰면 iOS가
+    가운데를 카메라 **아래**에 따로 놓아 셋의 높이가 어긋난다(실제로 글자만 아래로
+    처졌다). 그래서 확장은 아래 영역 하나에 이 줄과 막대를 통째로 넣는다.
+  */
+  const row = (
+    <HStack spacing={14} alignment="center">
+      {ring(52)}
+      {lines}
+      {clock(34, 'heavy', 96)}
     </HStack>
   );
 
@@ -150,22 +194,19 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
           widgetURL('intava://run'),
         ]}
       >
-        <HStack spacing={14}>
-          {ring(52)}
-          {lines}
-          <Spacer />
-          {clock(34, 'heavy', 96)}
-        </HStack>
+        {row}
         {bar}
       </VStack>
     ),
     compactLeading: ring(22),
     compactTrailing: clock(15, 'bold', 46),
     minimal: ring(22),
-    expandedLeading: <VStack modifiers={[padding({ leading: 4, top: 4 })]}>{ring(52)}</VStack>,
-    expandedTrailing: <VStack modifiers={[padding({ trailing: 4, top: 4 })]}>{clock(34, 'heavy', 96)}</VStack>,
-    expandedCenter: lines,
-    expandedBottom: <VStack modifiers={[padding({ horizontal: 4, top: 6 })]}>{bar}</VStack>,
+    expandedBottom: (
+      <VStack spacing={14} modifiers={[padding({ horizontal: 6, top: 2, bottom: 4 })]}>
+        {row}
+        {bar}
+      </VStack>
+    ),
   };
 };
 
