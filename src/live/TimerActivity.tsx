@@ -241,14 +241,34 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
   );
 
   /*
-    바탕(잠금화면 배너만) — 위는 검정, 아래로 갈수록 단계 색이 옅게 번진다. 지금이 운동인지 휴식인지
-    숫자를 읽기 전에 색으로 먼저 안다. 단계 색은 #RRGGBB, 끝에 붙인 4D가 불투명도 30%다.
+    바탕(잠금화면 배너만) — 링 뒤에서 단계 색이 원형으로 번져 나가 검정으로 사라진다.
+    숫자를 읽기 전에 색으로 지금이 운동인지 휴식인지 안다.
+
+    중심은 링 자리다: 왼쪽 여백 20 + 링 반지름 26 = 46pt, 배너 폭 약 360pt라 x≈0.13,
+    위 여백 20 + 반지름 26 ≈ 46pt, 배너 높이 약 120pt라 y≈0.38. 단계 색을 검정과
+    35·20·8%로 섞어 번지게 한다. 반지름 190pt는 링 둘레에만 맺혀 작아 보여 320pt로
+    키웠다(실기기). 펼친 아일랜드는 둘레의 iOS 여백 때문에 바탕이 네모로
+    갇혀 검정 그대로 둔다(실기기).
   */
+  /*
+    단계 색을 검정 위에 k만큼 얹은 **불투명** 색 — 반투명 색을 쓰면 잠금화면이 그 틈으로
+    배경화면을 비춰 보였다(실기기). activityBackgroundTint의 검정도 아래에 깔리지 않았다.
+    위젯 함수 안이라 바깥 도우미를 못 쓴다(문자열로 옮겨져 돈다).
+  */
+  const dim = (k: number) => {
+    const h = p.color.replace('#', '');
+    const ch = (i: number) =>
+      Math.round(parseInt(h.slice(i, i + 2), 16) * k)
+        .toString(16)
+        .padStart(2, '0');
+    return `#${ch(0)}${ch(2)}${ch(4)}`;
+  };
   const glow = background({
-    type: 'linearGradient',
-    colors: ['#000000', `${p.color}4D`],
-    startPoint: { x: 0.5, y: 0 },
-    endPoint: { x: 0.5, y: 1 },
+    type: 'radialGradient',
+    colors: [dim(0.35), dim(0.2), dim(0.08), '#000000'],
+    center: { x: 0.13, y: 0.38 },
+    startRadius: 0,
+    endRadius: 320,
   });
 
   return {
