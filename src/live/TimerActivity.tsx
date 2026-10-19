@@ -23,7 +23,7 @@
  * 디자인의 확장 상태에 있던 일시정지·건너뛰기 버튼은 아직 없다 — 이 버전의
  * expo-widgets는 라이브 액티비티의 버튼 입력을 문서로 약속하지 않는다.
  */
-import { HStack, ProgressView, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
+import { Capsule, HStack, ProgressView, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
 import {
   activityBackgroundTint,
   font,
@@ -195,18 +195,25 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
     </VStack>
   );
 
+  /*
+    막대 바탕은 회색 캡슐을 따로 깐다 — 시스템 막대의 트랙은 아일랜드의 검은 바탕에서
+    거의 보이지 않아 남은 구간이 비어 보였다. 링 트랙과 비슷한 밝기로 맞춘다.
+  */
   const bar = (
     <HStack spacing={10}>
-      {still ? (
-        <ProgressView value={p.done ? 1 : p.runFraction} modifiers={[labelsHidden(), tint(p.color)]} />
-      ) : (
-        // 막대도 링처럼 흐른 시간 글자를 아래에 붙인다 — 걷는다
-        <ProgressView
-          timerInterval={whole}
-          countsDown={false}
-          modifiers={[labelsHidden(), tint(p.color)]}
-        />
-      )}
+      <ZStack>
+        <Capsule modifiers={[foregroundStyle('#FFFFFF38'), frame({ height: 4 })]} />
+        {still ? (
+          <ProgressView value={p.done ? 1 : p.runFraction} modifiers={[labelsHidden(), tint(p.color)]} />
+        ) : (
+          // 막대도 링처럼 흐른 시간 글자를 아래에 붙인다 — 걷는다
+          <ProgressView
+            timerInterval={whole}
+            countsDown={false}
+            modifiers={[labelsHidden(), tint(p.color)]}
+          />
+        )}
+      </ZStack>
       <Text modifiers={[font({ size: 12, weight: 'semibold' }), monospacedDigit(), foregroundStyle('#FFFFFF8C')]}>
         {p.stage}
       </Text>
