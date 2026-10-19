@@ -49,6 +49,13 @@ import { blockSummary, clock, liveText, planStages, shapeLabel } from './engine/
 import { countdownFeedback, segmentFeedback } from './feedback';
 import { t } from './i18n';
 import { liveNeedsRetry, syncLiveActivity } from './live';
+import {
+  requestWorkoutAuthorization,
+  startWorkoutSession,
+  stopWorkoutSession,
+  workoutAuthUndetermined,
+  workoutSessionState,
+} from '../modules/intava-workout';
 import { cancelAll, scheduleUpcoming } from './notify';
 import { uid, useStore } from './store';
 import { LIVE_COLOR } from './theme';
@@ -869,17 +876,36 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       markRun(preset.id);
       // 완료 화면의 "다시 하기"는 방금 돌던 구성을 그대로 물려받는다 — 차례도, 뺀 것도, 고친 것도
       const now = Date.now();
+      /*
+        건강(운동) 권한 창이 처음 뜨는 운동이면, 창이 닫힐 때까지 0초에 멈춰 둔다 —
+        창을 읽는 사이 첫 구간이 흘러가 버리지 않게. 닫히면 그 순간을 0초로 다시 잡는다.
+        이미 답한 뒤라면(두 번째 운동부터) 창이 없으니 바로 흐른다.
+      */
+      // 아일랜드를 꺼 두었으면 운동 세션도 켜지 않으니 물을 것도 없다
+      const asking = settingsRef.current.liveActivity && workoutAuthUndetermined();
       persist({
         presetId: preset.id,
         preset,
         edited: edited || undefined,
         zeroAt: now,
         startedAt: now,
-        pausedAt: null,
+        pausedAt: asking ? now : null,
         orders,
         skips,
       });
       setSyncId((n) => n + 1);
+      if (asking) {
+        void requestWorkoutAuthorization().then(() => {
+          const s = storedRef.current;
+          // 그 사이 다른 운동을 시작했거나 끝냈으면 손대지 않는다
+          if (!s || s.startedAt !== now || s.pausedAt == null) return;
+          const t = Date.now();
+          persist({ ...s, zeroAt: t, startedAt: t, pausedAt: null });
+          setSyncId((n) => n + 1);
+          tick();
+          void reschedule();
+        });
+      }
     },
     editPreset: (p: Preset) => {
       const s = storedRef.current;
@@ -1199,6 +1225,42 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       void reschedule();
       },
   }), [persist, flush, seekTo, tick, reschedule, elapsedNow, snapshotAt, markRun, addRecord]);
+
+  /*
+    운동 중에는 iOS 운동 세션(HKWorkoutSession, iPhone은 iOS 26+)을 켜 둔다 —
+    modules/intava-workout.
+
+    **라이브 액티비티 때문이다.** 인타바는 무음 오디오로만 뒤에서 살아 있었는데,
+    liveactivitiesd는 그런 앱의 갱신을 「only playing background media so is forbidden to
+    update activity」로 버린다(실기기 로그). 아일랜드가 뒤에서 0:00에 멈춰 있던 원인이다.
+    운동 세션이라는 정당한 실행 사유가 생기자 뒤·잠금 상태의 구간 전환 갱신이 전부
+    반영됐다(10-19 15:26~15:31, 20건 반영·0건 거절). 그래서 아일랜드를 꺼 두면 켜지 않는다.
+
+    **앱이 앞에 있을 때만 시작한다.** 뒤에서 시작하면 곧바로 「종료됨」이 되었다(실기기,
+    15:20:49). 그래서 세션이 생길 때 앞이면 바로, 아니면 앞으로 올 때 시작하고, 앞으로
+    올 때마다 살아 있는지 보아 끝나 있으면 다시 켠다.
+  */
+  const hasSession = stored != null;
+  const hasSessionRef = useRef(hasSession);
+  hasSessionRef.current = hasSession;
+  const ensureWorkout = useCallback(() => {
+    if (!hasSessionRef.current || !settingsRef.current.liveActivity) return;
+    if (AppState.currentState !== 'active') return;
+    const st = workoutSessionState();
+    if (st === 2 || st === 4) return; // 실행 중 · 일시정지
+    void startWorkoutSession();
+  }, []);
+  useEffect(() => {
+    if (!loaded) return;
+    if (hasSession && settings.liveActivity) ensureWorkout();
+    else void stopWorkoutSession();
+  }, [loaded, hasSession, settings.liveActivity, ensureWorkout]);
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') ensureWorkout();
+    });
+    return () => sub.remove();
+  }, [ensureWorkout]);
 
   /** 라이브 액티비티 갱신 계기들 — stored·계획이 바뀌거나 복원이 끝나면 한 번 보낸다 */
   useEffect(() => {
