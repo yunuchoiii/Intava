@@ -84,15 +84,17 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
     선 굵기는 이 부품이 정해 두고, 크기에 비례해 굵어진다 — 작게 그려 키워도
     (scaleEffect) 비율이 그대로라 굵어지지 않았다. 그래서 **같은 시각으로 도는 링을
     조금씩 작게 겹친다.** 간격이 선보다 좁으면 얇은 선들이 붙어 하나의 굵은 띠가 된다.
-    넷이면 원래 선의 대략 세 배다.
+
+    **둘만 겹친다.** 넷이면 원래 선의 세 배쯤이라 너무 두꺼웠고, 링마다 깔리는 반투명
+    바탕 링도 네 번 겹쳐 진해졌다 — 바탕은 지울 수 없어 겹 수가 곧 바탕의 농도다.
   */
   const ring = (size: number) => {
     const hide: Record<string, boolean> = { hidesValueLabel: true };
-    const layers = [0, 1, 2, 3];
+    const layers = [0, 1];
     return (
       <ZStack modifiers={[frame({ width: size, height: size })]}>
         {layers.map((k) => {
-          const d = size * (1 - 0.075 * k);
+          const d = size * (1 - 0.07 * k);
           const mods = [progressViewStyle('circular'), tint(p.color), frame({ width: d, height: d })];
           return still ? (
             <ProgressView key={k} value={p.done ? 0 : p.fraction} modifiers={mods} />
