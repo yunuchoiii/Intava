@@ -431,11 +431,12 @@ function SessionCard({
         )}
 
         <View style={styles.cardStats}>
-          <CardStat value={clock(record.totalSec)} label={t('records.cardTotal')} />
+          <CardStat value={clock(record.totalSec)} label={t('records.cardTotal')} divider />
           <CardStat
             value={clock(record.workSec)}
             label={t('records.cardWork')}
             tone={C.recWork}
+            divider
           />
           <CardStat
             value={t('count.sets', { count: record.completedSets })}
@@ -463,13 +464,32 @@ function SessionCard({
   );
 }
 
-function CardStat({ value, label, tone }: { value: string; label: string; tone?: string }) {
+/*
+  카드의 세 숫자 — 상단 이달 요약(Stat)과 같은 짜임이다. 붙은 세 칸, 제목 위·값 아래,
+  칸 안에서 가운데. 두 자리가 따로 놀면 같은 앱의 숫자인데 읽는 법이 둘이 된다.
+*/
+function CardStat({
+  value,
+  label,
+  tone,
+  divider,
+}: {
+  value: string;
+  label: string;
+  tone?: string;
+  divider?: boolean;
+}) {
   return (
-    <View style={{ flex: 1 }}>
-      <Text style={[styles.cardStatValue, TABULAR, !!tone && { color: tone }]} numberOfLines={1}>
+    <View style={[styles.cardStat, divider && styles.statDivider]}>
+      <Text style={styles.cardStatLabel}>{label}</Text>
+      <Text
+        style={[styles.cardStatValue, TABULAR, !!tone && { color: tone }]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.75}
+      >
         {value}
       </Text>
-      <Text style={styles.cardStatLabel}>{label}</Text>
     </View>
   );
 }
@@ -581,9 +601,18 @@ const styles = StyleSheet.create({
 
   strip: { flexDirection: 'row', gap: 3, height: 8 },
 
-  cardStats: { flexDirection: 'row', gap: 14 },
-  cardStatValue: { fontSize: 17, fontWeight: '700', letterSpacing: -0.34, color: C.textPrimary },
-  cardStatLabel: { marginTop: 4, fontSize: 11, color: C.textTertiary },
+  cardStats: {
+    flexDirection: 'row',
+    borderRadius: 14,
+    borderCurve: 'continuous',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    overflow: 'hidden',
+  },
+  cardStat: { flex: 1, paddingVertical: 11, paddingHorizontal: 6, alignItems: 'center' },
+  cardStatValue: { marginTop: 4, fontSize: 17, fontWeight: '700', letterSpacing: -0.34, color: C.textPrimary },
+  cardStatLabel: { fontSize: 11, color: C.textTertiary },
 
   blockList: {
     borderRadius: 13,
