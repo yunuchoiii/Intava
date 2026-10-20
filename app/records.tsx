@@ -447,7 +447,7 @@ function SessionCard({
         {record.blocks.length > 0 && (
           <View style={styles.blockList}>
             {record.blocks.map((b, i) => (
-              <View key={`${b.name}${i}`} style={styles.blockRow}>
+              <View key={`${b.name}${i}`} style={[styles.blockRow, i > 0 && styles.blockRowRule]}>
                 <Text style={styles.blockName} numberOfLines={1}>
                   {b.name}
                 </Text>
@@ -614,19 +614,16 @@ const styles = StyleSheet.create({
   cardStatValue: { marginTop: 4, fontSize: 17, fontWeight: '700', letterSpacing: -0.34, color: C.textPrimary },
   cardStatLabel: { fontSize: 11, color: C.textTertiary },
 
-  blockList: {
-    borderRadius: 13,
-    borderCurve: 'continuous',
-    overflow: 'hidden',
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    gap: 1,
-  },
+  /** 종목 줄 — 바탕 없이 카드 안쪽 폭을 그대로 쓴다. 줄 사이 가는 선만 표로 남긴다 */
+  blockList: {},
   blockRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
-    paddingHorizontal: 13,
-    backgroundColor: 'rgba(255,255,255,0.03)',
+  },
+  blockRowRule: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255,255,255,0.10)',
   },
   blockName: { flex: 1, fontSize: 14, fontWeight: '600', color: C.textPrimary },
   blockSpec: { marginRight: 12, fontSize: 12.5, color: C.textSecondary },
