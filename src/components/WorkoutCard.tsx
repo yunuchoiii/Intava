@@ -7,7 +7,7 @@
  *
  * 공유 이미지(ShareImage)는 360×640으로 그려 1080×1920(인스타 스토리)으로 찍는다.
  * 스크롤이 없으므로 종목은 일곱 줄까지만 두고 나머지는 「외 N개 종목」으로 묶는다.
- * 아래 112pt(이미지 기준)는 인스타 답장창 자리라 비워 둔다.
+ * 위 84pt는 인스타 프로필·닫기 버튼, 아래 60pt는 하단 바 자리라 비워 둔다(시안 개정).
  */
 import React from 'react';
 import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
@@ -269,7 +269,7 @@ export const ShareImage = React.forwardRef<View, { record: WorkoutRecord; style?
     const rest = blocks.slice(SHARE_MAX_ROWS);
     const maxDur = Math.max(1, ...blocks.map((b) => b.durSec));
     const restTotal = Math.max(0, record.totalSec - record.workSec);
-    /** 일곱 줄이 차면 촘촘하게(시안 2d) — 아래 답장창 자리(112pt)를 넘지 않게 */
+    /** 일곱 줄이 차면 촘촘하게(시안 2d) — 아래 하단 바 자리(60pt)를 넘지 않게 */
     const dense = blocks.length >= SHARE_MAX_ROWS;
     return (
       <View ref={ref} collapsable={false} style={[styles.share, style]}>
@@ -282,7 +282,7 @@ export const ShareImage = React.forwardRef<View, { record: WorkoutRecord; style?
           <SplitRing size={dense ? 100 : 128} work={record.workSec} total={record.totalSec}
             label={clock(record.totalSec)} labelSize={dense ? 24 : 30} />
           <View style={styles.heroText}>
-            <Text style={[styles.heroName, { fontSize: 21 }]} numberOfLines={2}>
+            <Text style={[styles.heroName, { fontSize: 21 }]} numberOfLines={1}>
               {record.presetName}
             </Text>
             <Text style={[styles.heroSub, { fontSize: 11.5 }]} numberOfLines={1}>
@@ -295,7 +295,7 @@ export const ShareImage = React.forwardRef<View, { record: WorkoutRecord; style?
           </View>
         </View>
         {shown.length > 0 && (
-          <View style={[styles.panel, styles.sharePanel, dense && { marginTop: 14 }]}>
+          <View style={[styles.panel, styles.sharePanel, dense && { marginTop: 14, paddingVertical: 2 }]}>
             {shown.map((b, i) => (
               <View
                 key={`${b.name}${i}`}
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
     height: SHARE_H,
     overflow: 'hidden',
     backgroundColor: CARD.bg,
-    paddingTop: 44,
+    paddingTop: 92,
     paddingHorizontal: 24,
   },
   shareHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

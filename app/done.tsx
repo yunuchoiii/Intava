@@ -213,7 +213,7 @@ export default function Done() {
         <View style={[cardStyles.hero, { marginTop: 24, gap: 20 }]}>
           <SplitRing size={140} work={entry.workSec} total={entry.totalSec} label={clock(entry.totalSec)} labelSize={33} />
           <View style={cardStyles.heroText}>
-            <Text style={[cardStyles.heroName, { fontSize: 24 }]} numberOfLines={2}>
+            <Text style={[cardStyles.heroName, { fontSize: 24 }]} numberOfLines={1}>
               {entry.presetName}
             </Text>
             <Text style={[cardStyles.heroSub, { fontSize: 12.5 }]} numberOfLines={1}>
