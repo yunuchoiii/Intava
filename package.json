@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
+    "@expo-google-fonts/league-spartan": "^0.4.2",
     "@expo/ui": "~57.0.25",
     "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "~57.0.30",
@@ -37,6 +38,7 @@
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
     "react-native-svg": "15.15.4",
+    "react-native-view-shot": "5.1.0",
     "react-native-worklets": "0.10.1"
   },
   "devDependencies": {

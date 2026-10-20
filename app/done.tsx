@@ -1,48 +1,104 @@
-/** 5.7 완료 — DONE 색 플러드 */
+/**
+ * 운동 완료 — 화면이 곧 공유 카드다(시안 「스토리 공유 카드」 2a·2c).
+ *
+ * 두 길로 열린다.
+ * - 운동이 끝나서(run → done): 세션을 정리하고, 운동 중에 바꾼 것을 루틴에 남길지
+ *   「홈으로」에서 묻고, 끝까지 간 운동이면 리뷰를 청할 차례를 센다.
+ * - 기록 화면에서 다시 볼 때(view=1): 그날의 카드를 보여 주고 공유만 한다. 돌고 있는
+ *   세션은 건드리지 않는다 — 운동 중에 지난 기록을 열어 볼 수도 있다.
+ *
+ * 그리는 것은 모두 **기록**에서 온다. 세션은 이 화면이 뜨자마자 비워지지만 기록은
+ * 저장소에 남는다. 공유 이미지(1080×1920)는 같은 기록으로 따로 그려 찍는다.
+ */
+import * as Sharing from 'expo-sharing';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, PixelRatio, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
+import { captureRef } from 'react-native-view-shot';
 import { WhiteButton } from '../src/components/Buttons';
-import { Chevron, Collapsible } from '../src/components/Collapsible';
 import { PressBox } from '../src/components/PressBox';
-import { PhaseFlood } from '../src/components/PhaseFlood';
-import { clock, isSimple } from '../src/engine/labels';
-import { clockTime, dateLabel } from '../src/engine/records';
-import { NO_LIVED, type Lived, type RoundOrders, type RoundSkips } from '../src/engine/segments';
+import {
+  Backdrop,
+  BlockLine,
+  CARD,
+  Legend,
+  Logo,
+  ShareImage,
+  SplitRing,
+  cardDateLine,
+  cardStyles,
+  subtitleLine,
+} from '../src/components/WorkoutCard';
+import { clock } from '../src/engine/labels';
+import { type RoundOrders } from '../src/engine/segments';
 import { noteFinishedWorkout } from '../src/review';
 import { useSession } from '../src/session';
 import { useStore } from '../src/store';
 import { useToast } from '../src/components/Toast';
 import { t } from '../src/i18n';
-import { GUTTER, PHASE_COLOR, TABULAR } from '../src/theme';
+import { TABULAR } from '../src/theme';
 import { presetFingerprint, type Preset } from '../src/types';
 
+/**
+ * 1080×1920(인스타 스토리) — view-shot의 width·height는 기기 배율이 한 번 더 곱해져
+ * 그대로 주면 3배(3240×5760)로 찍혔다. 배율로 나눠 준다.
+ */
+const SHOT = {
+  format: 'png' as const,
+  width: 1080 / PixelRatio.get(),
+  height: 1920 / PixelRatio.get(),
+  result: 'tmpfile' as const,
+};
+
 export default function Done() {
-  /**
-   * 끝까지 간 경우와 도중에 끈 경우가 같은 화면을 쓴다.
-   *
-   * 넘어오는 값 — 무엇을(id), 실제로 지나온 몫(lived), 끝까지 갔는지(full),
-   * 어떤 차례로 돌았는지(orders). **세션에서 읽지 않는다.** 이 화면은 뜨자마자
-   * 세션을 비우기 때문에(미니 바가 남으면 안 된다) 그 뒤에는 물어볼 데가 없다.
-   */
-  const { id, lived, record, full, orders, skips, edited } = useLocalSearchParams<{
-    id: string;
-    lived?: string;
-    /** 방금 남긴 기록의 id — 종목별 몫과 구간 이력은 거기서 꺼낸다 */
+  const { id, record, full, orders, edited, view } = useLocalSearchParams<{
+    id?: string;
+    /** 방금 남긴(또는 다시 볼) 기록의 id — 화면의 모든 숫자가 여기서 온다 */
     record?: string;
     full?: string;
     orders?: string;
-    skips?: string;
     /** 운동 중에 고친 루틴 사본(JSON) — 고친 것이 없으면 비어 있다 */
     edited?: string;
+    /** 기록 화면에서 다시 보는 중 — 세션·저장 묻기·리뷰를 건드리지 않는다 */
+    view?: string;
   }>();
+  const viewing = view === '1';
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { getPreset, savePreset, records } = useStore();
   const toast = useToast();
   const session = useSession();
-  const saved = getPreset(id);
+  const shot = useRef<View>(null);
+  const [sharing, setSharing] = useState(false);
+  /** 종목 목록이 판보다 길어 스크롤되는가 — 그때만 아래에 흐려짐을 깐다(시안 2c) */
+  const [overflow, setOverflow] = useState(false);
+  const listBox = useRef(0);
+  const listContent = useRef(0);
+  const measureOverflow = () => setOverflow(listContent.current > listBox.current + 1);
+
+  // 완료 화면에 닿았으면 그 세션은 끝난 것이다 — 미니 바가 남지 않게 정리한다
+  useEffect(() => {
+    if (!viewing) session.stop();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /**
+   * 리뷰를 청할 자리 — **끝까지 간 실행에서만.** 도중에 껐다면 그 사람은 지금 만족한
+   * 상태가 아니다. 나머지 조건은 review.ts에 있다. 화면을 먼저 떠나면 묻는 것만 취소된다.
+   */
+  useEffect(() => {
+    if (!full || viewing) return;
+    return noteFinishedWorkout();
+  }, [full, viewing]);
+
+  const entry = useMemo(
+    () => (record ? records.find((r) => r.id === record) : undefined),
+    [record, records]
+  );
+
+  const saved = id ? getPreset(id) : undefined;
   /** 운동 중에 고친 사본 — 루틴과 다르게 돌았을 수 있다 */
   const tweaked = useMemo<Preset | undefined>(() => {
     if (!edited) return undefined;
@@ -53,72 +109,17 @@ export default function Done() {
       return undefined;
     }
   }, [edited, id]);
-  /** 화면에 그리는 것은 실제로 돈 쪽이다 */
   const preset = tweaked ?? saved;
-  /** 종목별 표는 접어 둔 채로 시작한다 — 먼저 보는 것은 아래 숫자 넷이다 */
-  const [blocksOpen, setBlocksOpen] = useState(false);
-
-  // 완료 화면에 닿았으면 그 세션은 끝난 것이다 — 미니 바가 남지 않게 정리한다
-  useEffect(() => {
-    session.stop();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  /**
-   * 리뷰를 청할 자리 — **끝까지 간 실행에서만.**
-   *
-   * 도중에 껐다면 그 사람은 지금 만족한 상태가 아니다. 세지도 묻지도 않는다.
-   * 나머지 조건(세 번째부터, 생애 한 번, 물을 수 없는 자리면 침묵)은 review.ts에
-   * 있다. 화면을 먼저 떠나면 묻는 것만 취소된다.
-   */
-  useEffect(() => {
-    if (!full) return;
-    return noteFinishedWorkout();
-  }, [full]);
-
   /** 실행 중에 바꾼 차례 — 라운드별. 마지막 라운드의 것이 최종 차례다 */
   const rounds = useMemo<RoundOrders | undefined>(() => parseRounds(orders), [orders]);
-  /**
-   * 실행 중에 뺀 종목 — 라운드별.
-   *
-   * "다시 하기"에만 쓴다. 루틴에 남길지는 **묻지 않는다** — 빼기는 "오늘 어깨가
-   * 아파서 건너뛴다" 같은 일회성 판단이라, 루틴에서 영영 지우는 것은 편집 화면의
-   * 삭제가 할 일이다. 순서와 한꺼번에 물으면 되돌릴 수 없는 쪽이 묻어 들어간다.
-   */
-  const dropped = useMemo<RoundSkips | undefined>(() => parseRounds(skips), [skips]);
-
-  /**
-   * 계획이 아니라 실제로 지나온 만큼 — 세션이 정산해 넘겨준 값이다.
-   * 넘기기(⏭)로 건너뛴 구간은 여기에 들어 있지 않다.
-   */
-  const stats = useMemo<Lived>(() => {
-    if (!lived) return NO_LIVED;
-    try {
-      return { ...NO_LIVED, ...(JSON.parse(lived) as Lived) };
-    } catch {
-      return NO_LIVED;
-    }
-  }, [lived]);
-
-  /**
-   * 방금 남긴 기록 — 종목별 몫과 구간 이력이 여기 들어 있다.
-   *
-   * 세션이 정산하면서 이미 계산해 저장소에 넣어 둔 것이라 다시 셀 필요가 없다.
-   * 세션은 이 화면이 뜨자마자 비워지지만 **기록은 저장소에 남으므로** 안전하다.
-   */
-  const entry = useMemo(
-    () => (record ? records.find((r) => r.id === record) : undefined),
-    [record, records]
-  );
 
   /**
    * 루틴에 남길 모양 — 운동 중에 고친 종목과 마지막에 돌던 차례를 합친 것.
-   * 저장된 루틴과 같으면 null이다(물을 것이 없다).
-   *
-   * 둘을 따로 묻지 않는다. 운동을 마친 사람에게 창을 두 번 띄우면 두 번째는 읽지
-   * 않고 누른다. 뺀 종목은 여기 들어가지 않는다(dropped의 주석).
+   * 저장된 루틴과 같으면 null이다(물을 것이 없다). 뺀 종목은 여기 들어가지 않는다 —
+   * 빼기는 「오늘은 건너뛴다」 같은 일회성 판단이라 루틴에서 지우는 것은 편집 화면의 일이다.
    */
   const proposal = useMemo<Preset | null>(() => {
-    if (!saved || !preset) return null;
+    if (viewing || !saved || !preset) return null;
     let blocks = preset.blocks;
     const last = rounds?.[rounds.length - 1];
     if (last) {
@@ -126,11 +127,7 @@ export default function Done() {
       const picked = last.map((bid) => byId.get(bid)).filter((b) => !!b);
       blocks = [...picked, ...blocks.filter((b) => !picked.includes(b))];
     }
-    /*
-      순서는 실행 사본이 아니라 **블록 배열 자체**로 견준다 — 지문에는 종목 차례가
-      들어 있어 따로 셀 필요가 없다. 날짜 도장(createdAt·lastRunAt)은 저장소 것을
-      그대로 둔다 — 사본은 시작할 때 베낀 것이라 그 뒤 값이 옛것이다.
-    */
+    // 날짜 도장은 저장소 것을 그대로 둔다 — 사본은 시작할 때 베낀 것이라 그 뒤 값이 옛것이다
     const next: Preset = {
       ...saved,
       ...preset,
@@ -139,17 +136,17 @@ export default function Done() {
       lastRunAt: saved.lastRunAt,
     };
     return presetFingerprint(next) === presetFingerprint(saved) ? null : next;
-  }, [saved, preset, rounds]);
-
-  if (!preset) {
-    return <View style={{ flex: 1, backgroundColor: PHASE_COLOR.DONE }} />;
-  }
+  }, [viewing, saved, preset, rounds]);
 
   /**
    * 홈으로 — 운동 중에 바꾼 것(종목·차례)을 루틴에 남길지는 여기서 한 번만 묻는다.
    * 시트에서 바꾸는 그 순간에는 좋은 값인지 아직 모른다. 해보고 나서야 안다.
    */
-  const goHome = () => {
+  const leave = () => {
+    if (viewing) {
+      router.back();
+      return;
+    }
     if (!proposal) {
       router.dismissTo('/');
       return;
@@ -167,175 +164,144 @@ export default function Done() {
     ]);
   };
 
+  /**
+   * 공유 — 숨겨 둔 360×640 카드를 1080×1920으로 찍어 iOS 공유 창에 넘긴다.
+   * 그 창에 인스타그램(스토리·피드·DM)과 「이미지 저장」이 함께 있다.
+   */
+  const share = async () => {
+    if (!shot.current || sharing) return;
+    setSharing(true);
+    try {
+      const uri = await captureRef(shot, SHOT);
+      await Sharing.shareAsync(uri, { mimeType: 'image/png', UTI: 'public.png' });
+    } catch {
+      Alert.alert(t('doneScreen.shareFailTitle'), t('doneScreen.shareFailBody'));
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const leaveLabel = t(viewing ? 'doneScreen.close' : 'doneScreen.home');
+  const bottomPad = Math.max(insets.bottom - 4, 16);
+
+  if (!entry) {
+    return (
+      <View style={[styles.root, { paddingBottom: bottomPad, paddingHorizontal: 24, justifyContent: 'flex-end' }]}>
+        <Backdrop id="doneEmpty" />
+        <WhiteButton label={leaveLabel} height={56} radius={18} haptic="none" onPress={leave} />
+      </View>
+    );
+  }
+
+  const maxDur = Math.max(1, ...entry.blocks.map((b) => b.durSec));
+  const restSec = Math.max(0, entry.totalSec - entry.workSec);
+
   return (
-    <View style={{ flex: 1, backgroundColor: PHASE_COLOR.DONE }}>
-      <PhaseFlood color={PHASE_COLOR.DONE} />
-      <View
-        style={{
-          flex: 1,
-          paddingTop: insets.top + 58,
-          paddingBottom: Math.max(insets.bottom, 16),
-          paddingHorizontal: GUTTER,
-        }}
-      >
-        {/*
-          가운데는 스크롤한다. 종목이 많은 루틴에서는 표가 길어져 아래 버튼을
-          밀어내는데, 운동을 막 끝낸 사람이 홈으로 갈 길을 잃으면 안 된다.
-          짧을 때는 가운데 정렬 그대로다(contentContainer의 flexGrow + center).
-        */}
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={styles.scroll}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* 끝까지 갔는지 도중에 껐는지 — 숫자만 다르고 말은 그대로면 거짓말이 된다 */}
-          <Text style={styles.title}>
-            {t(full ? 'doneScreen.title' : 'doneScreen.titleStopped')}
+    <View style={styles.root}>
+      {/* 찍을 카드 — 바탕 뒤에 가려 둔다. 찍는 것은 가려져 있어도 된다 */}
+      <ShareImage ref={shot} record={entry} />
+      <Backdrop id="done" />
+
+      <View style={{ flex: 1, paddingTop: insets.top + 16, paddingHorizontal: 24 }}>
+        <View style={styles.head}>
+          <Logo size={22} fontSize={21} />
+          <Text style={[styles.date, TABULAR]} numberOfLines={1}>
+            {cardDateLine(entry)}
           </Text>
-          {/* 이름이 먼저, 구성은 그 아래 한 단계 작게 — 한 줄로 이으면 두 줄로 접힌다 */}
-          <Text style={styles.name} numberOfLines={2}>
-            {preset.name}
-          </Text>
-          {/* 종목 수는 기록에서 — 실행 중에 붙인 종목까지 세야 한다(detailLine) */}
-          {(() => {
-            const line = detailLine(preset, entry?.blocks.length);
-            return !!line && <Text style={styles.detail}>{line}</Text>;
-          })()}
-          {/*
-            언제 — 날짜부터 적는다. 이 화면은 그 자리에서만 보는 것이 아니다.
-            운동을 끝내고 그대로 두었다가 몇 시간 뒤에, 자정을 넘겨 다음 날에
-            다시 보는 일이 있는데 시각만 있으면 어느 날의 것인지 알 수 없다.
-            기록 화면이 그날 머리에 적는 것과 같은 문장을 쓴다(dateLabel).
-          */}
-          {!!entry && (
-            <Text style={[styles.detail, TABULAR]}>
-              {t('doneScreen.spanDated', {
-                date: dateLabel(entry.startedAt),
-                from: clockTime(entry.startedAt),
-                to: clockTime(entry.endedAt),
-              })}
+        </View>
+
+        <View style={[cardStyles.hero, { marginTop: 24, gap: 20 }]}>
+          <SplitRing size={140} work={entry.workSec} total={entry.totalSec} label={clock(entry.totalSec)} labelSize={33} />
+          <View style={cardStyles.heroText}>
+            <Text style={[cardStyles.heroName, { fontSize: 24 }]} numberOfLines={2}>
+              {entry.presetName}
             </Text>
-          )}
+            <Text style={[cardStyles.heroSub, { fontSize: 12.5 }]} numberOfLines={1}>
+              {subtitleLine(entry)}
+            </Text>
+            <View style={cardStyles.legend}>
+              <Legend color={CARD.work} label={t('doneScreen.legendWork')} value={clock(entry.workSec)} />
+              <Legend color={CARD.rest} label={t('doneScreen.legendRest')} value={clock(restSec)} />
+            </View>
+          </View>
+        </View>
 
-          {/*
-            구간 스트립 — 긴 막대가 운동, 짧은 막대가 휴식. 페이즈를 그대로
-            칠하지 않고 **운동이냐 아니냐**로만 가른다. 기록 화면과 같은 문법이되
-            색은 다시 잡았다. 저기는 어두운 유리 위라 분홍·민트였지만 여기는
-            초록 위 흰 글자의 화면이라, 흰색의 농도로만 말하는 것이 맞다.
-          */}
-          {!!entry?.segs.length && (
-            <View style={styles.strip}>
-              {entry.segs.slice(0, 40).map((s, i) => (
-                <View
-                  key={i}
-                  style={{
-                    flex: Math.max(0.4, s.durSec),
-                    borderRadius: 4,
-                    backgroundColor:
-                      s.phase === 'WORK' ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.34)',
-                  }}
-                />
+        {entry.blocks.length > 0 ? (
+          <View
+            style={[cardStyles.panel, styles.list]}
+            onLayout={(e) => {
+              listBox.current = e.nativeEvent.layout.height;
+              measureOverflow();
+            }}
+          >
+            {/* 종목이 많으면 목록만 스크롤한다 — 머리와 버튼은 제자리(시안 2c) */}
+            <ScrollView
+              contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 4, paddingBottom: overflow ? 28 : 4 }}
+              showsVerticalScrollIndicator={false}
+              onContentSizeChange={(_, h) => {
+                listContent.current = h;
+                measureOverflow();
+              }}
+            >
+              {entry.blocks.map((b, i) => (
+                <BlockLine key={`${b.name}${i}`} block={b} record={entry} maxDur={maxDur} />
               ))}
-            </View>
-          )}
-
-          {/*
-            종목별로 실제 보낸 시간 — 넘긴 종목은 여기 없다.
-
-            막대 바로 아래 둔다. 막대가 "어떤 결로 흘렀나"를 그림으로 말하면,
-            이 목록이 그 그림의 이름표다 — 둘이 떨어져 있으면 서로를 못 가리킨다.
-
-            접어 둔 채로 시작한다. 운동을 막 끝낸 사람이 먼저 보는 것은 아래 숫자
-            넷이고, 종목별 몫은 궁금할 때 펴 보는 것이다.
-          */}
-          {!!entry?.blocks.length && (
-            <View style={styles.blocks}>
-              {/*
-                눌림을 **밝기로만** 말한다. 축소는 가운데를 기준으로 일어나서,
-                폭이 꽉 찬 줄에서는 왼쪽 글자가 안쪽으로 미끄러졌다 돌아온다 —
-                눌린 것이 아니라 글자가 흔들린 것으로 읽힌다.
-              */}
-              <PressBox
-                onPress={() => setBlocksOpen((v) => !v)}
-                radius={10}
-                scaleTo={1}
-                dim={0.14}
-                dimColor="#FFF"
-                style={styles.blocksHead}
-                accessibilityLabel={t('count.exercises', { count: entry.blocks.length })}
-              >
-                <Text style={styles.blocksTitle}>
-                  {t('count.exercises', { count: entry.blocks.length })}
-                </Text>
-                <Chevron open={blocksOpen} color="#FFFFFF" />
-              </PressBox>
-              <Collapsible open={blocksOpen}>
-                {/* 마지막 줄이 테두리에 닿지 않게 — 안쪽 여백은 여기서 준다 */}
-                <View style={{ paddingBottom: 8 }}>
-                  {entry.blocks.map((b, i) => (
-                    <View key={`${b.name}${i}`} style={styles.blockRow}>
-                      <Text style={styles.blockName} numberOfLines={1}>
-                        {b.name}
-                      </Text>
-                      <Text style={[styles.blockSpec, TABULAR]} numberOfLines={1}>
-                        {b.spec}
-                      </Text>
-                      <Text style={[styles.blockDur, TABULAR]}>{clock(b.durSec)}</Text>
-                    </View>
-                  ))}
-                </View>
-              </Collapsible>
-            </View>
-          )}
-
-          <View style={{ marginTop: 24, alignSelf: 'stretch' }}>
-            <StatRow label={t('doneScreen.totalTime')} value={clock(stats.total)} first />
-            <StatRow label={t('doneScreen.pureWork')} value={clock(stats.work)} />
-            {/*
-              예전에는 세트와 라운드 중 하나만 보였다. 둘 다 Lived에 있는데
-              굳이 고를 이유가 없다 — 라운드를 도는 루틴에서 "몇 세트 했나"는
-              그 자체로 알고 싶은 숫자다.
-            */}
-            <StatRow label={t('doneScreen.completedSets')} value={`${stats.sets}`} />
-            {!isSimple(preset) && (
-              <StatRow label={t('doneScreen.completedRounds')} value={`${stats.rounds}`} />
+            </ScrollView>
+            {overflow && (
+              <LinearGradient
+                pointerEvents="none"
+                colors={['rgba(20,24,24,0)', 'rgba(20,24,24,0.9)']}
+                style={styles.fade}
+              />
             )}
           </View>
-        </ScrollView>
+        ) : (
+          <View style={{ flex: 1 }} />
+        )}
+      </View>
 
-        {/*
-          자리는 그대로 두고 무게만 바꿨다. 운동을 마친 사람이 여기서 열에 아홉은
-          홈으로 간다 — 흰 버튼은 그쪽이 맞다. 다시 하기는 방금 돌던 차례 그대로
-          시작하며(여기서 또 저장을 묻지 않는다) 글자만 남긴다.
-        */}
+      <View style={[styles.actions, { paddingBottom: bottomPad }]}>
         <PressBox
-          onPress={() => {
-            // 고친 사본으로 돌았으면 그대로 다시 돈다 — 루틴에 남길지는 그 운동이 끝나고 묻는다
-            session.start(preset, rounds, dropped, !!tweaked);
-            router.replace('/run');
-          }}
-          haptic="commit"
-          scaleTo={0.96}
-          dim={0}
-          style={styles.textButton}
-          accessibilityLabel={t('doneScreen.again')}
+          onPress={share}
+          disabled={sharing}
+          haptic="tap"
+          radius={18}
+          scaleTo={0.97}
+          dim={0.14}
+          dimColor="#FFF"
+          outerStyle={{ flex: 1 }}
+          style={styles.shareButton}
+          accessibilityLabel={t('doneScreen.share')}
         >
-          <Text style={styles.textButtonLabel}>{t('doneScreen.again')}</Text>
+          <ShareIcon />
+          <Text style={styles.shareLabel}>{t('doneScreen.share')}</Text>
         </PressBox>
-        {/* 홈까지 물러난다 — replace면 홈 위에 홈이 한 겹 더 쌓인다 */}
         <WhiteButton
-          label={t('doneScreen.home')}
-          height={72}
-          color={PHASE_COLOR.DONE}
+          label={leaveLabel}
+          height={56}
+          radius={18}
+          color={CARD.bg}
           haptic="none"
-          onPress={goHome}
+          style={{ flex: 1.6 }}
+          onPress={leave}
         />
       </View>
     </View>
   );
 }
 
-/** 라운드별 id 배열 — 차례와 뺀 것이 같은 꼴이라 읽는 법도 하나다 */
+function ShareIcon() {
+  return (
+    <Svg width={19} height={19} viewBox="0 0 24 24" fill="none" stroke={CARD.text} strokeWidth={2.2}
+      strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M12 3v11" />
+      <Path d="M7.5 7.5L12 3l4.5 4.5" />
+      <Path d="M5 12v6a2.5 2.5 0 0 0 2.5 2.5h9A2.5 2.5 0 0 0 19 18v-6" />
+    </Svg>
+  );
+}
+
+/** 라운드별 id 배열 */
 function parseRounds(raw?: string): string[][] | undefined {
   if (!raw) return undefined;
   try {
@@ -346,134 +312,24 @@ function parseRounds(raw?: string): string[][] | undefined {
   }
 }
 
-/**
- * 이름 아래 한 줄 — 무엇을 한 것인지의 **생김새**만.
- *
- * 세트 수는 넣지 않는다. 바로 아래 표에 실제로 해낸 세트가 있는데 여기에도
- * 숫자가 있으면 둘이 다투고("0세트"인데 "3종목 2라운드"), 줄도 길어져 접힌다.
- * 타이머(종목 하나)는 적을 구성이 없어 웜업·쿨다운만 남는다.
- */
-function detailLine(p: Preset, blockCount = p.blocks.length): string {
-  const parts = [
-    /*
-      종목 수는 **그날 실제로 한 것**으로 센다. 실행 중에 「운동 더 하기」로 붙인
-      종목은 프리셋에 없으므로, blocks.length만 보면 두 종목을 했는데 「1종목」이
-      된다. 부르는 쪽이 기록의 종목 수를 넘겨준다.
-    */
-    blockCount <= 1 && p.rounds <= 1
-      ? null
-      : t('doneScreen.composition', {
-          blocks: t('count.blocks', { count: blockCount }),
-          rounds: t('count.rounds', { count: p.rounds }),
-        }),
-    p.warmupSec > 0 || p.cooldownSec > 0
-      ? t('doneScreen.extraPart', {
-          extra: [
-            p.warmupSec > 0 ? t('doneScreen.warmup') : null,
-            p.cooldownSec > 0 ? t('doneScreen.cooldown') : null,
-          ]
-            .filter(Boolean)
-            .join('/'),
-        })
-      : null,
-  ].filter(Boolean);
-  return parts.join(' · ');
-}
-
-function StatRow({ label, value, first }: { label: string; value: string; first?: boolean }) {
-  return (
-    <View style={[styles.stat, first && { borderTopWidth: 0 }]}>
-      <Text style={styles.statLabel}>{label}</Text>
-      <Text style={[styles.statValue, TABULAR]}>{value}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  /**
-   * 짧으면 가운데, 길면 스크롤 — flexGrow가 그 둘을 한 규칙으로 만든다.
-   *
-   * 아래 여백은 넉넉해야 한다. 종목 표가 길어지면 마지막 줄이 「다시 하기」에
-   * 그대로 붙어, 표의 일부인지 버튼인지 구분이 안 된다.
-   */
-  scroll: { flexGrow: 1, justifyContent: 'center', paddingTop: 8, paddingBottom: 40 },
-  title: {
-    fontSize: 44,
-    fontWeight: '800',
-    letterSpacing: -1.76,
-    color: '#FFFFFF',
-    textAlign: 'center',
-  },
-  name: {
-    marginTop: 14,
-    fontSize: 20,
-    fontWeight: '700',
-    letterSpacing: -0.4,
-    color: '#FFFFFF',
-    opacity: 0.95,
-    textAlign: 'center',
-  },
-  detail: {
-    marginTop: 7,
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    opacity: 0.62,
-    textAlign: 'center',
-  },
-  stat: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 18,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.28)',
-  },
-  statLabel: { fontSize: 18, color: '#FFFFFF', opacity: 0.85 },
-  statValue: { fontSize: 30, fontWeight: '700', color: '#FFFFFF' },
-  /** 바탕 없는 글자 버튼 — 흰 버튼 옆에서 한 걸음 물러선다 */
-  textButton: { height: 60, alignItems: 'center', justifyContent: 'center' },
-  textButtonLabel: { fontSize: 18, fontWeight: '600', color: '#FFFFFF' },
-
-  /** 구간 스트립 — 실행 화면 하단 눈금과 같은 두께로 */
-  strip: { marginTop: 26, flexDirection: 'row', gap: 3, height: 8, alignSelf: 'stretch' },
-
-  /**
-   * 종목별 표 — 어두운 판을 깔지 않는다. 이 화면은 초록 위 흰 글자가 규칙이라
-   * 판을 깔면 그 자리만 다른 화면처럼 뜬다. 줄 사이의 얇은 선으로만 나눈다.
-   */
-  /**
-   * 접히는 상자 — 반투명한 흰 테두리로 둘레를 긋는다.
-   *
-   * 이 화면은 판을 깔지 않는 것이 규칙이라(초록 위 흰 글자) 배경 대신 선으로만
-   * 묶는다. `overflow: hidden`은 펼쳐지는 내용이 둥근 모서리 밖으로 새지 않게 한다.
-   */
-  blocks: {
-    marginTop: 18,
-    alignSelf: 'stretch',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.28)',
-    borderRadius: 16,
+  root: { flex: 1, backgroundColor: CARD.bg, overflow: 'hidden' },
+  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  date: { flexShrink: 1, fontSize: 12, fontWeight: '600', color: CARD.sub },
+  list: { flex: 1, minHeight: 0, marginTop: 24, overflow: 'hidden' },
+  fade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 36 },
+  actions: { flexDirection: 'row', gap: 10, paddingTop: 16, paddingHorizontal: 24 },
+  shareButton: {
+    height: 56,
+    borderRadius: 18,
     borderCurve: 'continuous',
-    overflow: 'hidden',
-    paddingHorizontal: 14,
-  },
-  /** 접었다 펴는 손잡이 — 상자 폭에 걸쳐 눌리는 자리를 넓게 준다 */
-  blocksHead: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 13,
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
   },
-  blocksTitle: { fontSize: 15, fontWeight: '600', color: '#FFFFFF', opacity: 0.85 },
-  blockRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 11,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.20)',
-  },
-  blockName: { flex: 1, fontSize: 15, fontWeight: '600', color: '#FFFFFF' },
-  blockSpec: { marginRight: 12, fontSize: 12.5, color: '#FFFFFF', opacity: 0.62 },
-  blockDur: { fontSize: 13, fontWeight: '700', color: '#FFFFFF', opacity: 0.9 },
+  shareLabel: { fontSize: 16, fontWeight: '700', color: CARD.text },
 });

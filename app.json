@@ -31,7 +31,8 @@
           "ja",
           "zh-Hans"
         ],
-        "CFBundleAllowMixedLocalizations": true
+        "CFBundleAllowMixedLocalizations": true,
+        "NSPhotoLibraryAddUsageDescription": "운동 기록 카드를 사진 앱에 저장합니다."
       }
     },
     "android": {
@@ -94,6 +95,15 @@
       ],
       "expo-localization",
       "expo-sharing",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "node_modules/@expo-google-fonts/league-spartan/600SemiBold/LeagueSpartan_600SemiBold.ttf",
+            "node_modules/@expo-google-fonts/league-spartan/700Bold/LeagueSpartan_700Bold.ttf"
+          ]
+        }
+      ],
       [
         "expo-widgets",
         {

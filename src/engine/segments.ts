@@ -354,7 +354,10 @@ export function segmentAt(plan: Plan, elapsed: number): { seg: Segment; idx: num
 export function summarizeLived(
   plan: Plan,
   spans: Span[]
-): { blocks: { blockId: string; name: string; durSec: number }[]; segs: { phase: Phase; durSec: number }[] } {
+): {
+  blocks: { blockId: string; name: string; durSec: number; workSec: number }[];
+  segs: { phase: Phase; durSec: number }[];
+} {
   type Tally = { blockId: string; name: string; durSec: number; workSec: number };
   const order: string[] = [];
   const byBlock = new Map<string, Tally>();
@@ -391,7 +394,7 @@ export function summarizeLived(
     blocks: order
       .map((id) => byBlock.get(id)!)
       .filter((b) => b.workSec >= MIN_LIVED_SEC - 0.01)
-      .map(({ blockId, name, durSec }) => ({ blockId, name, durSec })),
+      .map(({ blockId, name, durSec, workSec }) => ({ blockId, name, durSec, workSec })),
     segs,
   };
 }
