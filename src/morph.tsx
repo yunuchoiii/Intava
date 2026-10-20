@@ -11,7 +11,7 @@
  */
 import { usePathname } from 'expo-router';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
-import { Animated, Easing } from 'react-native';
+import { Animated, AppState, Easing } from 'react-native';
 
 type Opts = {
   /** 주면 timing, 없으면 spring */
@@ -74,7 +74,16 @@ export function MorphProvider({ children }: { children: React.ReactNode }) {
   const dragging = useRef(false);
   /** 손가락이 마지막으로 값을 움직인 시각 — held()가 본다 */
   const touchedAt = useRef(0);
-  /** p의 지금 값 — 안전망이 제자리인지 본다(Animated.Value는 동기로 읽을 수 없다) */
+  /**
+   * p가 가 있는 값 — 안전망이 제자리인지 본다(Animated.Value는 동기로 읽을 수 없다).
+   *
+   * **값을 정하는 쪽이 직접 적는다**(set · 전환이 끝날 때 · stop). 예전에는 p에 리스너를
+   * 달아 받았는데, p는 네이티브 드라이버라 그 값이 JS로 오지 않아 처음의 1에 굳어
+   * 있었다. 그러면 안전망은 실행 화면이 늘 어긋나 있다고 보고 0.4초마다 펼치기를
+   * 다시 걸었다 — 실기기 계측(10-20) 화면을 잠근 1분 반 동안 157번, 프레임 요청
+   * 59만 번(백그라운드에서는 화면 주기에 묶이지 않아 쉬지 않고 돈다), 프로세스
+   * CPU 125%. 한 시간 운동에 배터리 46%와 심한 발열이 이것이었다.
+   */
   const current = useRef(1);
   const collapsedAt = useRef(0);
   /**
@@ -96,6 +105,7 @@ export function MorphProvider({ children }: { children: React.ReactNode }) {
       gen.current += 1;
       animating.current = false;
       if (dragging.current) touchedAt.current = Date.now();
+      current.current = v;
       p.setValue(v);
       radius.setValue(v);
     };
@@ -137,7 +147,10 @@ export function MorphProvider({ children }: { children: React.ReactNode }) {
       const settle = (reached: boolean) => {
         if (settled) return;
         settled = true;
-        if (gen.current === mine) animating.current = false;
+        if (gen.current === mine) {
+          animating.current = false;
+          if (reached) current.current = to;
+        }
         if (reached) onDone?.();
       };
 
@@ -155,7 +168,9 @@ export function MorphProvider({ children }: { children: React.ReactNode }) {
     const stop = () => {
       gen.current += 1;
       animating.current = false;
-      p.stopAnimation();
+      p.stopAnimation((v) => {
+        current.current = v;
+      });
       radius.stopAnimation();
     };
 
@@ -177,28 +192,22 @@ export function MorphProvider({ children }: { children: React.ReactNode }) {
    * 들어온 지 900ms 안에 연필을 누르면, 접히는 도중에 안전망이 끼어들어 전환을
    * 죽이고 편집 화면으로 가지도 못한 채 투명한 실행 화면만 남았다. 안전망이
    * 곧 사고 원인이었다.
+   *
+   * **한 번이 아니라 계속 살핀다.** 예전에는 라우트가 바뀐 뒤 900ms에 한 번만 봤고,
+   * 그 순간 깃발이 참이면(굳은 깃발도) 그냥 지나가 다시는 보지 않았다. 이제는
+   * WATCH_MS마다 보고, 손가락이 정말 쥐고 있지 않은데(held) 제자리가 아니면
+   * 제자리로 보낸다. 실행 화면이면 펼치고, 아니면 접는다.
+   *
+   * 접어 내리는 중에는 비켜선다 — 접기가 끝나고 라우트가 실제로 바뀌기 전의 틈에
+   * 「/run인데 접혀 있다」로 읽고 도로 펼치면 안 된다(collapsedAt).
    */
-  useEffect(() => {
-    const id = p.addListener(({ value }) => {
-      current.current = value;
-    });
-    return () => p.removeListener(id);
-  }, [p]);
-
-  /*
-    **한 번이 아니라 계속 살핀다.** 예전에는 라우트가 바뀐 뒤 900ms에 한 번만 봤고,
-    그 순간 깃발이 참이면(굳은 깃발도) 그냥 지나가 다시는 보지 않았다. 이제는
-    WATCH_MS마다 보고, 손가락이 정말 쥐고 있지 않은데(held) 제자리가 아니면
-    제자리로 보낸다. 실행 화면이면 펼치고, 아니면 접는다.
-
-    접어 내리는 중에는 비켜선다 — 접기가 끝나고 라우트가 실제로 바뀌기 전의 틈에
-    「/run인데 접혀 있다」로 읽고 도로 펼치면 안 된다(collapsedAt).
-  */
   useEffect(() => {
     const rest = pathname === '/run' ? 0 : 1;
     const idle = () => !api.held() && !animating.current;
     if (rest === 1 && idle()) api.set(1);
     const id = setInterval(() => {
+      // 화면에 없으면 고칠 자리도 없다 — 뒤에서 전환을 걸면 프레임 요청이 쉬지 않고 돈다
+      if (AppState.currentState !== 'active') return;
       if (!idle() || Math.abs(current.current - rest) < 0.001) return;
       if (rest === 0) {
         if (Date.now() - collapsedAt.current < LEAVING_MS) return;
