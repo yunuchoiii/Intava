@@ -26,7 +26,6 @@ import {
   CARD,
   Legend,
   Logo,
-  SegStrip,
   ShareImage,
   SplitRing,
   cardDateLine,
@@ -227,8 +226,6 @@ export default function Done() {
           </View>
         </View>
 
-        <SegStrip record={entry} style={{ marginTop: 22 }} />
-
         {entry.blocks.length > 0 ? (
           <View
             style={[cardStyles.panel, styles.list]}
@@ -319,7 +316,7 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: CARD.bg, overflow: 'hidden' },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   date: { flexShrink: 1, fontSize: 12, fontWeight: '600', color: CARD.sub },
-  list: { flex: 1, minHeight: 0, marginTop: 18, overflow: 'hidden' },
+  list: { flex: 1, minHeight: 0, marginTop: 24, overflow: 'hidden' },
   fade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 36 },
   actions: { flexDirection: 'row', gap: 10, paddingTop: 16, paddingHorizontal: 24 },
   shareButton: {

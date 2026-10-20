@@ -211,31 +211,6 @@ export function subtitleLine(r: WorkoutRecord): string {
   return nums.length >= 2 ? `${r.shape} · ${sets}` : sets;
 }
 
-// ---- 구간 띠 ----------------------------------------------------------------
-
-/**
- * 구간 띠 — 지나온 구간을 차례대로, 길이에 비례한 막대로. 운동은 진한 흰색, 나머지
- * (휴식·웜업·쿨다운)는 옅은 흰색 — 예전 완료 화면의 띠 그대로(사용자 지정).
- * 너무 잘게 나뉘면 실오라기가 되므로 앞에서부터 40개까지만 그린다(기록 화면과 같은 규칙).
- */
-export function SegStrip({ record, height = 8, style }: { record: WorkoutRecord; height?: number; style?: StyleProp<ViewStyle> }) {
-  if (!record.segs.length) return null;
-  return (
-    <View style={[{ flexDirection: 'row', gap: 3, height }, style]}>
-      {record.segs.slice(0, 40).map((s, i) => (
-        <View
-          key={i}
-          style={{
-            flex: Math.max(0.4, s.durSec),
-            borderRadius: height / 2,
-            backgroundColor: s.phase === 'WORK' ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.34)',
-          }}
-        />
-      ))}
-    </View>
-  );
-}
-
 // ---- 종목 줄 ----------------------------------------------------------------
 
 /** 종목 안 운동 몫 — 옛 기록(workSec 없음)은 그날 전체의 운동 비율로 대신한다 */
@@ -319,9 +294,8 @@ export const ShareImage = React.forwardRef<View, { record: WorkoutRecord; style?
             </View>
           </View>
         </View>
-        <SegStrip record={record} height={6} style={{ marginTop: dense ? 16 : 20 }} />
         {shown.length > 0 && (
-          <View style={[styles.panel, styles.sharePanel, dense && { marginTop: 12, paddingVertical: 2 }]}>
+          <View style={[styles.panel, styles.sharePanel, dense && { marginTop: 14, paddingVertical: 2 }]}>
             {shown.map((b, i) => (
               <View
                 key={`${b.name}${i}`}
@@ -417,7 +391,7 @@ const styles = StyleSheet.create({
   },
   shareHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   shareDate: { fontSize: 11, fontWeight: '600', color: CARD.sub },
-  sharePanel: { marginTop: 16, paddingHorizontal: 14, borderRadius: 16, overflow: 'hidden' },
+  sharePanel: { marginTop: 22, paddingHorizontal: 14, borderRadius: 16, overflow: 'hidden' },
   shareLine: { gap: 5, paddingVertical: 8 },
   shareRule: { borderTopWidth: 1, borderTopColor: CARD.line },
   shareBarRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
