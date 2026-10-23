@@ -301,7 +301,7 @@ export const zh: Catalog = {
     desc: '在灵动岛和锁屏上随时查看训练进度。',
     island: '灵动岛',
     lock: '锁屏',
-    ok: '好',
+    ok: '开始使用',
     sampleName: '蝴蝶机夹胸',
   },
 

@@ -308,7 +308,7 @@ export const en: Catalog = {
     desc: 'Check your workout progress right from the Dynamic Island and Lock Screen.',
     island: 'Dynamic Island',
     lock: 'Lock Screen',
-    ok: 'OK',
+    ok: 'Get started',
     sampleName: 'Pec Deck Fly',
   },
 
