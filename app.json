@@ -19,8 +19,7 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": [
-          "audio",
-          "workout-processing"
+          "audio"
         ],
         "NSHealthShareUsageDescription": "인타바는 건강 데이터를 읽지 않습니다.",
         "NSHealthUpdateUsageDescription": "운동 중 iOS 운동 세션을 켜서 잠금화면·다이내믹 아일랜드 타이머를 이어 갑니다.",
