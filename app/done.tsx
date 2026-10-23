@@ -10,11 +10,10 @@
  * 그리는 것은 모두 **기록**에서 온다. 세션은 이 화면이 뜨자마자 비워지지만 기록은
  * 저장소에 남는다. 공유 이미지(1080×1920)는 같은 기록으로 따로 그려 찍는다.
  */
-import * as Sharing from 'expo-sharing';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, PixelRatio, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, PixelRatio, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { captureRef } from 'react-native-view-shot';
@@ -52,6 +51,9 @@ const SHOT = {
   height: 1920 / PixelRatio.get(),
   result: 'tmpfile' as const,
 };
+
+/** iOS 공유 창의 「이미지 저장」 */
+const SAVE_TO_PHOTOS = 'com.apple.UIKit.activity.SaveToCameraRoll';
 
 export default function Done() {
   const { id, record, full, orders, edited, view } = useLocalSearchParams<{
@@ -167,13 +169,20 @@ export default function Done() {
   /**
    * 공유 — 숨겨 둔 360×640 카드를 1080×1920으로 찍어 iOS 공유 창에 넘긴다.
    * 그 창에 인스타그램(스토리·피드·DM)과 「이미지 저장」이 함께 있다.
+   *
+   * RN의 Share를 쓴다 — expo-sharing은 창에서 무엇을 골랐는지 돌려주지 않아, 사진에
+   * 저장됐는지 알 수 없었다. Share는 iOS가 끝낸 활동의 종류(activityType)를 준다.
+   * 저장은 끝났을 때만 sharedAction으로 돌아오므로 그때만 「저장했습니다」를 띄운다.
    */
   const share = async () => {
     if (!shot.current || sharing) return;
     setSharing(true);
     try {
       const uri = await captureRef(shot, SHOT);
-      await Sharing.shareAsync(uri, { mimeType: 'image/png', UTI: 'public.png' });
+      const res = await Share.share({ url: uri });
+      if (res.action === Share.sharedAction && res.activityType === SAVE_TO_PHOTOS) {
+        toast(t('doneScreen.imageSaved'));
+      }
     } catch {
       Alert.alert(t('doneScreen.shareFailTitle'), t('doneScreen.shareFailBody'));
     } finally {

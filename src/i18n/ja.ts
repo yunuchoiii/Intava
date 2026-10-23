@@ -289,6 +289,8 @@ export const ja: Catalog = {
     cardWeekdays: '日 月 火 水 木 金 土',
     shareFailTitle: '画像を作成できませんでした',
     shareFailBody: 'しばらくしてからもう一度お試しください。',
+    /** 공유 창에서 「이미지 저장」을 마쳤을 때 */
+    imageSaved: '画像を写真アプリに保存しました',
   },
 
   /** 라이브 액티비티 — 다이내믹 아일랜드 · 잠금화면 */

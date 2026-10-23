@@ -319,6 +319,8 @@ export const ko = {
     cardWeekdays: '일 월 화 수 목 금 토',
     shareFailTitle: '이미지를 만들지 못했습니다',
     shareFailBody: '잠시 뒤 다시 시도해 주세요.',
+    /** 공유 창에서 「이미지 저장」을 마쳤을 때 */
+    imageSaved: '이미지를 사진 앱에 저장했습니다',
   },
 
   /** 라이브 액티비티 — 다이내믹 아일랜드 · 잠금화면 */

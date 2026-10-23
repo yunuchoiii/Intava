@@ -296,6 +296,8 @@ export const en: Catalog = {
     cardWeekdays: 'Sun Mon Tue Wed Thu Fri Sat',
     shareFailTitle: 'Couldn’t create the image',
     shareFailBody: 'Please try again in a moment.',
+    /** 공유 창에서 「이미지 저장」을 마쳤을 때 */
+    imageSaved: 'Image saved to Photos',
   },
 
   /** 라이브 액티비티 — 다이내믹 아일랜드 · 잠금화면 */

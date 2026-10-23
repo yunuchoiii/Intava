@@ -289,6 +289,8 @@ export const zh: Catalog = {
     cardWeekdays: '日 一 二 三 四 五 六',
     shareFailTitle: '无法生成图片',
     shareFailBody: '请稍后再试。',
+    /** 공유 창에서 「이미지 저장」을 마쳤을 때 */
+    imageSaved: '图片已保存到照片',
   },
 
   /** 라이브 액티비티 — 다이내믹 아일랜드 · 잠금화면 */
