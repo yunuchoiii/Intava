@@ -90,7 +90,9 @@ function Card({ onClose }: { onClose: () => void }) {
           <View style={{ gap: 8 }}>
             <Text style={styles.kicker}>{t('announce.kicker')}</Text>
             <Text style={styles.title}>{t('announce.title')}</Text>
+            <Text style={styles.desc}>{t('announce.desc')}</Text>
           </View>
+          <View style={styles.rule} />
           <View style={{ gap: 14 }}>
             {island && (
               <Row icon={<View style={styles.glyphIsland} />} title={t('announce.island')} sub={t('announce.islandSub')} />
@@ -288,6 +290,8 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: 12, gap: 18 },
   kicker: { fontSize: 11.5, fontWeight: '800', letterSpacing: 1.6, color: '#6E7279' },
   title: { fontSize: 22, lineHeight: 30, fontWeight: '800', letterSpacing: -0.66, color: '#F7F7F8' },
+  desc: { marginTop: 2, fontSize: 14.5, lineHeight: 21, color: '#9A9EA6' },
+  rule: { height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(255,255,255,0.12)' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   iconBox: {
     width: 40,
