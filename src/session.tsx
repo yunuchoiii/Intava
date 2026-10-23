@@ -1079,6 +1079,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
             name: b.name,
             spec: specOf.get(b.blockId) ?? '',
             durSec: Math.round(b.durSec),
+            workSec: Math.round(b.workSec),
           })),
           segs: segs.map((x) => ({ phase: x.phase, durSec: x.durSec })),
         });

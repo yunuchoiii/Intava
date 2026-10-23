@@ -305,7 +305,12 @@ export default function Records() {
           ) : (
             <View style={styles.sessionList}>
               {sessions.map((r) => (
-                <SessionCard key={r.id} record={r} onLongPress={() => askDelete(r)} />
+                <SessionCard
+                  key={r.id}
+                  record={r}
+                  onLongPress={() => askDelete(r)}
+                  onOpen={() => router.push({ pathname: '/done', params: { record: r.id, view: '1' } })}
+                />
               ))}
             </View>
           )}
@@ -370,9 +375,12 @@ function Stat({
 function SessionCard({
   record,
   onLongPress,
+  onOpen,
 }: {
   record: WorkoutRecord;
   onLongPress: () => void;
+  /** 그날의 완료 카드를 다시 연다 — 공유는 거기서 */
+  onOpen: () => void;
 }) {
   const done = record.completed;
   /**
@@ -447,7 +455,7 @@ function SessionCard({
         {record.blocks.length > 0 && (
           <View style={styles.blockList}>
             {record.blocks.map((b, i) => (
-              <View key={`${b.name}${i}`} style={styles.blockRow}>
+              <View key={`${b.name}${i}`} style={[styles.blockRow, i > 0 && styles.blockRowRule]}>
                 <Text style={styles.blockName} numberOfLines={1}>
                   {b.name}
                 </Text>
@@ -459,6 +467,20 @@ function SessionCard({
             ))}
           </View>
         )}
+
+        <PressBox
+          onPress={onOpen}
+          haptic="tap"
+          radius={12}
+          scaleTo={0.98}
+          dim={0.12}
+          dimColor="#FFF"
+          style={styles.cardOpen}
+          accessibilityLabel={t('records.viewCard')}
+        >
+          <Text style={styles.cardOpenLabel}>{t('records.viewCard')}</Text>
+          <ChevronIcon size={16} dir="right" color={C.textSecondary} />
+        </PressBox>
       </Glass>
     </Pressable>
   );
@@ -614,19 +636,30 @@ const styles = StyleSheet.create({
   cardStatValue: { marginTop: 4, fontSize: 17, fontWeight: '700', letterSpacing: -0.34, color: C.textPrimary },
   cardStatLabel: { fontSize: 11, color: C.textTertiary },
 
-  blockList: {
-    borderRadius: 13,
+  /** 카드 맨 아래 — 완료 카드 다시 보기. 줄 전체가 눌리되 글자는 한 걸음 물러서 있다 */
+  cardOpen: {
+    marginTop: 12,
+    height: 44,
+    borderRadius: 12,
     borderCurve: 'continuous',
-    overflow: 'hidden',
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    gap: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
+  cardOpenLabel: { fontSize: 14, fontWeight: '600', color: C.textSecondary },
+
+  /** 종목 줄 — 바탕 없이 카드 안쪽 폭을 그대로 쓴다. 줄 사이 가는 선만 표로 남긴다 */
+  blockList: {},
   blockRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
-    paddingHorizontal: 13,
-    backgroundColor: 'rgba(255,255,255,0.03)',
+  },
+  blockRowRule: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255,255,255,0.10)',
   },
   blockName: { flex: 1, fontSize: 14, fontWeight: '600', color: C.textPrimary },
   blockSpec: { marginRight: 12, fontSize: 12.5, color: C.textSecondary },

@@ -38,6 +38,7 @@ import {
   multilineTextAlignment,
   padding,
   progressViewStyle,
+  scaleEffect,
   tint,
   widgetURL,
 } from '@expo/ui/swift-ui/modifiers';
@@ -109,7 +110,13 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
     const hide: Record<string, boolean> = { hidesValueLabel: true };
     const layers = [0, 1];
     return (
-      <ZStack modifiers={[frame({ width: size, height: size })]}>
+      /*
+        좌우로 뒤집는다 — 시스템 원형 진행은 12시부터 시계방향으로 차고, 줄 때는 끝이
+        반시계로 물러난다. 앱 안의 링은 남은 호가 12시에서 끝나고 머리가 **시계방향으로**
+        전진한다(Ring.tsx). 뒤집으면 그 움직임과 같아진다. 멈춘 링(value)도 같이 뒤집혀
+        남은 호가 같은 자리에 선다.
+      */
+      <ZStack modifiers={[frame({ width: size, height: size }), scaleEffect({ x: -1, y: 1 })]}>
         {layers.map((k) => {
           const d = size * (1 - 0.035 * k);
           const mods = [progressViewStyle('circular'), tint(p.color), frame({ width: d, height: d })];

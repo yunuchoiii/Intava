@@ -285,6 +285,19 @@ export const en: Catalog = {
     saveChangesBody: 'The exercises and order you changed this time will be saved to this routine.',
     saveChangesSkip: "Don't save",
     saveChangesConfirm: 'Save',
+    /** 완료 카드(공유 이미지와 같은 짜임) */
+    share: 'Share',
+    close: 'Close',
+    legendWork: 'Work',
+    legendRest: 'Rest',
+    /** 공유 이미지는 종목 일곱 줄까지 — 나머지를 묶는 줄 */
+    moreBlocks: '+{{count}} more',
+    cardDate: '{{w}}, {{m}}/{{d}} · {{from}}–{{to}}',
+    cardWeekdays: 'Sun Mon Tue Wed Thu Fri Sat',
+    shareFailTitle: 'Couldn’t create the image',
+    shareFailBody: 'Please try again in a moment.',
+    /** 공유 창에서 「이미지 저장」을 마쳤을 때 */
+    imageSaved: 'Image saved to Photos',
   },
 
   /** 라이브 액티비티 — 다이내믹 아일랜드 · 잠금화면 */
@@ -363,6 +376,8 @@ export const en: Catalog = {
     emptyRested: 'A rest day.',
     emptyToday: 'Log a workout today.',
     emptyFuture: 'This day hasn’t come yet.',
+    /** 카드 아래 — 그날의 완료 카드를 다시 연다 */
+    viewCard: 'View share card',
     deleteTitle: 'Delete this record?',
     deleteBody: 'Deleted records can’t be restored.',
     deleted: 'Record deleted',

@@ -1,5 +1,5 @@
 /**
- * 실행 화면의 원형 링 (실행 화면 v2) — 330×330, r=148, stroke 15, dasharray 930
+ * 실행 화면의 원형 링 (실행 화면 v2) — 330×330, r=148, stroke 15
  *
  * 진행은 250ms 스냅샷을 그대로 그리지 않는다. 구간이 바뀌거나 시간축이 끊긴
  * 순간(syncKey)에만 기준을 다시 잡고, 그 사이는 남은 시간만큼의 선형
@@ -21,20 +21,11 @@ import {
   View,
   type GestureResponderEvent,
 } from 'react-native';
-import Reanimated, {
-  Easing as ReEasing,
-  cancelAnimation,
-  useAnimatedProps,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
-import Svg, { Circle } from 'react-native-svg';
 import { scrubTick } from '../feedback';
 import { ABS, TABULAR } from '../theme';
 
 export const RING_SIZE = 330;
 const R = 148;
-const CIRC = 930;
 const CENTER = RING_SIZE / 2;
 /** 링을 잡을 수 있는 반지름 범위 — 가운데 숫자 영역은 제외한다 */
 const GRAB_MIN = 93;
@@ -43,18 +34,21 @@ const GRAB_MAX = 181;
 const DECIDE_PX = 6;
 
 /**
- * 링의 진행만 **UI 스레드에서** 돈다.
+ * 링의 진행은 **회전(transform)만으로** 그린다 — RN 네이티브 드라이버가 iOS에서
+ * 직접 돌리고, JS는 구간이 바뀔 때 한 번 값을 건다.
  *
- * strokeDashoffset은 RN의 네이티브 드라이버가 다루지 못하는 속성이라, 예전에는
- * `useNativeDriver: false`로 돌렸다. 그러면 운동하는 내내 — 40분이면 14만 프레임 —
- * JS가 매 프레임 값을 계산해 네이티브로 건네준다. 화면에 아무 일도 없는 휴식
- * 2분 동안에도 쉬지 않는다. 이 앱에서 끊임없이 도는 계산은 이것 하나뿐이라,
- * 발열의 가장 큰 몫이기도 하다.
+ * 예전에는 SVG 원의 strokeDashoffset을 reanimated로 흘렸다. 그런데 SVG 속성은
+ * reanimated가 네이티브로 바로 꽂지 못하는 「JS 속성」이라, 매 프레임 UI 스레드가
+ * 값을 JS로 넘기고 JS가 setNativeProps로 화면 트리 전체를 다시 커밋했다.
+ * 실기기(iPhone 18 Pro) 계측: 화면을 잠근 채로도 프로세스 CPU 125%, 한 시간 운동에
+ * 배터리 46%와 심한 발열. 회전은 커밋 없이 레이어만 돌린다.
  *
- * reanimated의 애니메이션 값은 JS를 거치지 않고 UI 스레드에서 보간된다.
- * 그리는 것은 똑같고, JS는 구간이 바뀔 때 한 번씩만 값을 건다.
+ * 그리는 법: 남은 호는 경과각 θ(12시 기준 시계방향 0~360°)부터 360°까지다.
+ * - 오른쪽 반(0~180°): 오른쪽 반원을 θ만큼 돌려 오른쪽 창으로 자른다 → [θ, 180°].
+ *   θ가 180°를 넘으면 반원이 왼쪽으로 다 넘어가 창에 남는 것이 없다.
+ * - 왼쪽 반(180~360°): θ가 180°가 될 때까지 그대로 있다가, 그 뒤 θ−180°만큼 돈다.
+ * - 끝 모양: 12시에 고정 점, 머리(θ)에 도는 팔 끝의 점 — SVG의 둥근 끝과 같다.
  */
-const AnimatedCircle = Reanimated.createAnimatedComponent(Circle);
 
 type Props = {
   /** 남은 비율 0~1 */
@@ -91,7 +85,8 @@ export function Ring({
   onScrubEnd,
 }: Props) {
   const pulse = useRef(new Animated.Value(1)).current;
-  const prog = useSharedValue(Math.max(0, Math.min(1, ratio)));
+  /** 경과각 0~360° — 남은 비율 r이면 (1−r)×360 */
+  const theta = useRef(new Animated.Value(angleFor(ratio))).current;
   const [scrubbing, setScrubbing] = useState(false);
 
   /**
@@ -169,30 +164,45 @@ export function Ring({
     return () => loop.stop();
   }, [warn, active, pulse]);
 
-  /** 기준 재설정 + 남은 시간만큼 0을 향해 선형으로 흐르기 */
+  /** 기준 재설정 + 남은 시간만큼 360°를 향해 선형으로 흐르기 */
   useEffect(() => {
     if (scrubbing) return; // 드래그 중에는 손가락이 값을 쥐고 있다
-    cancelAnimation(prog);
-    prog.value = Math.max(0, Math.min(1, ratioRef.current));
+    theta.stopAnimation();
+    theta.setValue(angleFor(ratioRef.current));
     if (paused || !active) return;
     const ms = remainRef.current * 1000;
     if (ms <= 0) return;
-    prog.value = withTiming(0, { duration: ms, easing: ReEasing.linear });
-    return () => cancelAnimation(prog);
-  }, [syncKey, paused, scrubbing, active, prog]);
+    const run = Animated.timing(theta, {
+      toValue: 360,
+      duration: ms,
+      easing: Easing.linear,
+      useNativeDriver: true,
+    });
+    run.start();
+    return () => run.stop();
+  }, [syncKey, paused, scrubbing, active, theta]);
 
-  /**
-   * 남은 만큼을 흰 호로 그리되, **줄어드는 머리가 시계방향으로 전진**하게 한다.
-   *
-   * 오프셋을 양수로 키우면 호가 12시에서 시작해 끝점이 반시계로 물러난다 —
-   * 눈에는 링이 거꾸로 도는 것으로 읽힌다. 음수로 주면 dash 패턴이 반대로
-   * 밀려서 경과한 만큼이 12시부터 시계방향으로 벗겨지고, 남은 호는 그 뒤를
-   * 잇는다. 시계도 스톱워치도 그렇게 돌고, 하단 막대가 왼쪽에서 오른쪽으로
-   * 차오르는 것과도 같은 방향이다.
-   */
-  const dash = useAnimatedProps(() => ({
-    strokeDashoffset: -CIRC + Math.max(0, Math.min(1, prog.value)) * CIRC,
-  }));
+  /*
+    호는 줄어드는 머리가 12시에서 출발해 **시계방향으로** 전진한다. 시계도
+    스톱워치도 그렇게 돌고, 하단 막대가 왼쪽에서 오른쪽으로 차오르는 것과도 같다.
+  */
+  const rightTurn = useMemo(
+    () => theta.interpolate({ inputRange: [0, 180, 360], outputRange: ['0deg', '180deg', '180deg'] }),
+    [theta]
+  );
+  const leftTurn = useMemo(
+    () => theta.interpolate({ inputRange: [0, 180, 360], outputRange: ['0deg', '0deg', '180deg'] }),
+    [theta]
+  );
+  const headTurn = useMemo(
+    () => theta.interpolate({ inputRange: [0, 360], outputRange: ['0deg', '360deg'] }),
+    [theta]
+  );
+  /** 다 흐르면 두 끝 점도 걷는다 — 남은 호가 없는데 12시에 점 하나가 남지 않게 */
+  const capShow = useMemo(
+    () => theta.interpolate({ inputRange: [0, 359, 360], outputRange: [1, 1, 0], extrapolate: 'clamp' }),
+    [theta]
+  );
 
   // ---- 드래그로 남은 시간 조정 -------------------------------------------
 
@@ -264,7 +274,7 @@ export function Ring({
           isTurning(e, g.dx, g.dy),
         onPanResponderGrant: (e) => {
           // 흐르던 값을 여기서 세운다 — 손가락이 쥔 값 위로 애니메이션이 계속 밀면 서로 다툰다
-          cancelAnimation(prog);
+          theta.stopAnimation();
           lastAngle.current = angleOf(e);
           accum.current = 0;
           startRemain.current = remainRef.current;
@@ -290,7 +300,7 @@ export function Ring({
             0,
             Math.min(dur, startRemain.current - (accum.current / (Math.PI * 2)) * dur)
           );
-          prog.value = next / dur;
+          theta.setValue(angleFor(next / dur));
 
           const sec = Math.ceil(next);
           if (sec !== lastSecond.current) {
@@ -310,8 +320,10 @@ export function Ring({
           onScrubEnd?.();
         },
       }),
-    [onScrubStart, onScrub, onScrubEnd, prog]
+    [onScrubStart, onScrub, onScrubEnd, theta]
   );
+
+  const stroke = scrubbing ? 18 : 15;
 
   return (
     <View style={{ width: RING_SIZE, height: RING_SIZE }}>
@@ -326,31 +338,35 @@ export function Ring({
         />
       </View>
 
-      <Svg
-        width={RING_SIZE}
-        height={RING_SIZE}
-        style={[StyleSheet.absoluteFill, { transform: [{ rotate: '-90deg' }] }]}
+      {/* 바탕 트랙 */}
+      <View style={[styles.band, bandBox(TRACK_W), { borderColor: 'rgba(0,0,0,0.20)' }]} pointerEvents="none" />
+
+      {/* 남은 호 — 오른쪽 반과 왼쪽 반을 따로 돌려 자른다(위 설명) */}
+      <View style={[styles.half, { left: CENTER }]} pointerEvents="none">
+        <Animated.View style={[styles.turner, { left: -CENTER, transform: [{ rotate: rightTurn }] }]}>
+          <View style={[styles.half, { left: CENTER }]}>
+            <View style={[styles.band, bandBox(stroke), { left: bandBox(stroke).left - CENTER }]} />
+          </View>
+        </Animated.View>
+      </View>
+      <View style={[styles.half, { left: 0 }]} pointerEvents="none">
+        <Animated.View style={[styles.turner, { transform: [{ rotate: leftTurn }] }]}>
+          <View style={[styles.half, { left: 0 }]}>
+            <View style={[styles.band, bandBox(stroke)]} />
+          </View>
+        </Animated.View>
+      </View>
+
+      {/* 둥근 끝 — 12시 고정 점과 머리를 따라 도는 점 */}
+      <Animated.View style={[styles.turner, { opacity: capShow }]} pointerEvents="none">
+        <View style={[styles.cap, capBox(stroke)]} />
+      </Animated.View>
+      <Animated.View
+        style={[styles.turner, { opacity: capShow, transform: [{ rotate: headTurn }] }]}
+        pointerEvents="none"
       >
-        <Circle
-          cx={CENTER}
-          cy={CENTER}
-          r={R}
-          fill="none"
-          stroke="rgba(0,0,0,0.20)"
-          strokeWidth={14}
-        />
-        <AnimatedCircle
-          cx={CENTER}
-          cy={CENTER}
-          r={R}
-          fill="none"
-          stroke="#FFFFFF"
-          strokeWidth={scrubbing ? 18 : 15}
-          strokeLinecap="round"
-          strokeDasharray={CIRC}
-          animatedProps={dash}
-        />
-      </Svg>
+        <View style={[styles.cap, capBox(stroke)]} />
+      </Animated.View>
 
       {/*
         링 안쪽 위 — 시안 「링 위 5a: 이름이 주인공」.
@@ -385,7 +401,32 @@ export function Ring({
   );
 }
 
+/** 남은 비율(1이면 가득) → 경과각 */
+function angleFor(ratio: number): number {
+  return (1 - Math.max(0, Math.min(1, ratio))) * 360;
+}
+
+const TRACK_W = 14;
+
+/** 반지름 R의 중심선에 굵기 w로 그린 고리의 상자 */
+function bandBox(w: number) {
+  const d = R * 2 + w;
+  const o = CENTER - d / 2;
+  return { left: o, top: o, width: d, height: d, borderRadius: d / 2, borderWidth: w };
+}
+
+/** 12시 자리의 끝 점 — 굵기와 같은 지름 */
+function capBox(w: number) {
+  return { left: CENTER - w / 2, top: CENTER - R - w / 2, width: w, height: w, borderRadius: w / 2 };
+}
+
 const styles = StyleSheet.create({
+  band: { position: 'absolute', borderColor: '#FFFFFF' },
+  /** 반쪽 창 — 링 상자의 왼쪽 또는 오른쪽 절반만 보인다 */
+  half: { position: 'absolute', top: 0, width: CENTER, height: RING_SIZE, overflow: 'hidden' },
+  /** 링 상자와 같은 크기의 회전판 — 가운데를 축으로 돈다 */
+  turner: { position: 'absolute', top: 0, left: 0, width: RING_SIZE, height: RING_SIZE },
+  cap: { position: 'absolute', backgroundColor: '#FFFFFF' },
   disc: {
     position: 'absolute',
     top: 24,

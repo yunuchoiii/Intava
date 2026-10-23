@@ -232,6 +232,11 @@ export type RecordBlock = {
   spec: string;
   /** 이 종목에서 실제로 보낸 시간 (휴식 포함) */
   durSec: number;
+  /**
+   * 그중 운동 구간 — 완료 화면 막대의 빨간 몫. 이 필드가 생기기 전 기록에는 없다
+   * (그때는 그날 전체의 운동 비율로 나눠 그린다).
+   */
+  workSec?: number;
 };
 
 export type RecordSeg = { phase: Phase; durSec: number };

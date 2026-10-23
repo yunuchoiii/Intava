@@ -65,6 +65,7 @@ export function BlockSheet({
    */
   const nameRef = useRef<TextInput>(null);
   const memoRef = useRef<TextInput>(null);
+  const scrollRef = useRef<ScrollView>(null);
   /**
    * 닫히는 동안 보여줄 값 — 부모가 block을 비워도 여기서는 붙잡고 있는다.
    *
@@ -120,6 +121,7 @@ export function BlockSheet({
     <Sheet visible={block != null} onClose={onClose} onClosed={onClosed}>
       {/* 키보드가 올라오면 시트가 짧아진다 — 그때 줄어드는 쪽은 이 목록이다 */}
       <ScrollView
+        ref={scrollRef}
         style={{ maxHeight: 560, flexShrink: 1 }}
         contentContainerStyle={{ paddingHorizontal: GUTTER, paddingBottom: 8 }}
         keyboardShouldPersistTaps="handled"
@@ -207,7 +209,15 @@ export function BlockSheet({
                 selectionColor={C.textPrimary}
                 maxLength={60}
                 returnKeyType="done"
-                onFocus={() => setMemoFocused(true)}
+                onFocus={() => {
+                  setMemoFocused(true);
+                  /*
+                    메모는 목록 맨 끝이다. 키보드가 올라오면 iOS는 입력칸이 보이는 만큼만
+                    올려 주는데, ✕(26pt)는 입력칸보다 커서 아래가 잘렸다(실기기). 시트가
+                    키보드 위로 줄어든 뒤 끝까지 내린다.
+                  */
+                  setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 300);
+                }}
                 onBlur={() => setMemoFocused(false)}
               />
               {memoFocused && (draft.memo ?? '').length > 0 && (
@@ -282,6 +292,8 @@ const styles = StyleSheet.create({
    */
   memoInputRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8, height: CLEAR_SIZE },
   memoInput: {
+    // 줄 높이(✕)와 같게 — iOS가 키보드 위로 올려 줄 때 이 상자만큼은 다 보이게 한다
+    height: CLEAR_SIZE,
     fontSize: 17,
     color: C.textPrimary,
     padding: 0,

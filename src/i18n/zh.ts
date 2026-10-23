@@ -278,6 +278,19 @@ export const zh: Catalog = {
     saveChangesBody: '会把这次更改的动作和顺序保存到这个循环。',
     saveChangesSkip: '不保存',
     saveChangesConfirm: '保存',
+    /** 완료 카드(공유 이미지와 같은 짜임) */
+    share: '分享',
+    close: '关闭',
+    legendWork: '运动',
+    legendRest: '休息',
+    /** 공유 이미지는 종목 일곱 줄까지 — 나머지를 묶는 줄 */
+    moreBlocks: '另外 {{count}} 个项目',
+    cardDate: '{{m}}月{{d}}日 周{{w}} · {{from}}–{{to}}',
+    cardWeekdays: '日 一 二 三 四 五 六',
+    shareFailTitle: '无法生成图片',
+    shareFailBody: '请稍后再试。',
+    /** 공유 창에서 「이미지 저장」을 마쳤을 때 */
+    imageSaved: '图片已保存到照片',
   },
 
   /** 라이브 액티비티 — 다이내믹 아일랜드 · 잠금화면 */
@@ -355,6 +368,8 @@ export const zh: Catalog = {
     emptyRested: '这天休息了。',
     emptyToday: '记录今天的训练吧。',
     emptyFuture: '这一天还没有到来。',
+    /** 카드 아래 — 그날의 완료 카드를 다시 연다 */
+    viewCard: '查看分享卡片',
     deleteTitle: '删除这条记录吗？',
     deleteBody: '删除后无法恢复。',
     deleted: '已删除记录',

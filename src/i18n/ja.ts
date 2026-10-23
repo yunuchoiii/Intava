@@ -278,6 +278,19 @@ export const ja: Catalog = {
     saveChangesBody: '今回変更した種目と順番をこのルーティンに保存します。',
     saveChangesSkip: '保存しない',
     saveChangesConfirm: '保存',
+    /** 완료 카드(공유 이미지와 같은 짜임) */
+    share: '共有',
+    close: '閉じる',
+    legendWork: '運動',
+    legendRest: '休憩',
+    /** 공유 이미지는 종목 일곱 줄까지 — 나머지를 묶는 줄 */
+    moreBlocks: 'ほか{{count}}種目',
+    cardDate: '{{m}}月{{d}}日({{w}}) · {{from}}–{{to}}',
+    cardWeekdays: '日 月 火 水 木 金 土',
+    shareFailTitle: '画像を作成できませんでした',
+    shareFailBody: 'しばらくしてからもう一度お試しください。',
+    /** 공유 창에서 「이미지 저장」을 마쳤을 때 */
+    imageSaved: '画像を写真アプリに保存しました',
   },
 
   /** 라이브 액티비티 — 다이내믹 아일랜드 · 잠금화면 */
@@ -356,6 +369,8 @@ export const ja: Catalog = {
     emptyRested: 'この日は休みました。',
     emptyToday: 'トレーニングを記録しましょう。',
     emptyFuture: 'まだ来ていない日です。',
+    /** 카드 아래 — 그날의 완료 카드를 다시 연다 */
+    viewCard: 'シェアカードを見る',
     deleteTitle: 'この記録を削除しますか？',
     deleteBody: '削除した記録は元に戻せません。',
     deleted: '記録を削除しました',

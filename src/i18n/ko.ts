@@ -308,6 +308,19 @@ export const ko = {
     saveChangesBody: '이번 운동에서 바꾼 종목과 순서를 이 루틴에 저장합니다.',
     saveChangesSkip: '저장 안 함',
     saveChangesConfirm: '저장',
+    /** 완료 카드(공유 이미지와 같은 짜임) */
+    share: '공유하기',
+    close: '닫기',
+    legendWork: '운동',
+    legendRest: '휴식',
+    /** 공유 이미지는 종목 일곱 줄까지 — 나머지를 묶는 줄 */
+    moreBlocks: '외 {{count}}개 종목',
+    cardDate: '{{m}}월 {{d}}일 {{w}} · {{from}}–{{to}}',
+    cardWeekdays: '일 월 화 수 목 금 토',
+    shareFailTitle: '이미지를 만들지 못했습니다',
+    shareFailBody: '잠시 뒤 다시 시도해 주세요.',
+    /** 공유 창에서 「이미지 저장」을 마쳤을 때 */
+    imageSaved: '이미지를 사진 앱에 저장했습니다',
   },
 
   /** 라이브 액티비티 — 다이내믹 아일랜드 · 잠금화면 */
@@ -390,6 +403,8 @@ export const ko = {
     emptyRested: '이 날은 쉬었습니다.',
     emptyToday: '운동을 기록해보세요.',
     emptyFuture: '아직 오지 않은 날입니다.',
+    /** 카드 아래 — 그날의 완료 카드를 다시 연다 */
+    viewCard: '공유 카드 보기',
     deleteTitle: '이 기록을 지울까요?',
     deleteBody: '지운 기록은 되돌릴 수 없습니다.',
     deleted: '기록을 삭제했습니다',
