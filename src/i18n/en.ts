@@ -304,7 +304,7 @@ export const en: Catalog = {
   /** 라이브 액티비티 출시 팝업 — 설치 뒤 한 번 */
   announce: {
     kicker: 'NEW · LIVE ACTIVITIES',
-    title: 'Leave the screen,\nthe timer keeps going',
+    title: 'See time left at a glance,\nwithout opening the app',
     desc: 'Check your workout progress right from the Dynamic Island and Lock Screen.',
     island: 'Dynamic Island',
     islandSub: 'Time left at a glance, even in other apps',
