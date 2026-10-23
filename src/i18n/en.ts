@@ -304,11 +304,12 @@ export const en: Catalog = {
   /** 라이브 액티비티 출시 팝업 — 설치 뒤 한 번 */
   announce: {
     kicker: 'NEW · LIVE ACTIVITIES',
-    title: 'Never miss an interval,\neven outside the app',
+    title: 'Leave the screen,\nthe timer keeps going',
+    desc: 'Check your workout progress right from the Dynamic Island and Lock Screen.',
     island: 'Dynamic Island',
-    islandSub: 'Time left, even while using other apps',
+    islandSub: 'Time left at a glance, even in other apps',
     lock: 'Lock Screen',
-    lockSub: 'Wake your phone to see the current interval and what’s next',
+    lockSub: 'Wake the screen to see the current interval and next exercise',
     ok: 'OK',
     sampleName: 'Pec Deck Fly',
   },

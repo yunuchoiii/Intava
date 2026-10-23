@@ -297,11 +297,12 @@ export const zh: Catalog = {
   /** 라이브 액티비티 출시 팝업 — 설치 뒤 한 번 */
   announce: {
     kicker: '新功能 · 实时活动',
-    title: '离开屏幕\n也不错过每个间歇',
+    title: '离开屏幕\n计时照常继续',
+    desc: '在灵动岛和锁屏上随时查看训练进度。',
     island: '灵动岛',
-    islandSub: '使用其他 App 时也能看到剩余时间',
+    islandSub: '使用其他 App 时也能一眼看到剩余时间',
     lock: '锁屏',
-    lockSub: '点亮屏幕即可看到当前区间和下一个动作',
+    lockSub: '点亮屏幕即可查看当前区间和下一个动作',
     ok: '好',
     sampleName: '蝴蝶机夹胸',
   },
