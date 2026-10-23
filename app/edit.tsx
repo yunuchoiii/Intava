@@ -10,6 +10,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
   Keyboard,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -31,7 +32,6 @@ import { WhiteButton } from '../src/components/Buttons';
 import { Surface } from '../src/components/Surface';
 import { PressBox } from '../src/components/PressBox';
 import { BackIcon, PlayIcon } from '../src/components/Icons';
-import { InfoTip } from '../src/components/InfoTip';
 import { Screen } from '../src/components/Screen';
 import { ValueRow } from '../src/components/ValueRow';
 import { t } from '../src/i18n';
@@ -40,7 +40,14 @@ import { totalSec, workSec } from '../src/engine/segments';
 import { countdownOf, useSessionStable } from '../src/session';
 import { emptyPreset, uid, useStore } from '../src/store';
 import { C, GUTTER, TABULAR } from '../src/theme';
-import { kindOf, presetFingerprint as fingerprint, type Block, type Preset } from '../src/types';
+import {
+  kindOf,
+  presetFingerprint as fingerprint,
+  workoutTypeOf,
+  type Block,
+  type Preset,
+} from '../src/types';
+import { WorkoutTypeSheet } from '../src/components/WorkoutTypeSheet';
 
 /** 종목 추가와 저장 — 한 화면의 두 버튼이라 모서리를 한 값에 묶어둔다 */
 const ACTION_RADIUS = 16;
@@ -81,6 +88,7 @@ export default function Edit() {
   const [sheet, setSheet] = useState<{ block: Block; isNew: boolean } | null>(null);
   const [picking, setPicking] = useState(false);
   const [startEndOpen, setStartEndOpen] = useState(false);
+  const [pickingType, setPickingType] = useState(false);
   const [nameFocused, setNameFocused] = useState(false);
   // 종목을 끌어 옮기는 동안에는 화면이 같이 스크롤되면 안 된다
   const [reordering, setReordering] = useState(false);
@@ -376,6 +384,61 @@ export default function Edit() {
     />
   );
 
+  /**
+   * 운동 종류 — 건강·피트니스 앱에 이 루틴을 무엇으로 남길지(기본 고강도 인터벌).
+   * 운동 중 켜는 iOS 운동 세션도 이 종류다. 건강 앱은 iPhone에만 있어 iOS에서만 선다.
+   */
+  const workoutTypeRow =
+    Platform.OS === 'ios' ? (
+      <Pressable
+        style={styles.linkRow}
+        onPress={() => {
+          setOpen(null);
+          setPickingType(true);
+        }}
+        accessibilityRole="button"
+      >
+        <Text style={styles.rowTitle}>{t('edit.workoutType')}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 1, marginLeft: 12 }}>
+          <Text style={styles.rowValueMuted} numberOfLines={1}>
+            {t(`workoutType.${workoutTypeOf(draft)}`)}
+          </Text>
+          <Text style={styles.typeChevron}>›</Text>
+        </View>
+      </Pressable>
+    ) : null;
+
+  /*
+    「건강 앱에 운동 기록」이 꺼져 있으면 운동 종류 줄 바로 밑에 빨갛게 알린다 — 꺼진 채
+    종류만 고르면 왜 피트니스에 안 남는지 알 길이 없다. 누르면 편집을 확정하고 설정을 연다.
+  */
+  const healthOffRow =
+    Platform.OS === 'ios' && !settings.healthSync ? (
+      <Pressable
+        style={styles.healthOff}
+        onPress={() => {
+          if (!isNew) commit();
+          router.push('/settings');
+        }}
+        accessibilityRole="button"
+      >
+        <Text style={styles.healthOffText}>{t('edit.workoutTypeHealthOff')}</Text>
+      </Pressable>
+    ) : null;
+
+  /*
+    「운동 기록」 칸 — 이 루틴이 건강·피트니스와 운동 기록 화면에 무엇으로 남는지.
+    건강 앱은 iPhone에만 있어 iOS에서만 선다.
+  */
+  const recordSection =
+    Platform.OS === 'ios' ? (
+      <>
+        <Text style={styles.section}>{t('edit.recordSection')}</Text>
+        {workoutTypeRow}
+        {healthOffRow}
+      </>
+    ) : null;
+
   return (
     <Screen>
       <View style={{ flex: 1, paddingTop: insets.top + 6 }}>
@@ -481,7 +544,7 @@ export default function Edit() {
               />
 
               <Pressable
-                style={[styles.linkRow, tip === 'startEnd' && styles.raised]}
+                style={styles.linkRow}
                 onPress={() => {
                   setStartEndOpen((v) => !v);
                   setOpen(null);
@@ -489,7 +552,6 @@ export default function Edit() {
               >
                 <View style={styles.titleWrap}>
                   <Text style={styles.rowTitle}>{t('edit.startEndRow')}</Text>
-                  <InfoTip text={t('tips.startEnd')} {...toInfoTip(tip, setTip, 'startEnd')} />
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Text style={[styles.rowValueMuted, TABULAR]}>{startEndSummary()}</Text>
@@ -498,6 +560,7 @@ export default function Edit() {
               </Pressable>
               <Collapsible open={startEndOpen}>{startEndRows}</Collapsible>
               {countdownRow}
+              {recordSection}
             </>
           ) : (
             <>
@@ -590,12 +653,10 @@ export default function Edit() {
                 </>
               )}
 
-              <View style={[styles.sectionRow, tip === 'startEnd' && styles.raised]}>
-                <Text style={[styles.section, { marginTop: 0, marginBottom: 0 }]}>{t('edit.startEnd')}</Text>
-                <InfoTip text={t('tips.startEnd')} {...toInfoTip(tip, setTip, 'startEnd')} />
-              </View>
+              <Text style={styles.section}>{t('edit.startEnd')}</Text>
               {startEndRows}
               {countdownRow}
+              {recordSection}
             </>
           )}
 
@@ -621,6 +682,16 @@ export default function Edit() {
           )}
         </View>
       </View>
+
+      <WorkoutTypeSheet
+        visible={pickingType}
+        value={workoutTypeOf(draft)}
+        onClose={() => setPickingType(false)}
+        onPick={(workoutType) => {
+          patch({ workoutType });
+          setPickingType(false);
+        }}
+      />
 
       <BlockPickerSheet
         visible={picking}
@@ -674,16 +745,6 @@ export default function Edit() {
   );
 }
 
-function toInfoTip(
-  tip: string | null,
-  setTip: React.Dispatch<React.SetStateAction<string | null>>,
-  key: string
-) {
-  return {
-    open: tip === key,
-    onToggle: () => setTip((t) => (t === key ? null : key)),
-  };
-}
 
 const styles = StyleSheet.create({
   topBar: {
@@ -721,7 +782,6 @@ const styles = StyleSheet.create({
     padding: 0,
     letterSpacing: -0.44,
   },
-  sectionRow: { flexDirection: 'row', alignItems: 'center', marginTop: 40, marginBottom: 10 },
   section: {
     marginTop: 40,
     marginBottom: 10,
@@ -741,10 +801,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: C.divider,
   },
-  raised: { zIndex: 30, elevation: 30 },
   titleWrap: { flexDirection: 'row', alignItems: 'center', flexShrink: 1 },
   rowTitle: { fontSize: 18, fontWeight: '600', color: C.textPrimary },
   rowValueMuted: { fontSize: 16, color: C.textSecondary },
+  typeChevron: { marginLeft: 8, fontSize: 20, color: C.textTertiary },
+  healthOff: { paddingTop: 10, paddingBottom: 4 },
+  healthOffText: { fontSize: 14, lineHeight: 20, color: C.danger },
   footer: {
     paddingHorizontal: GUTTER,
     paddingTop: 12,

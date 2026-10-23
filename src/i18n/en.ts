@@ -57,6 +57,10 @@ export const en: Catalog = {
   },
 
   edit: {
+    recordSection: 'Workout log',
+    workoutType: 'Workout type',
+    workoutTypeNote: 'Saved to Health and Fitness as this type.',
+    workoutTypeHealthOff: '"Log workouts to Health" is off.',
     countdown: 'Countdown',
     countdownSeconds: '{{n}} sec',
     countdownUnit: 'sec',
@@ -162,6 +166,20 @@ export const en: Catalog = {
     duckMusic: 'Lower music for cues',
     screen: 'Screen',
     keepAwake: 'Keep screen on while running',
+    liveActivity: 'Dynamic Island & Lock Screen timer',
+    liveActivityNote: 'Shows the time left and the current interval outside the app while you work out.',
+    health: 'Health',
+    healthSync: 'Log workouts to Health',
+    healthSyncNote: 'When you finish (even early), the workout is saved to Health as the type chosen in the routine. It also shows in Fitness.',
+    healthDeniedTitle: 'Health access is off',
+    healthDeniedBody: 'In Settings → Health → Data Access & Devices → intava, turn on writing workouts.',
+    feedbackSection: 'Contact',
+    feedback: 'Tell the developer',
+    feedbackNote: 'Send a bug or a wish straight by email.',
+    feedbackSubject: '[Intava] Feedback',
+    feedbackBody: 'Write your message here.',
+    feedbackNoMailTitle: 'Can\'t open Mail',
+    feedbackNoMailBody: 'Please write to this address.\n{{email}}',
   },
 
   run: {
@@ -267,6 +285,39 @@ export const en: Catalog = {
     saveChangesBody: 'The exercises and order you changed this time will be saved to this routine.',
     saveChangesSkip: "Don't save",
     saveChangesConfirm: 'Save',
+    /** 완료 카드(공유 이미지와 같은 짜임) */
+    share: 'Share',
+    close: 'Close',
+    legendWork: 'Work',
+    legendRest: 'Rest',
+    /** 공유 이미지는 종목 일곱 줄까지 — 나머지를 묶는 줄 */
+    moreBlocks: '+{{count}} more',
+    cardDate: '{{w}}, {{m}}/{{d}} · {{from}}–{{to}}',
+    cardWeekdays: 'Sun Mon Tue Wed Thu Fri Sat',
+    shareFailTitle: 'Couldn’t create the image',
+    shareFailBody: 'Please try again in a moment.',
+    /** 공유 창에서 「이미지 저장」을 마쳤을 때 */
+    imageSaved: 'Image saved to Photos',
+  },
+
+  /** 라이브 액티비티 — 다이내믹 아일랜드 · 잠금화면 */
+  live: {
+    next: 'Next: {{what}}',
+    subWork: '{{sub}} · Next: {{next}}',
+  },
+
+  /** 건강·피트니스 운동 종류 */
+  workoutType: {
+    hiit: 'High Intensity Interval Training',
+    functionalStrength: 'Functional Strength Training',
+    traditionalStrength: 'Traditional Strength Training',
+    core: 'Core Training',
+    cross: 'Cross Training',
+    mixedCardio: 'Mixed Cardio',
+    jumpRope: 'Jump Rope',
+    flexibility: 'Flexibility',
+    yoga: 'Yoga',
+    pilates: 'Pilates',
   },
 
   notify: {
@@ -289,8 +340,6 @@ export const en: Catalog = {
   tips: {
     rounds:
       'How many times to cycle through every exercise. Sets repeat within one exercise; rounds repeat the whole list.',
-    startEnd:
-      'Drop any of the three to zero and it disappears. While running, warm-up shows **orange**, prepare **amber**, and cool-down **slate blue**.',
     keepScreenOn: 'This app expects to be used with the screen off.',
   },
 
@@ -327,6 +376,8 @@ export const en: Catalog = {
     emptyRested: 'A rest day.',
     emptyToday: 'Log a workout today.',
     emptyFuture: 'This day hasn’t come yet.',
+    /** 카드 아래 — 그날의 완료 카드를 다시 연다 */
+    viewCard: 'View share card',
     deleteTitle: 'Delete this record?',
     deleteBody: 'Deleted records can’t be restored.',
     deleted: 'Record deleted',

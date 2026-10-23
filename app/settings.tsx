@@ -24,9 +24,15 @@ import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 import { preview } from '../src/audio';
 import { exportBackup, pickBackup } from '../src/backup';
+import { DEVELOPER_EMAIL } from '../src/legal';
+import {
+  requestWorkoutAuthorization,
+  workoutAuthorized,
+  workoutAvailable,
+} from '../modules/intava-workout';
 import { ExportSheet, type ExportPick } from '../src/components/ExportSheet';
 import { useStore } from '../src/store';
-import { t } from '../src/i18n';
+import { currentLanguage, t } from '../src/i18n';
 import { C, GUTTER, TABULAR } from '../src/theme';
 
 /**
@@ -281,8 +287,46 @@ export default function SettingsScreen() {
             note={t('tips.keepScreenOn')}
             value={settings.keepScreenOn}
             onChange={(keepScreenOn) => setSettings({ keepScreenOn })}
-            last
+            last={Platform.OS !== 'ios'}
           />
+          {/* 라이브 액티비티는 iOS에만 있다 */}
+          {Platform.OS === 'ios' && (
+            <ToggleRow
+              title={t('settings.liveActivity')}
+              note={t('settings.liveActivityNote')}
+              value={settings.liveActivity}
+              onChange={(liveActivity) => setSettings({ liveActivity })}
+              last
+            />
+          )}
+
+          {/*
+            건강 앱 — HealthKit을 쓸 수 있는 기기(iPhone)에서만 선다.
+            켜는 순간 권한을 묻고, 허용되지 않으면 켜지 않은 채로 둔다 — 켜 있는데 아무것도
+            안 쓰이는 스위치는 거짓말이다. iOS는 한 번 거절하면 다시 묻지 않으므로 어디서
+            켜는지 알려 준다.
+          */}
+          {workoutAvailable() && (
+            <>
+              <Text style={styles.section}>{t('settings.health')}</Text>
+              <ToggleRow
+                title={t('settings.healthSync')}
+                note={t('settings.healthSyncNote')}
+                value={settings.healthSync}
+                onChange={(on) => {
+                  if (!on) {
+                    setSettings({ healthSync: false });
+                    return;
+                  }
+                  void requestWorkoutAuthorization().then(() => {
+                    if (workoutAuthorized()) setSettings({ healthSync: true });
+                    else Alert.alert(t('settings.healthDeniedTitle'), t('settings.healthDeniedBody'));
+                  });
+                }}
+                last
+              />
+            </>
+          )}
 
           {/*
             루틴은 이 기기 안에만 있다 — 앱을 지우거나 기기를 바꾸면 사라진다.
@@ -295,6 +339,35 @@ export default function SettingsScreen() {
             onPress={() => setExporting(true)}
           />
           <ActionRow title={t('backup.import')} note={t('backup.importNote')} onPress={doImport} last />
+
+          {/*
+            개발자에게 알리기 — 메일 앱을 받는 사람·제목·기기 정보가 채워진 채로 연다.
+            무엇이 어디서 났는지 되묻지 않아도 되게, 앱 버전·OS·언어를 본문 아래에 붙인다.
+            메일 앱이 없으면(지웠거나 계정이 없다) 주소를 보여 준다.
+          */}
+          <Text style={styles.section}>{t('settings.feedbackSection')}</Text>
+          <ActionRow
+            title={t('settings.feedback')}
+            note={t('settings.feedbackNote')}
+            onPress={() => {
+              const info = [
+                `${t('settings.version')}: ${appVersion}`,
+                `${Platform.OS} ${String(Platform.Version)}`,
+                `lang: ${currentLanguage()}`,
+              ].join('\n');
+              const url =
+                `mailto:${DEVELOPER_EMAIL}` +
+                `?subject=${encodeURIComponent(t('settings.feedbackSubject'))}` +
+                `&body=${encodeURIComponent(`${t('settings.feedbackBody')}\n\n\n---\n${info}`)}`;
+              Linking.openURL(url).catch(() =>
+                Alert.alert(
+                  t('settings.feedbackNoMailTitle'),
+                  t('settings.feedbackNoMailBody', { email: DEVELOPER_EMAIL })
+                )
+              );
+            }}
+            last
+          />
         </ScrollView>
       </View>
       </GestureDetector>

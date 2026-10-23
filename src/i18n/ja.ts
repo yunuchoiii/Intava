@@ -50,6 +50,10 @@ export const ja: Catalog = {
   },
 
   edit: {
+    recordSection: 'ワークアウト記録',
+    workoutType: 'ワークアウトの種類',
+    workoutTypeNote: 'ヘルスケアとフィットネスにこの種類で記録されます。',
+    workoutTypeHealthOff: '「ヘルスケアにワークアウトを記録」がオフです。',
     countdown: 'カウントダウン',
     countdownSeconds: '{{n}}秒',
     countdownUnit: '秒',
@@ -155,6 +159,20 @@ export const ja: Catalog = {
     duckMusic: '通知音のあいだ音楽を下げる',
     screen: '画面',
     keepAwake: '実行中に画面を消さない',
+    liveActivity: 'ダイナミックアイランド・ロック画面タイマー',
+    liveActivityNote: 'ワークアウト中、アプリの外でも残り時間と今の区間を表示します。',
+    health: 'ヘルスケア',
+    healthSync: 'ヘルスケアにワークアウトを記録',
+    healthSyncNote: '終えると（途中で終えても）ルーティンで選んだ種類でヘルスケアに保存します。フィットネスにも表示されます。',
+    healthDeniedTitle: 'ヘルスケアへのアクセスがオフです',
+    healthDeniedBody: '設定 → ヘルスケア → データアクセスとデバイス → intava で、ワークアウトの書き込みをオンにしてください。',
+    feedbackSection: 'お問い合わせ',
+    feedback: '開発者に知らせる',
+    feedbackNote: '不具合や要望をメールですぐに送ります。',
+    feedbackSubject: '[Intava] 開発者へ',
+    feedbackBody: 'ここに内容を書いてください。',
+    feedbackNoMailTitle: 'メールアプリを開けません',
+    feedbackNoMailBody: '次のアドレスに送ってください。\n{{email}}',
   },
 
   run: {
@@ -260,6 +278,39 @@ export const ja: Catalog = {
     saveChangesBody: '今回変更した種目と順番をこのルーティンに保存します。',
     saveChangesSkip: '保存しない',
     saveChangesConfirm: '保存',
+    /** 완료 카드(공유 이미지와 같은 짜임) */
+    share: '共有',
+    close: '閉じる',
+    legendWork: '運動',
+    legendRest: '休憩',
+    /** 공유 이미지는 종목 일곱 줄까지 — 나머지를 묶는 줄 */
+    moreBlocks: 'ほか{{count}}種目',
+    cardDate: '{{m}}月{{d}}日({{w}}) · {{from}}–{{to}}',
+    cardWeekdays: '日 月 火 水 木 金 土',
+    shareFailTitle: '画像を作成できませんでした',
+    shareFailBody: 'しばらくしてからもう一度お試しください。',
+    /** 공유 창에서 「이미지 저장」을 마쳤을 때 */
+    imageSaved: '画像を写真アプリに保存しました',
+  },
+
+  /** 라이브 액티비티 — 다이내믹 아일랜드 · 잠금화면 */
+  live: {
+    next: '次: {{what}}',
+    subWork: '{{sub}} · 次: {{next}}',
+  },
+
+  /** 건강·피트니스 운동 종류 */
+  workoutType: {
+    hiit: '高強度インターバルトレーニング',
+    functionalStrength: '機能的筋力トレーニング',
+    traditionalStrength: '筋力トレーニング（ウエイト）',
+    core: '体幹トレーニング',
+    cross: 'クロストレーニング',
+    mixedCardio: 'ミックスカーディオ',
+    jumpRope: '縄跳び',
+    flexibility: '柔軟性',
+    yoga: 'ヨガ',
+    pilates: 'ピラティス',
   },
 
   notify: {
@@ -282,8 +333,6 @@ export const ja: Catalog = {
   tips: {
     rounds:
       '種目全体を何周するかを決めます。セットは一つの種目の中の繰り返し、ラウンドは種目全体の繰り返しです。',
-    startEnd:
-      '三つとも0にすると消えます。実行中はウォームアップが**オレンジ**、準備が**アンバー**、クールダウンが**青灰色**の画面になります。',
     keepScreenOn: 'このアプリは画面を消したまま使うことを前提にしています。',
   },
 
@@ -320,6 +369,8 @@ export const ja: Catalog = {
     emptyRested: 'この日は休みました。',
     emptyToday: 'トレーニングを記録しましょう。',
     emptyFuture: 'まだ来ていない日です。',
+    /** 카드 아래 — 그날의 완료 카드를 다시 연다 */
+    viewCard: 'シェアカードを見る',
     deleteTitle: 'この記録を削除しますか？',
     deleteBody: '削除した記録は元に戻せません。',
     deleted: '記録を削除しました',

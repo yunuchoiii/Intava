@@ -2,7 +2,7 @@
   "expo": {
     "name": "intava",
     "slug": "Intava",
-    "version": "1.4.0",
+    "version": "1.5.0",
     "scheme": "intava",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -11,12 +11,19 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.intava.app",
+      "appleTeamId": "9A66V5LDFK",
+      "entitlements": {
+        "com.apple.developer.healthkit": true
+      },
       "buildNumber": "2",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": [
-          "audio"
+          "audio",
+          "workout-processing"
         ],
+        "NSHealthShareUsageDescription": "인타바는 건강 데이터를 읽지 않습니다.",
+        "NSHealthUpdateUsageDescription": "운동 중 iOS 운동 세션을 켜서 잠금화면·다이내믹 아일랜드 타이머를 이어 갑니다.",
         "UIUserInterfaceStyle": "Dark",
         "CFBundleLocalizations": [
           "ko",
@@ -24,7 +31,8 @@
           "ja",
           "zh-Hans"
         ],
-        "CFBundleAllowMixedLocalizations": true
+        "CFBundleAllowMixedLocalizations": true,
+        "NSPhotoLibraryAddUsageDescription": "운동 기록 카드를 사진 앱에 저장합니다."
       }
     },
     "android": {
@@ -87,6 +95,24 @@
       ],
       "expo-localization",
       "expo-sharing",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "node_modules/@expo-google-fonts/league-spartan/600SemiBold/LeagueSpartan_600SemiBold.ttf",
+            "node_modules/@expo-google-fonts/league-spartan/700Bold/LeagueSpartan_700Bold.ttf"
+          ]
+        }
+      ],
+      [
+        "expo-widgets",
+        {
+          "bundleIdentifier": "com.intava.app.ExpoWidgetsTarget",
+          "groupIdentifier": "group.com.intava.app",
+          "enablePushNotifications": false,
+          "widgets": []
+        }
+      ],
       [
         "expo-build-properties",
         {
