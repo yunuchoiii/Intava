@@ -24,6 +24,7 @@ import { totalSec } from '../src/engine/segments';
 import { t } from '../src/i18n';
 import { selectionTick } from '../src/feedback';
 import { useSessionStable } from '../src/session';
+import { LiveAnnounce } from '../src/components/LiveAnnounce';
 import { useToast } from '../src/components/Toast';
 import { sortPresets, useStore, type SortKey } from '../src/store';
 import { C, E2, GUTTER, LIFT, RADIUS, TABULAR } from '../src/theme';
@@ -276,6 +277,9 @@ export default function Home() {
           </View>
         </View>
       </View>
+
+      {/* 설치 뒤 한 번 — 라이브 액티비티 소개. 운동이 되살아나는 중이면 띄우지 않는다 */}
+      <LiveAnnounce blocked={!!session.preset} />
     </Screen>
   );
 }

@@ -294,6 +294,18 @@ export const ja: Catalog = {
   },
 
   /** 라이브 액티비티 — 다이내믹 아일랜드 · 잠금화면 */
+  /** 라이브 액티비티 출시 팝업 — 설치 뒤 한 번 */
+  announce: {
+    kicker: '新機能 · ライブアクティビティ',
+    title: '画面の外でも\nインターバルを逃さない',
+    island: 'ダイナミックアイランド',
+    islandSub: 'ほかのアプリを使っていても残り時間',
+    lock: 'ロック画面',
+    lockSub: '画面をつけるだけで今の区間と次の種目',
+    ok: 'OK',
+    sampleName: 'ペックデックフライ',
+  },
+
   live: {
     next: '次: {{what}}',
     subWork: '{{sub}} · 次: {{next}}',

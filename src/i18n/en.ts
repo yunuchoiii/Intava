@@ -301,6 +301,18 @@ export const en: Catalog = {
   },
 
   /** 라이브 액티비티 — 다이내믹 아일랜드 · 잠금화면 */
+  /** 라이브 액티비티 출시 팝업 — 설치 뒤 한 번 */
+  announce: {
+    kicker: 'NEW · LIVE ACTIVITIES',
+    title: 'Never miss an interval,\neven outside the app',
+    island: 'Dynamic Island',
+    islandSub: 'Time left, even while using other apps',
+    lock: 'Lock Screen',
+    lockSub: 'Wake your phone to see the current interval and what’s next',
+    ok: 'OK',
+    sampleName: 'Pec Deck Fly',
+  },
+
   live: {
     next: 'Next: {{what}}',
     subWork: '{{sub}} · Next: {{next}}',

@@ -294,6 +294,18 @@ export const zh: Catalog = {
   },
 
   /** 라이브 액티비티 — 다이내믹 아일랜드 · 잠금화면 */
+  /** 라이브 액티비티 출시 팝업 — 설치 뒤 한 번 */
+  announce: {
+    kicker: '新功能 · 实时活动',
+    title: '离开屏幕\n也不错过每个间歇',
+    island: '灵动岛',
+    islandSub: '使用其他 App 时也能看到剩余时间',
+    lock: '锁屏',
+    lockSub: '点亮屏幕即可看到当前区间和下一个动作',
+    ok: '好',
+    sampleName: '蝴蝶机夹胸',
+  },
+
   live: {
     next: '下一个：{{what}}',
     subWork: '{{sub}} · 下一个：{{next}}',
