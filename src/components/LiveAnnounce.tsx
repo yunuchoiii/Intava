@@ -95,9 +95,9 @@ function Card({ onClose }: { onClose: () => void }) {
           <View style={styles.rule} />
           <View style={{ gap: 14 }}>
             {island && (
-              <Row icon={<View style={styles.glyphIsland} />} title={t('announce.island')} sub={t('announce.islandSub')} />
+              <Row icon={<View style={styles.glyphIsland} />} title={t('announce.island')} />
             )}
-            <Row icon={<View style={styles.glyphLock} />} title={t('announce.lock')} sub={t('announce.lockSub')} />
+            <Row icon={<View style={styles.glyphLock} />} title={t('announce.lock')} />
           </View>
           <PressBox onPress={onClose} haptic="tap" radius={16} scaleTo={0.97} dim={0.1} accessibilityLabel={t('announce.ok')}>
             <LinearGradient colors={['#FFFFFF', '#E4E7EC']} style={styles.button}>
@@ -110,14 +110,12 @@ function Card({ onClose }: { onClose: () => void }) {
   );
 }
 
-function Row({ icon, title, sub }: { icon: React.ReactNode; title: string; sub: string }) {
+/** 아이콘 + 이름 한 줄 — 설명은 위의 한 문단이 맡는다(사용자 결정) */
+function Row({ icon, title }: { icon: React.ReactNode; title: string }) {
   return (
     <View style={styles.row}>
       <View style={styles.iconBox}>{icon}</View>
-      <View style={{ flex: 1, gap: 2 }}>
-        <Text style={styles.rowTitle}>{title}</Text>
-        <Text style={styles.rowSub}>{sub}</Text>
-      </View>
+      <Text style={[styles.rowTitle, { flex: 1 }]}>{title}</Text>
     </View>
   );
 }
@@ -304,7 +302,6 @@ const styles = StyleSheet.create({
   glyphIsland: { width: 22, height: 8, borderRadius: 4, backgroundColor: '#F7F7F8' },
   glyphLock: { width: 22, height: 12, borderRadius: 4, borderWidth: 2, borderColor: '#F7F7F8' },
   rowTitle: { fontSize: 15, fontWeight: '600', color: '#F7F7F8' },
-  rowSub: { fontSize: 13, color: '#9A9EA6' },
   button: { height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   buttonText: { fontSize: 16, fontWeight: '700', color: '#0A0A0C' },
 });
