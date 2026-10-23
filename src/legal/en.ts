@@ -5,7 +5,7 @@ const EMAIL = 'chltjdnjs529@gmail.com';
 export const en: LegalPack = {
   privacy: {
     title: 'Privacy Policy',
-    updated: 'Last updated: August 9, 2026',
+    updated: 'Last updated: October 23, 2026',
     lead: 'intava does not collect personal information.',
     sections: [
       {
@@ -20,7 +20,7 @@ export const en: LegalPack = {
         bullets: [
           'Routines and timers you create (names, exercises, durations, sets and rounds)',
           'Your workout log (when you trained and for how long)',
-          'App settings (sound, vibration, notifications, volume, keep-awake, sort order)',
+          'App settings (sound, vibration, notifications, volume, keep-awake, sort order, lock screen timer, Health logging)',
         ],
       },
       {
@@ -39,6 +39,26 @@ export const en: LegalPack = {
         heading: 'Notifications',
         body: [
           "The app uses your device's notification permission to tell you when an interval changes. All notifications are scheduled locally on the device and never pass through a remote push server. The app works normally if you decline the permission.",
+        ],
+      },
+      {
+        heading: 'Apple Health (HealthKit)',
+        body: [
+          'Only if you turn on “Log workouts to Health” in Settings, the app records each workout in Apple Health when it ends. What it writes is the workout type you chose for the routine, the start and end time, and the workout duration; active energy (calories) estimated by iOS during the workout may be attached. These workouts also appear in the Fitness app.',
+          'Intava never reads data from Health. Workouts written to Health stay in Apple Health, are not sent to anyone (including the developer), and are not used for advertising or analytics. You can revoke access anytime in iOS Settings → Health → Data Access & Devices.',
+          'When the lock screen timer is on, the app runs an iOS workout session during a workout so the timer keeps going while the screen is off. If “Log workouts to Health” is off, that session is discarded and nothing is saved to Health.',
+        ],
+      },
+      {
+        heading: 'Lock Screen & Dynamic Island',
+        body: [
+          'During a workout, the remaining time and current interval are shown on the Lock Screen and in the Dynamic Island. This is created and updated entirely on the device and never passes through a remote push server.',
+        ],
+      },
+      {
+        heading: 'Share image',
+        body: [
+          '“Share” on the finish screen turns the day\'s workout card into an image and hands it to the system share sheet. If you choose “Save Image,” iOS asks for permission to add it to Photos. The app never reads your photo library and keeps no copy of the image.',
         ],
       },
       {
@@ -86,7 +106,7 @@ export const en: LegalPack = {
       {
         heading: 'Can I reorder exercises mid-workout?',
         body: [
-          "“Reorder” below the timer changes the remaining order. Exercises you've already finished and the one you're doing now stay put.",
+          "“Edit exercises & order” below the timer changes the remaining order. Exercises you've already finished and the one you're doing now stay put.",
         ],
       },
       {

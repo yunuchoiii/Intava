@@ -27,7 +27,7 @@
 <body>
 
 <h1>인타바 개인정보 처리방침</h1>
-<p class="updated">최종 수정일: 2026년 8월 9일</p>
+<p class="updated">최종 수정일: 2026년 10월 23일</p>
 <p class="lead">인타바(intava)는 개인정보를 수집하지 않습니다.</p>
 
 <h2>수집하는 정보</h2>
@@ -38,7 +38,7 @@
 <ul>
   <li>사용자가 만든 루틴과 타이머(이름, 종목, 시간, 세트·라운드)</li>
   <li>운동 기록(언제 무엇을 얼마나 했는지)</li>
-  <li>앱 설정(소리, 진동, 알림, 볼륨, 화면 켜둠, 정렬 기준)</li>
+  <li>앱 설정(소리, 진동, 알림, 볼륨, 화면 켜둠, 정렬 기준, 잠금화면 타이머, 건강 앱 기록)</li>
 </ul>
 <p>앱을 삭제하면 이 데이터도 기기에서 함께 사라집니다. 앱은 이 데이터의 사본을 어디에도 두지 않으므로, 삭제한 데이터는 복구할 수 없습니다.</p>
 
@@ -47,6 +47,17 @@
 
 <h2>알림 권한</h2>
 <p>운동 중 구간이 바뀌는 시각을 알리기 위해 기기의 알림 권한을 사용합니다. 알림은 <strong>전부 기기 안에서 예약</strong>되며(로컬 알림), 원격 푸시 서버를 거치지 않습니다. 권한을 허용하지 않아도 앱은 정상 동작합니다.</p>
+
+<h2>건강 앱 (HealthKit)</h2>
+<p>설정에서 「건강 앱에 운동 기록」을 켠 경우에만, 운동을 마칠 때 그 운동을 Apple 건강 앱에 기록합니다. 기록되는 것은 루틴에서 고른 운동 종류, 시작·끝 시각, 운동 시간이며, 운동 중 iOS가 추정한 활동 에너지(칼로리)가 함께 붙을 수 있습니다. 이 기록은 피트니스 앱에도 보입니다.</p>
+<p>인타바는 <strong>건강 앱의 데이터를 읽지 않습니다.</strong> 건강 앱에 쓴 기록은 Apple 건강 앱 안에만 있으며, 개발자를 포함한 누구에게도 전송되지 않고, 광고나 분석에 쓰이지 않습니다. 권한은 언제든 iOS 설정 → 건강 → 데이터 접근 및 기기에서 끌 수 있습니다.</p>
+<p>잠금화면 타이머가 켜져 있으면, 화면이 꺼진 동안에도 타이머를 이어 가기 위해 운동 중 iOS 운동 세션을 사용합니다. 「건강 앱에 운동 기록」이 꺼져 있으면 그 세션은 건강 앱에 남기지 않고 버립니다.</p>
+
+<h2>잠금화면 · 다이내믹 아일랜드</h2>
+<p>운동 중 남은 시간과 지금 구간을 잠금화면과 다이내믹 아일랜드에 표시합니다. 이 표시는 기기 안에서만 만들어지고 갱신되며, 원격 푸시 서버를 거치지 않습니다.</p>
+
+<h2>공유 이미지</h2>
+<p>완료 화면의 「공유하기」는 그날의 운동 카드를 이미지로 만들어 기기의 공유 시트로 넘깁니다. 「이미지 저장」을 고르면 사진 앱에 저장하기 위해 사진 추가 권한을 요청합니다. 앱은 사진 보관함을 읽지 않으며, 만든 이미지의 사본을 보관하지 않습니다.</p>
 
 <h2>내보내기 파일</h2>
 <p>설정의 「내보내기」는 루틴·운동 기록·설정을 담은 파일을 만들어 기기의 공유 시트로 넘깁니다. 그 파일을 어디에 저장하거나 누구에게 보낼지는 <strong>전적으로 사용자가 정합니다.</strong> 앱은 그 과정에 관여하지 않고, 파일의 사본을 보관하지 않습니다.</p>
@@ -66,7 +77,7 @@
 <hr>
 
 <h1>intava Privacy Policy</h1>
-<p class="updated">Last updated: August 9, 2026</p>
+<p class="updated">Last updated: October 23, 2026</p>
 <p class="lead">intava does not collect personal information.</p>
 
 <h2>Information we collect</h2>
@@ -77,7 +88,7 @@
 <ul>
   <li>Routines and timers you create (names, exercises, durations, sets and rounds)</li>
   <li>Your workout log (when you trained and for how long)</li>
-  <li>App settings (sound, vibration, notifications, volume, keep-awake, sort order)</li>
+  <li>App settings (sound, vibration, notifications, volume, keep-awake, sort order, lock screen timer, Health logging)</li>
 </ul>
 <p>Deleting the app removes this data from your device. The app keeps no copy anywhere else, so deleted data cannot be recovered.</p>
 
@@ -86,6 +97,17 @@
 
 <h2>Notifications</h2>
 <p>The app uses your device's notification permission to tell you when an interval changes. All notifications are <strong>scheduled locally on the device</strong> and never pass through a remote push server. The app works normally if you decline the permission.</p>
+
+<h2>Apple Health (HealthKit)</h2>
+<p>Only if you turn on “Log workouts to Health” in Settings, the app records each workout in Apple Health when it ends. What it writes is the workout type you chose for the routine, the start and end time, and the workout duration; active energy (calories) estimated by iOS during the workout may be attached. These workouts also appear in the Fitness app.</p>
+<p>intava <strong>never reads data from Health.</strong> Workouts written to Health stay in Apple Health, are not sent to anyone (including the developer), and are not used for advertising or analytics. You can revoke access anytime in iOS Settings → Health → Data Access &amp; Devices.</p>
+<p>When the lock screen timer is on, the app runs an iOS workout session during a workout so the timer keeps going while the screen is off. If “Log workouts to Health” is off, that session is discarded and nothing is saved to Health.</p>
+
+<h2>Lock Screen &amp; Dynamic Island</h2>
+<p>During a workout, the remaining time and current interval are shown on the Lock Screen and in the Dynamic Island. This is created and updated entirely on the device and never passes through a remote push server.</p>
+
+<h2>Share image</h2>
+<p>“Share” on the finish screen turns the day's workout card into an image and hands it to the system share sheet. If you choose “Save Image,” iOS asks for permission to add it to Photos. The app never reads your photo library and keeps no copy of the image.</p>
 
 <h2>Exported files</h2>
 <p>“Export” in Settings creates a file containing your routines, workout log, and settings, and hands it to your device's share sheet. <strong>Where that file goes is entirely your choice.</strong> The app takes no part in it and keeps no copy.</p>
