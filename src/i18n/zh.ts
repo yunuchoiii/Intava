@@ -297,7 +297,7 @@ export const zh: Catalog = {
   /** 라이브 액티비티 출시 팝업 — 설치 뒤 한 번 */
   announce: {
     kicker: '新功能 · 实时活动',
-    title: '离开屏幕\n计时照常继续',
+    title: '无需打开 App\n剩余时间一目了然',
     desc: '在灵动岛和锁屏上随时查看训练进度。',
     island: '灵动岛',
     islandSub: '使用其他 App 时也能一眼看到剩余时间',
