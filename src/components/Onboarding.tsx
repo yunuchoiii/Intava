@@ -17,6 +17,7 @@ import * as Notifications from 'expo-notifications';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Animated,
   AppState,
   Linking,
   Platform,
@@ -153,6 +154,16 @@ const STEPS: Step[] = [
 function ColorsPage() {
   const [sel, setSel] = useState(1);
   const step = STEPS[sel];
+  /**
+   * 링도 원판처럼 녹아들며 바뀐다 — 다섯 단계의 링을 겹쳐 두고 고른 것만 0.6초에 걸쳐 드러낸다.
+   * 원판(PhaseFlood)과 같은 길이라, 한쪽만 휙 바뀌어 따로 놀지 않는다(사용자 지적).
+   */
+  const fades = useRef(STEPS.map((_, i) => new Animated.Value(i === 1 ? 1 : 0))).current;
+  useEffect(() => {
+    Animated.parallel(
+      fades.map((v, i) => Animated.timing(v, { toValue: i === sel ? 1 : 0, duration: 600, useNativeDriver: true }))
+    ).start();
+  }, [sel, fades]);
   const big = 250;
   const r = 114;
   const c = 2 * Math.PI * r;
@@ -164,13 +175,19 @@ function ColorsPage() {
           <View style={styles.bigDisc}>
             <PhaseFlood color={PHASE_COLOR[step.phase]} />
           </View>
-          <View style={[StyleSheet.absoluteFill, { transform: [{ rotate: '-90deg' }] }]}>
-            <Svg width={big} height={big}>
-              <Circle cx={big / 2} cy={big / 2} r={r} fill="none" stroke={step.track} strokeWidth={12} />
-              <Circle cx={big / 2} cy={big / 2} r={r} fill="none" stroke={step.ring} strokeWidth={12} strokeLinecap="round"
-                strokeDasharray={`${c} ${c}`} strokeDashoffset={c * 0.3} />
-            </Svg>
-          </View>
+          {STEPS.map((s, i) => (
+            <Animated.View
+              key={s.phase}
+              pointerEvents="none"
+              style={[StyleSheet.absoluteFill, { opacity: fades[i], transform: [{ rotate: '-90deg' }] }]}
+            >
+              <Svg width={big} height={big}>
+                <Circle cx={big / 2} cy={big / 2} r={r} fill="none" stroke={s.track} strokeWidth={12} />
+                <Circle cx={big / 2} cy={big / 2} r={r} fill="none" stroke={s.ring} strokeWidth={12} strokeLinecap="round"
+                  strokeDasharray={`${c} ${c}`} strokeDashoffset={c * 0.3} />
+              </Svg>
+            </Animated.View>
+          ))}
           <View style={[StyleSheet.absoluteFill, styles.center]} pointerEvents="none">
             <Text style={styles.bigPhase}>{t(`phase.${step.phase}`)}</Text>
             <Text style={[styles.bigClock, TABULAR]}>{step.clock}</Text>
