@@ -25,6 +25,7 @@ import { t } from '../src/i18n';
 import { selectionTick } from '../src/feedback';
 import { useSessionStable } from '../src/session';
 import { LiveAnnounce } from '../src/components/LiveAnnounce';
+import { Onboarding } from '../src/components/Onboarding';
 import { useToast } from '../src/components/Toast';
 import { sortPresets, useStore, type SortKey } from '../src/store';
 import { C, E2, GUTTER, LIFT, RADIUS, TABULAR } from '../src/theme';
@@ -68,7 +69,7 @@ export default function Home() {
   const miniSpace = useMiniTimerSpace();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const { presets, ready, settings, setSettings, duplicatePreset, deletePreset } = useStore();
+  const { presets, ready, settings, setSettings, duplicatePreset, deletePreset, onboarding } = useStore();
   const toast = useToast();
   const [tab, setTab] = useState<PresetKind>('routine');
   const [toolHeight, setToolHeight] = useState(TOOL_ROW_GUESS);
@@ -278,8 +279,12 @@ export default function Home() {
         </View>
       </View>
 
-      {/* 설치 뒤 한 번 — 라이브 액티비티 소개. 운동이 되살아나는 중이면 띄우지 않는다 */}
-      <LiveAnnounce blocked={!!session.preset} />
+      {/*
+        처음 설치한 사람은 온보딩(초기 설정)부터, 업데이트한 사람은 출시 팝업만.
+        온보딩이 끝나기 전에는 팝업을 막는다 — 끝낼 때 팝업도 본 것으로 적힌다(store).
+      */}
+      <Onboarding />
+      <LiveAnnounce blocked={!!session.preset || onboarding !== 'done'} />
     </Screen>
   );
 }

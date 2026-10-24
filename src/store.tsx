@@ -27,6 +27,18 @@ const KEY_RECORDS = 'intava:records';
  * 설정과는 따로, 백업에도 싣지 않는 기기 값으로 둔다.
  */
 const KEY_LAST_COUNTDOWN = 'intava:lastCountdown';
+/**
+ * 첫 설치 온보딩을 마쳤는가 — 'pending' | 'done'.
+ *
+ * **처음 이 값을 쓸 때 새 설치인지 가른다.** 루틴·기록이 있는지로 가르면 틀린다 —
+ * 예시 루틴은 앱이 심고, 기존 사용자가 루틴을 다 지웠을 수도 있다. 그래서 「루틴
+ * 저장소가 아예 만들어진 적이 없는가(null)」를 본다. 이전 판을 한 번이라도 연 사람은
+ * 예시 루틴이라도 저장돼 있으므로 null이 아니다 → 업데이트 사용자로 보고 'done'을
+ * 바로 적는다(온보딩 없이 출시 팝업만). 설치만 하고 연 적 없는 사람은 새 사용자다.
+ */
+const KEY_ONBOARDING = 'intava:onboarding';
+/** 출시 팝업을 본 표시(LiveAnnounce) — 새 사용자는 온보딩이 같은 소개를 하므로 끝낼 때 같이 적는다 */
+export const KEY_SEEN_ANNOUNCE = 'intava:seen:liveAnnounce';
 
 type Envelope<T> = { version: number; data: T };
 
@@ -146,6 +158,10 @@ type StoreValue = {
   mergePresets: (incoming: Preset[]) => void;
   /** 백업 불러오기 — 기록은 **덮어쓰지 않는다.** 없는 것만 더한다 */
   mergeRecords: (incoming: WorkoutRecord[]) => void;
+  /** 첫 설치 온보딩 — 불러오기 전에는 null */
+  onboarding: 'pending' | 'done' | null;
+  /** 온보딩 끝(시작하기·건너뛰기 둘 다) — 출시 팝업도 본 것으로 적는다 */
+  finishOnboarding: () => Promise<void>;
   /** 운동 기록 — 최근 것이 앞에 온다 */
   records: WorkoutRecord[];
   addRecord: (r: WorkoutRecord) => void;
@@ -160,6 +176,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettingsState] = useState<Settings>(DEFAULT_SETTINGS);
   const [records, setRecords] = useState<WorkoutRecord[]>([]);
   const [lastCountdownSec, setLastCountdownSec] = useState<number | undefined>(undefined);
+  const [onboarding, setOnboarding] = useState<'pending' | 'done' | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -168,7 +185,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const s = await load<Settings>(KEY_SETTINGS, DEFAULT_SETTINGS);
       const rec = await load<WorkoutRecord[]>(KEY_RECORDS, []);
       const cd = await load<number | null>(KEY_LAST_COUNTDOWN, null);
+      let ob = await load<'pending' | 'done' | null>(KEY_ONBOARDING, null);
+      if (ob !== 'pending' && ob !== 'done') {
+        // 처음 보는 판 — 예시 루틴을 심기 전에 가른다(KEY_ONBOARDING 주석)
+        ob = stored === null ? 'pending' : 'done';
+        void save(KEY_ONBOARDING, ob);
+      }
       if (!alive) return;
+      setOnboarding(ob);
       setRecords(Array.isArray(rec) ? rec : []);
       if (typeof cd === 'number') setLastCountdownSec(cd);
       if (stored === null) {
@@ -237,6 +261,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         }
       },
       deletePreset: (id: string) => persist((prev) => prev.filter((p) => p.id !== id)),
+      onboarding,
+      finishOnboarding: async () => {
+        // 출시 팝업 표시를 먼저 적는다 — 온보딩이 닫히는 순간 팝업이 저장소를 읽는다
+        await AsyncStorage.setItem(KEY_SEEN_ANNOUNCE, '1').catch(() => undefined);
+        await save(KEY_ONBOARDING, 'done');
+        setOnboarding('done');
+      },
       records,
       /** 최근 것이 앞 — 화면은 날짜로 다시 묶지만, 저장 자체는 시간순 역순이 자연스럽다 */
       addRecord: (r: WorkoutRecord) => persistRecords((prev) => [r, ...prev]),
@@ -292,7 +323,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           return [...prev, ...fresh].sort((a, b) => b.startedAt - a.startedAt);
         }),
     }),
-    [ready, presets, settings, lastCountdownSec, persist, records, persistRecords]
+    [ready, presets, settings, lastCountdownSec, onboarding, persist, records, persistRecords]
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
