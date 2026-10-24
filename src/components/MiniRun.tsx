@@ -49,7 +49,7 @@ export function MiniRun({ phase, width }: { phase: Phase; width: number }) {
   const R = 128;
   const c = 2 * Math.PI * R;
   return (
-    <View style={{ width, height: H * s, borderRadius: 48 * s, overflow: 'hidden', borderWidth: Math.max(1, 6 * s), borderColor: '#2A2A30' }}>
+    <View style={{ width, height: H * s, borderRadius: 48 * s, overflow: 'hidden' }}>
       <View style={[styles.base, { transform: [{ translateX: (W * (s - 1)) / 2 }, { translateY: (H * (s - 1)) / 2 }, { scale: s }] }]}>
         <PhaseFlood color={color} />
         {/* 상태 줄 + 아일랜드 */}
@@ -108,6 +108,14 @@ export function MiniRun({ phase, width }: { phase: Phase; width: number }) {
           </View>
         </View>
       </View>
+      {/*
+        테두리는 내용 **위에** 덧그린다. 상자 자체에 borderWidth를 주면 안쪽 내용이 그 두께만큼
+        밀려 오른쪽 여백만 좁아졌다(실기기) — 내용은 상자 폭 그대로 줄여 그린 것이라서다.
+      */}
+      <View
+        pointerEvents="none"
+        style={[StyleSheet.absoluteFill, { borderRadius: 48 * s, borderWidth: Math.max(1, 6 * s), borderColor: '#2A2A30' }]}
+      />
     </View>
   );
 }

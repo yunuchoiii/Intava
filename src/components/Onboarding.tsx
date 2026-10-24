@@ -42,7 +42,6 @@ import { PHASE_COLOR, TABULAR } from '../theme';
 import { ISLAND_MIN_INSET, IslandPill, LockCard, PreviewGlow } from './LiveAnnounce';
 import { NUM_BOLD } from './WorkoutCard';
 import { MiniRun } from './MiniRun';
-import { Portal } from './Overlay';
 import { PressBox } from './PressBox';
 
 const BG = '#17171C';
@@ -52,17 +51,14 @@ const ON = '#30C46C';
 
 type Perm = 'unknown' | 'undetermined' | 'granted' | 'denied';
 
-export function Onboarding() {
-  const { onboarding, finishOnboarding } = useStore();
-  if (onboarding !== 'pending') return null;
-  return (
-    <Portal>
-      <Pages onDone={() => void finishOnboarding()} />
-    </Portal>
-  );
-}
-
-function Pages({ onDone }: { onDone: () => void }) {
+/**
+ * 화면(app/onboarding.tsx, 풀스크린 모달)으로 띄운다 — 겹(Portal)이 아니다.
+ *
+ * 처음에는 시트처럼 뿌리의 겹으로 띄웠는데, 그 겹은 별도 창이라 건강 앱 권한 창이
+ * 그 **아래** 앱 창에 떠서 보이지 않았다. 건너뛰기로 겹이 닫히자 그제서야 드러났다(실기기).
+ * 알림 허용 창은 시스템 창이라 상관없었다. 모달 화면은 앱 창 안이라 권한 창이 그 위에 뜬다.
+ */
+export function OnboardingPages({ onDone }: { onDone: () => void }) {
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const island = insets.top >= ISLAND_MIN_INSET;
@@ -138,7 +134,7 @@ function ColorsPage({ width }: { width: number }) {
   const k = width / 393;
   const phones = [
     { phase: 'WARMUP' as const, x: -18, y: 74, w: 110, rot: 24, op: 0.42, side: 'l' },
-    { phase: 'COOLDOWN' as const, x: 393 - 18 - 110, y: 74, w: 110, rot: -24, op: 0.42, side: 'r' },
+    { phase: 'COOLDOWN' as const, x: 393 + 18 - 110, y: 74, w: 110, rot: -24, op: 0.42, side: 'r' },
     { phase: 'SET_REST' as const, x: 18, y: 42, w: 134, rot: 16, op: 0.72, side: 'l' },
     { phase: 'BLOCK_REST' as const, x: 393 - 18 - 134, y: 42, w: 134, rot: -16, op: 0.72, side: 'r' },
     { phase: 'WORK' as const, x: 114, y: 12, w: 165, rot: 0, op: 1, side: 'c' },
@@ -162,11 +158,29 @@ function ColorsPage({ width }: { width: number }) {
               top: p.y * k,
               width: p.w * k,
               height: p.w * k * (852 / 393),
-              opacity: p.op,
-              transform: [{ perspective: 800 }, { rotateY: `${p.rot}deg` }],
+              /*
+                3D 기울이기(perspective + rotateY) 대신 가로로만 눌러 비스듬히 선 것처럼 보인다.
+                3D로 기울이면 iOS가 목업을 저해상도로 굽고 기울여 글자가 깨졌고, 깊이로 다시
+                정렬해 바깥 목업이 안쪽 목업 앞으로 튀어나왔다(실기기). 납작한 변형은 둘 다 없다.
+              */
+              transform: [{ scaleX: Math.cos((p.rot * Math.PI) / 180) }],
             }}
           >
             <MiniRun phase={p.phase} width={p.w * k} />
+            {/*
+              흐리게 하는 것은 투명도가 아니라 **배경색 막**이다. 목업 자체를 반투명하게 하면
+              뒤에 깔린 목업의 숫자가 비쳐 겹쳐 보였고, 반투명한 채 기울이면 iOS가 저해상도로
+              한 번 굽고 기울여 글자가 깨졌다(실기기).
+            */}
+            {p.op < 1 && (
+              <View
+                pointerEvents="none"
+                style={[
+                  StyleSheet.absoluteFill,
+                  { borderRadius: 48 * ((p.w * k) / 393), backgroundColor: BG, opacity: 1 - p.op },
+                ]}
+              />
+            )}
           </View>
         ))}
         {labels.map((l) => (
