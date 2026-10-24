@@ -4,7 +4,7 @@
  * 사용법을 가르치지 않는다. **처음 한 번 하는 초기 설정**이다. 장마다 제목 한 줄 +
  * 설명 한 줄 + 컨트롤. 앱 안 설정은 스위치, iOS 권한은 버튼으로 가른다.
  *
- * 1. 색이 곧 단계 — 실행 화면 다섯 장을 부채꼴로(설정 없음)
+ * 1. 색이 곧 단계 — 단계 색 띠 다섯 줄과 할 일(설정 없음)
  * 2. 화면을 꺼도 알려 드려요 — 소리·진동 스위치 + 알림 권한(묻지 않음/허용됨/거부됨)
  * 3. 앱 밖에서도 타이머 — 라이브 액티비티·화면 꺼짐 방지 스위치(아일랜드 없는 기종은 잠금화면만)
  * 4. 건강 앱에 기록 — 켜는 순간에만 권한을 묻고, 허용됐을 때만 켜진 채 남긴다
@@ -38,10 +38,10 @@ import {
 } from '../../modules/intava-workout';
 import { t } from '../i18n';
 import { useStore } from '../store';
-import { PHASE_COLOR, TABULAR } from '../theme';
+import { PHASE_COLOR, TABULAR, floodColors } from '../theme';
+import type { Phase } from '../types';
 import { ISLAND_MIN_INSET, IslandPill, LockCard, PreviewGlow } from './LiveAnnounce';
 import { NUM_BOLD } from './WorkoutCard';
-import { MiniRun } from './MiniRun';
 import { PressBox } from './PressBox';
 
 const BG = '#17171C';
@@ -95,7 +95,7 @@ export function OnboardingPages({ onDone }: { onDone: () => void }) {
       >
         {pages.map((p) => (
           <View key={p} style={{ width, flex: 1 }}>
-            {p === 'colors' && <ColorsPage width={width} />}
+            {p === 'colors' && <ColorsPage />}
             {p === 'alerts' && <AlertsPage />}
             {p === 'live' && <LivePage width={width} island={island} />}
             {p === 'health' && <HealthPage />}
@@ -129,83 +129,48 @@ export function OnboardingPages({ onDone }: { onDone: () => void }) {
 
 // ---- 1장 ------------------------------------------------------------------
 
-/** 부채꼴 다섯 장 — 가운데 운동, 양옆으로 휴식·종목 전환, 끝에 웜업·쿨다운(시안 3a) */
-function ColorsPage({ width }: { width: number }) {
-  const k = width / 393;
-  const phones = [
-    { phase: 'WARMUP' as const, x: -18, y: 74, w: 110, rot: 24, op: 0.42, side: 'l' },
-    { phase: 'COOLDOWN' as const, x: 393 + 18 - 110, y: 74, w: 110, rot: -24, op: 0.42, side: 'r' },
-    { phase: 'SET_REST' as const, x: 18, y: 42, w: 134, rot: 16, op: 0.72, side: 'l' },
-    { phase: 'BLOCK_REST' as const, x: 393 - 18 - 134, y: 42, w: 134, rot: -16, op: 0.72, side: 'r' },
-    { phase: 'WORK' as const, x: 114, y: 12, w: 165, rot: 0, op: 1, side: 'c' },
-  ];
-  const labels = [
-    { phase: 'WARMUP' as const, x: 42, y: 350, size: 13, color: DIM },
-    { phase: 'SET_REST' as const, x: 96, y: 366, size: 13.5, color: SUB },
-    { phase: 'WORK' as const, x: 196.5, y: 388, size: 15, color: '#F7F7F8' },
-    { phase: 'BLOCK_REST' as const, x: 297, y: 366, size: 13.5, color: SUB },
-    { phase: 'COOLDOWN' as const, x: 351, y: 350, size: 13, color: DIM },
-  ];
+/**
+ * 색 띠 다섯 줄 — 단계 = 색 + 할 일(시안 4a).
+ *
+ * 처음에는 실행 화면 목업 다섯 장을 부채꼴로 놓았는데, 목업이 실제 화면과 달라 보여
+ * 오히려 헷갈렸다. 기기 그림 없이 **단계 색 자체**만 보여 주고, 색 옆에 그 단계에서
+ * 할 일을 붙여 「색 → 행동」이 한 번에 읽히게 한다. 띠의 색은 실행 화면 바탕과 같은 결
+ * (floodColors — 밝은 쪽에서 어두운 쪽으로)이다.
+ */
+const BANDS: { phase: Phase; act: string }[] = [
+  { phase: 'WARMUP', act: 'onboarding.actWarmup' },
+  { phase: 'WORK', act: 'onboarding.actWork' },
+  { phase: 'SET_REST', act: 'onboarding.actRest' },
+  { phase: 'BLOCK_REST', act: 'onboarding.actBlock' },
+  { phase: 'COOLDOWN', act: 'onboarding.actCooldown' },
+];
+
+function ColorsPage() {
   return (
-    <View style={{ flex: 1, gap: 22 * k }}>
-      <View style={{ height: 430 * k }}>
-        {phones.map((p) => (
-          <View
-            key={p.phase}
-            style={{
-              position: 'absolute',
-              left: p.x * k,
-              top: p.y * k,
-              width: p.w * k,
-              height: p.w * k * (852 / 393),
-              /*
-                3D 기울이기(perspective + rotateY) 대신 가로로만 눌러 비스듬히 선 것처럼 보인다.
-                3D로 기울이면 iOS가 목업을 저해상도로 굽고 기울여 글자가 깨졌고, 깊이로 다시
-                정렬해 바깥 목업이 안쪽 목업 앞으로 튀어나왔다(실기기). 납작한 변형은 둘 다 없다.
-              */
-              transform: [{ scaleX: Math.cos((p.rot * Math.PI) / 180) }],
-            }}
-          >
-            <MiniRun phase={p.phase} width={p.w * k} />
-            {/*
-              흐리게 하는 것은 투명도가 아니라 **배경색 막**이다. 목업 자체를 반투명하게 하면
-              뒤에 깔린 목업의 숫자가 비쳐 겹쳐 보였고, 반투명한 채 기울이면 iOS가 저해상도로
-              한 번 굽고 기울여 글자가 깨졌다(실기기).
-            */}
-            {p.op < 1 && (
-              <View
-                pointerEvents="none"
-                style={[
-                  StyleSheet.absoluteFill,
-                  { borderRadius: 48 * ((p.w * k) / 393), backgroundColor: BG, opacity: 1 - p.op },
-                ]}
-              />
-            )}
-          </View>
-        ))}
-        {labels.map((l) => (
-          <View
-            key={l.phase}
-            style={[styles.phaseLabel, { left: l.x * k - 60, top: l.y * k }]}
-          >
-            <View
-              style={{
-                width: l.phase === 'WORK' ? 8 : 7,
-                height: l.phase === 'WORK' ? 8 : 7,
-                borderRadius: 4,
-                backgroundColor: l.phase === 'WORK' ? '#FF4D5E' : PHASE_COLOR[l.phase],
-              }}
-            />
-            <Text style={{ fontSize: l.size, fontWeight: l.phase === 'WORK' ? '700' : '600', color: l.color }}>
-              {t(`phase.${l.phase}`)}
-            </Text>
-          </View>
-        ))}
+    <View style={styles.colorsPage}>
+      <View style={{ gap: 8 }}>
+        {BANDS.map((b) => {
+          const { light, base, dark } = floodColors(PHASE_COLOR[b.phase]);
+          return (
+            <LinearGradient
+              key={b.phase}
+              colors={[light, base, dark]}
+              locations={[0, 0.55, 1]}
+              start={{ x: 0.33, y: 0 }}
+              end={{ x: 0.67, y: 1 }}
+              style={styles.band}
+            >
+              <Text style={styles.bandName} numberOfLines={1}>
+                {t(`phase.${b.phase}`)}
+              </Text>
+              <Text style={styles.bandAct} numberOfLines={2}>
+                {t(b.act)}
+              </Text>
+            </LinearGradient>
+          );
+        })}
       </View>
-      <View style={{ paddingHorizontal: 28, gap: 8, alignItems: 'center' }}>
-        <Text style={[styles.title, { textAlign: 'center' }]}>{t('onboarding.colorsTitle')}</Text>
-        <Text style={[styles.desc, { textAlign: 'center' }]}>{t('onboarding.colorsDesc')}</Text>
-      </View>
+      <Heading title={t('onboarding.colorsTitle')} desc={t('onboarding.colorsDesc')} />
     </View>
   );
 }
@@ -478,7 +443,19 @@ const styles = StyleSheet.create({
   page: { flex: 1, paddingTop: 28, paddingHorizontal: 24, gap: 32 },
   title: { fontSize: 26, lineHeight: 34, fontWeight: '800', letterSpacing: -0.78, color: '#F7F7F8' },
   desc: { fontSize: 15, lineHeight: 22, color: SUB },
-  phaseLabel: { position: 'absolute', width: 120, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  colorsPage: { flex: 1, paddingTop: 16, paddingHorizontal: 24, justifyContent: 'space-between', gap: 24 },
+  band: {
+    height: 70,
+    borderRadius: 18,
+    borderCurve: 'continuous',
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  bandName: { fontSize: 19, fontWeight: '800', color: '#FFFFFF' },
+  bandAct: { flexShrink: 1, textAlign: 'right', fontSize: 14, fontWeight: '600', color: 'rgba(255,255,255,0.85)' },
   card: { borderRadius: 20, borderCurve: 'continuous', backgroundColor: 'rgba(255,255,255,0.05)' },
   rule: { height: 1, marginLeft: 18, backgroundColor: 'rgba(255,255,255,0.07)' },
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingVertical: 16, paddingHorizontal: 18 },
