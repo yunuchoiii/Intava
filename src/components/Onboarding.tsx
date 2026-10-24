@@ -4,7 +4,7 @@
  * 사용법을 가르치지 않는다. **처음 한 번 하는 초기 설정**이다. 장마다 제목 한 줄 +
  * 설명 한 줄 + 컨트롤. 앱 안 설정은 스위치, iOS 권한은 버튼으로 가른다.
  *
- * 1. 색이 곧 단계 — 단계 색 띠 다섯 줄과 할 일(설정 없음)
+ * 1. 색이 곧 단계 — 큰 링 + 단계 링 다섯(누르면 큰 링 색이 바뀜, 설정 없음)
  * 2. 화면을 꺼도 알려 드려요 — 소리·진동 스위치 + 알림 권한(묻지 않음/허용됨/거부됨)
  * 3. 앱 밖에서도 타이머 — 라이브 액티비티·화면 꺼짐 방지 스위치(아일랜드 없는 기종은 잠금화면만)
  * 4. 건강 앱에 기록 — 켜는 순간에만 권한을 묻고, 허용됐을 때만 켜진 채 남긴다
@@ -38,10 +38,12 @@ import {
 } from '../../modules/intava-workout';
 import { t } from '../i18n';
 import { useStore } from '../store';
-import { PHASE_COLOR, TABULAR, floodColors } from '../theme';
+import { selectionTick } from '../feedback';
+import { PHASE_COLOR, TABULAR } from '../theme';
 import type { Phase } from '../types';
 import { ISLAND_MIN_INSET, IslandPill, LockCard, PreviewGlow } from './LiveAnnounce';
 import { NUM_BOLD } from './WorkoutCard';
+import { PhaseFlood } from './PhaseFlood';
 import { PressBox } from './PressBox';
 
 const BG = '#17171C';
@@ -130,47 +132,88 @@ export function OnboardingPages({ onDone }: { onDone: () => void }) {
 // ---- 1장 ------------------------------------------------------------------
 
 /**
- * 색 띠 다섯 줄 — 단계 = 색 + 할 일(시안 4a).
+ * 큰 링 + 단계 링 다섯 — 시안 4g.
  *
- * 처음에는 실행 화면 목업 다섯 장을 부채꼴로 놓았는데, 목업이 실제 화면과 달라 보여
- * 오히려 헷갈렸다. 기기 그림 없이 **단계 색 자체**만 보여 주고, 색 옆에 그 단계에서
- * 할 일을 붙여 「색 → 행동」이 한 번에 읽히게 한다. 띠의 색은 실행 화면 바탕과 같은 결
- * (floodColors — 밝은 쪽에서 어두운 쪽으로)이다.
+ * 실행 화면의 링과 유리 원판을 큰 링 하나로 가져오고, 아래 작은 링 다섯 개를 단계
+ * 버튼으로 둔다. 누르면 큰 링이 그 단계의 색으로 바뀐다 — 원판은 실행 화면과 같은
+ * PhaseFlood라 색이 녹아들듯 건너간다. 설명 대신 직접 눌러 「색이 곧 단계」를 겪게 한다.
+ *
+ * 처음에는 실행 화면 목업 다섯 장(부채꼴)을, 다음엔 색 띠(4a)를 썼다. 목업은 실제
+ * 화면과 달라 보였고, 색 띠는 정적이었다(사용자 결정).
  */
-const BANDS: { phase: Phase; act: string }[] = [
-  { phase: 'WARMUP', act: 'onboarding.actWarmup' },
-  { phase: 'WORK', act: 'onboarding.actWork' },
-  { phase: 'SET_REST', act: 'onboarding.actRest' },
-  { phase: 'BLOCK_REST', act: 'onboarding.actBlock' },
-  { phase: 'COOLDOWN', act: 'onboarding.actCooldown' },
+type Step = { phase: Phase; ring: string; track: string; clock: string };
+const STEPS: Step[] = [
+  { phase: 'WARMUP', ring: '#C96A1E', track: 'rgba(201,106,30,0.3)', clock: '0:34' },
+  { phase: 'WORK', ring: '#FF4D5E', track: 'rgba(255,77,94,0.3)', clock: '0:39' },
+  { phase: 'SET_REST', ring: '#2BB3A3', track: 'rgba(18,137,124,0.35)', clock: '0:20' },
+  { phase: 'BLOCK_REST', ring: '#5B83F0', track: 'rgba(43,91,215,0.35)', clock: '0:09' },
+  { phase: 'COOLDOWN', ring: '#6C93B5', track: 'rgba(62,107,143,0.4)', clock: '1:38' },
 ];
 
 function ColorsPage() {
+  const [sel, setSel] = useState(1);
+  const step = STEPS[sel];
+  const big = 250;
+  const r = 114;
+  const c = 2 * Math.PI * r;
   return (
     <View style={styles.colorsPage}>
-      <View style={{ gap: 8 }}>
-        {BANDS.map((b) => {
-          const { light, base, dark } = floodColors(PHASE_COLOR[b.phase]);
-          return (
-            <LinearGradient
-              key={b.phase}
-              colors={[light, base, dark]}
-              locations={[0, 0.55, 1]}
-              start={{ x: 0.33, y: 0 }}
-              end={{ x: 0.67, y: 1 }}
-              style={styles.band}
-            >
-              <Text style={styles.bandName} numberOfLines={1}>
-                {t(`phase.${b.phase}`)}
-              </Text>
-              <Text style={styles.bandAct} numberOfLines={2}>
-                {t(b.act)}
-              </Text>
-            </LinearGradient>
-          );
-        })}
+      <View style={styles.colorsStage}>
+        <View style={{ width: big, height: big }}>
+          {/* 유리 원판 — 실행 화면 바탕과 같은 PhaseFlood라 단계를 바꾸면 색이 녹아들며 건너간다 */}
+          <View style={styles.bigDisc}>
+            <PhaseFlood color={PHASE_COLOR[step.phase]} />
+          </View>
+          <View style={[StyleSheet.absoluteFill, { transform: [{ rotate: '-90deg' }] }]}>
+            <Svg width={big} height={big}>
+              <Circle cx={big / 2} cy={big / 2} r={r} fill="none" stroke={step.track} strokeWidth={12} />
+              <Circle cx={big / 2} cy={big / 2} r={r} fill="none" stroke={step.ring} strokeWidth={12} strokeLinecap="round"
+                strokeDasharray={`${c} ${c}`} strokeDashoffset={c * 0.3} />
+            </Svg>
+          </View>
+          <View style={[StyleSheet.absoluteFill, styles.center]} pointerEvents="none">
+            <Text style={styles.bigPhase}>{t(`phase.${step.phase}`)}</Text>
+            <Text style={[styles.bigClock, TABULAR]}>{step.clock}</Text>
+          </View>
+        </View>
+
+        <View style={styles.stepRow}>
+          {STEPS.map((s, i) => {
+            const on = i === sel;
+            const sc = 2 * Math.PI * 18;
+            return (
+              <PressBox
+                key={s.phase}
+                onPress={() => {
+                  if (i !== sel) selectionTick();
+                  setSel(i);
+                }}
+                haptic="none"
+                radius={14}
+                scaleTo={0.92}
+                dim={0}
+                style={[styles.step, { opacity: on ? 1 : 0.5 }]}
+                accessibilityLabel={t(`phase.${s.phase}`)}
+              >
+                <View style={{ transform: [{ rotate: '-90deg' }] }}>
+                  <Svg width={44} height={44}>
+                    <Circle cx={22} cy={22} r={18} fill="none" stroke={s.track} strokeWidth={6} />
+                    <Circle cx={22} cy={22} r={18} fill="none" stroke={s.ring} strokeWidth={6} strokeLinecap="round"
+                      strokeDasharray={`${sc} ${sc}`} strokeDashoffset={sc * 0.3} />
+                  </Svg>
+                </View>
+                <Text style={[styles.stepName, on && styles.stepNameOn]} numberOfLines={1}>
+                  {t(`phase.${s.phase}`)}
+                </Text>
+              </PressBox>
+            );
+          })}
+        </View>
       </View>
-      <Heading title={t('onboarding.colorsTitle')} desc={t('onboarding.colorsDesc')} />
+      <View style={{ paddingHorizontal: 4, gap: 8, alignItems: 'center' }}>
+        <Text style={[styles.title, { textAlign: 'center' }]}>{t('onboarding.colorsTitle')}</Text>
+        <Text style={[styles.desc, { textAlign: 'center' }]}>{t('onboarding.colorsDesc')}</Text>
+      </View>
     </View>
   );
 }
@@ -443,19 +486,29 @@ const styles = StyleSheet.create({
   page: { flex: 1, paddingTop: 28, paddingHorizontal: 24, gap: 32 },
   title: { fontSize: 26, lineHeight: 34, fontWeight: '800', letterSpacing: -0.78, color: '#F7F7F8' },
   desc: { fontSize: 15, lineHeight: 22, color: SUB },
-  colorsPage: { flex: 1, paddingTop: 16, paddingHorizontal: 24, justifyContent: 'space-between', gap: 24 },
-  band: {
-    height: 70,
-    borderRadius: 18,
-    borderCurve: 'continuous',
-    paddingHorizontal: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
+  colorsPage: { flex: 1, paddingHorizontal: 24, gap: 22 },
+  colorsStage: { height: 430, alignItems: 'center', justifyContent: 'center', gap: 34 },
+  bigDisc: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    right: 20,
+    bottom: 20,
+    borderRadius: 105,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 18 },
   },
-  bandName: { fontSize: 19, fontWeight: '800', color: '#FFFFFF' },
-  bandAct: { flexShrink: 1, textAlign: 'right', fontSize: 14, fontWeight: '600', color: 'rgba(255,255,255,0.85)' },
+  center: { alignItems: 'center', justifyContent: 'center', gap: 4 },
+  bigPhase: { fontSize: 18, fontWeight: '700', color: '#FFFFFF' },
+  /** 실행 화면 링 안 숫자와 같은 글꼴 — 시스템 800, 고정폭 숫자(Ring.tsx의 clock) */
+  bigClock: { fontSize: 66, fontWeight: '800', letterSpacing: -3, color: '#FFFFFF' },
+  stepRow: { alignSelf: 'stretch', flexDirection: 'row', justifyContent: 'space-between' },
+  step: { width: 64, alignItems: 'center', gap: 8, paddingVertical: 4 },
+  stepName: { fontSize: 12.5, fontWeight: '600', color: '#C9CCD1' },
+  stepNameOn: { fontWeight: '700', color: '#F7F7F8' },
   card: { borderRadius: 20, borderCurve: 'continuous', backgroundColor: 'rgba(255,255,255,0.05)' },
   rule: { height: 1, marginLeft: 18, backgroundColor: 'rgba(255,255,255,0.07)' },
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 16, paddingVertical: 16, paddingHorizontal: 18 },
