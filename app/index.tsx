@@ -25,7 +25,6 @@ import { t } from '../src/i18n';
 import { selectionTick } from '../src/feedback';
 import { useSessionStable } from '../src/session';
 import { LiveAnnounce } from '../src/components/LiveAnnounce';
-import { Onboarding } from '../src/components/Onboarding';
 import { useToast } from '../src/components/Toast';
 import { sortPresets, useStore, type SortKey } from '../src/store';
 import { C, E2, GUTTER, LIFT, RADIUS, TABULAR } from '../src/theme';
@@ -149,6 +148,14 @@ export default function Home() {
     restored.current = true;
     router.push('/run');
   }, [session.restoredFromStorage, session.preset, session.done, router]);
+
+  /** 첫 설치면 온보딩 화면을 한 번 띄운다(store의 KEY_ONBOARDING) */
+  const askedOnboarding = useRef(false);
+  useEffect(() => {
+    if (askedOnboarding.current || onboarding !== 'pending') return;
+    askedOnboarding.current = true;
+    router.push('/onboarding');
+  }, [onboarding, router]);
 
   /** 세그먼트 탭을 누르면 페이지를 옮긴다 — 스와이프와 같은 상태를 공유한다 */
   const goTab = useCallback(
@@ -283,7 +290,6 @@ export default function Home() {
         처음 설치한 사람은 온보딩(초기 설정)부터, 업데이트한 사람은 출시 팝업만.
         온보딩이 끝나기 전에는 팝업을 막는다 — 끝낼 때 팝업도 본 것으로 적힌다(store).
       */}
-      <Onboarding />
       <LiveAnnounce blocked={!!session.preset || onboarding !== 'done'} />
     </Screen>
   );
