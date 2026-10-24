@@ -232,7 +232,8 @@ function AlertsPage() {
   const [perm, ask] = useNotifPerm();
   return (
     <View style={styles.page}>
-      <Heading title={t('onboarding.alertsTitle')} desc={t('onboarding.alertsDesc')} />
+      {/* 부제 없음 — 아래 스위치 설명이 같은 말을 이미 한다 */}
+      <Heading title={t('onboarding.alertsTitle')} />
       <View style={styles.card}>
         <ToggleRow
           title={t('settings.sound')}
@@ -318,7 +319,7 @@ function LivePage({ width, island }: { width: number; island: boolean }) {
         />
         <View style={styles.rule} />
         <ToggleRow
-          title={t('settings.keepAwake')}
+          title={t('onboarding.keepAwake')}
           note={t('onboarding.keepAwakeNote')}
           value={settings.keepScreenOn}
           onChange={(v) => setSettings({ keepScreenOn: v })}
@@ -436,11 +437,11 @@ function Rings() {
 
 // ---- 공통 -----------------------------------------------------------------
 
-function Heading({ title, desc }: { title: string; desc: string }) {
+function Heading({ title, desc }: { title: string; desc?: string }) {
   return (
     <View style={{ paddingHorizontal: 4, gap: 8 }}>
       <Text style={styles.title}>{title}</Text>
-      <Text style={styles.desc}>{desc}</Text>
+      {!!desc && <Text style={styles.desc}>{desc}</Text>}
     </View>
   );
 }
