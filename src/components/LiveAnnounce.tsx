@@ -18,15 +18,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { t } from '../i18n';
 import { TABULAR } from '../theme';
+import { KEY_SEEN_ANNOUNCE } from '../store';
 import { Portal } from './Overlay';
 import { PressBox } from './PressBox';
 
-const KEY = 'intava:seen:liveAnnounce';
+const KEY = KEY_SEEN_ANNOUNCE;
 const RED = '#FF4D5E';
 const TEAL = '#2BD9C3';
 
 /** 다이내믹 아일랜드가 있는 기종 — 상단 안전 영역이 59pt 안팎이다(노치는 47~50) */
-const ISLAND_MIN_INSET = 54;
+export const ISLAND_MIN_INSET = 54;
 
 export function LiveAnnounce({ blocked }: { blocked: boolean }) {
   const [show, setShow] = useState(false);
@@ -121,7 +122,7 @@ function Row({ icon, title }: { icon: React.ReactNode; title: string }) {
 }
 
 /** 미리보기 판 — 위는 운동(빨강), 아래는 휴식(청록)이 번진다. 그림 순서와 아래 줄 순서가 같다 */
-function PreviewGlow({ w, h }: { w: number; h: number }) {
+export function PreviewGlow({ w, h }: { w: number; h: number }) {
   if (!w || !h) return null;
   return (
     <Svg style={StyleSheet.absoluteFill} width={w} height={h}>
@@ -169,7 +170,7 @@ function MiniRing({ size, stroke, color, track, remain }: { size: number; stroke
 }
 
 /** 접힌 아일랜드 — 왼쪽 링, 오른쪽 남은 시간(운동 구간) */
-function IslandPill() {
+export function IslandPill() {
   return (
     <View style={styles.pill}>
       <MiniRing size={22} stroke={3.4} color={RED} track="rgba(211,47,62,0.3)" remain={0.7} />
@@ -182,7 +183,7 @@ function IslandPill() {
  * 잠금화면 카드 — 실제 배너를 1110pt 폭 기준으로 그린 시안 값을 폭에 맞춰 줄인 것.
  * 휴식 구간이라 「다음에 무엇을 하는지」가 바로 읽힌다.
  */
-function LockCard({ width }: { width: number }) {
+export function LockCard({ width }: { width: number }) {
   const k = width / 1110;
   const ring = 156 * k;
   return (

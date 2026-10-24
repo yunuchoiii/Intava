@@ -301,6 +301,42 @@ export const en: Catalog = {
   },
 
   /** 라이브 액티비티 — 다이내믹 아일랜드 · 잠금화면 */
+  /** 첫 설치 온보딩 — 초기 설정 4장(Onboarding.tsx) */
+  onboarding: {
+    skip: 'Skip',
+    next: 'Next',
+    start: 'Get started',
+    colorsTitle: 'The color tells you\nwhat to do now',
+    colorsDesc: 'The whole screen changes color with each phase.',
+    alertsTitle: 'Alerts, even with the screen off',
+    alertsDesc: 'Sound and vibration mark every interval change.',
+    soundNote: 'Interval start/end tones and countdown',
+    vibrationNote: 'Feel it even with the sound down',
+    iosPerm: 'iOS PERMISSIONS',
+    notif: 'Notifications',
+    notifNote: 'Interval changes and workout end, even with the app closed',
+    notifAllow: 'Allow Notifications',
+    notifAllowed: 'Allowed',
+    notifOpenSettings: 'Allow in Settings',
+    notifDeniedNote: 'Notifications are off. Turn them on in iOS Settings → intava → Notifications.',
+    liveTitle: 'See the timer outside the app',
+    liveDesc: 'Time left stays visible in other apps and on the Lock Screen.',
+    liveTitleLock: 'See the timer on the Lock Screen',
+    liveDescLock: 'Just wake your phone to see the time left.',
+    liveLock: 'Lock Screen timer',
+    liveNote: 'Time left and the next interval',
+    keepAwakeNote: 'Uses more battery when on',
+    healthTitle: 'Log workouts to Health',
+    healthDesc: 'Workout time and calories add to your activity.',
+    healthNote: 'Turning this on asks for Health access',
+    healthDenied: 'Access is off. Turn it on in ',
+    healthPath: 'Settings → Health → Data Access & Devices → intava',
+    healthDeniedTail: '.',
+    sampleWorkout: 'Interval Training',
+    sampleMeta: 'intava · Today 7:12 AM',
+    sampleRoutine: 'Morning Full Body',
+  },
+
   /** 라이브 액티비티 출시 팝업 — 설치 뒤 한 번 */
   announce: {
     kicker: 'NEW · LIVE ACTIVITIES',
