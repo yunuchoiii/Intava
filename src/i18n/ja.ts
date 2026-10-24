@@ -294,6 +294,53 @@ export const ja: Catalog = {
   },
 
   /** 라이브 액티비티 — 다이내믹 아일랜드 · 잠금화면 */
+  /** 첫 설치 온보딩 — 초기 설정 4장(Onboarding.tsx) */
+  onboarding: {
+    skip: 'スキップ',
+    next: '次へ',
+    start: 'はじめる',
+    colorsTitle: '色を見れば\n今どの段階かわかります',
+    colorsDesc: '運動の段階に合わせて画面の色が変わります。',
+    alertsTitle: '画面を消してもお知らせ',
+    soundNote: '区間切り替えの通知音とカウントダウン',
+    vibrationNote: '音がなくても区間の切り替えを知らせます',
+    iosPerm: 'iOS の許可',
+    notif: '通知',
+    notifNote: 'アプリが停止しても区間の切り替えを通知',
+    notifAllow: '通知を許可',
+    notifAllowed: '許可済み',
+    notifOpenSettings: '設定で許可',
+    notifDeniedNote: '通知がオフです。iOSの設定 → intava → 通知 でオンにできます。',
+    liveTitle: 'アプリを開かなくても\nタイマーがひと目で',
+    liveDesc: 'ほかのアプリやロック画面でも残り時間を確認できます。',
+    liveTitleLock: 'ロック画面でも\nタイマーがひと目で',
+    liveDescLock: 'ロック画面でも残り時間を確認できます。',
+    liveLock: 'ロック画面のタイマー',
+    liveNote: '残り時間と次の区間を表示',
+    keepAwake: '運動中は画面をつけたまま',
+    keepAwakeNote: '運動している間、画面を消さずにおきます',
+    healthTitle: 'ワークアウトをヘルスケアに',
+    healthDesc: 'ワークアウトをAppleのヘルスケアに保存します。',
+    healthNote: '運動を終えるとヘルスケアに記録します',
+    healthDenied: '許可がオフです。',
+    healthPath: '設定 → ヘルスケア → データアクセスとデバイス → intava',
+    healthDeniedTail: ' でオンにできます。',
+    sampleWorkout: 'インターバルトレーニング',
+    sampleMeta: 'intava · 今日 午前7:12',
+    sampleRoutine: '朝の全身ルーティン',
+  },
+
+  /** 라이브 액티비티 출시 팝업 — 설치 뒤 한 번 */
+  announce: {
+    kicker: '新機能 · ライブアクティビティ',
+    title: 'アプリを開かなくても\n残り時間がひと目で',
+    desc: 'ダイナミックアイランドとロック画面で、トレーニングの進み具合をすぐに確認できます。',
+    island: 'ダイナミックアイランド',
+    lock: 'ロック画面',
+    ok: 'はじめる',
+    sampleName: 'ペックデックフライ',
+  },
+
   live: {
     next: '次: {{what}}',
     subWork: '{{sub}} · 次: {{next}}',

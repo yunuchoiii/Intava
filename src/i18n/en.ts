@@ -301,6 +301,53 @@ export const en: Catalog = {
   },
 
   /** 라이브 액티비티 — 다이내믹 아일랜드 · 잠금화면 */
+  /** 첫 설치 온보딩 — 초기 설정 4장(Onboarding.tsx) */
+  onboarding: {
+    skip: 'Skip',
+    next: 'Next',
+    start: 'Get started',
+    colorsTitle: 'See your phase\nat a glance by color',
+    colorsDesc: 'The screen color changes with each workout phase.',
+    alertsTitle: 'Alerts, even with the screen off',
+    soundNote: 'Interval change tones and countdown',
+    vibrationNote: 'Signals interval changes without sound',
+    iosPerm: 'iOS PERMISSIONS',
+    notif: 'Notifications',
+    notifNote: 'Interval changes, even if the app is stopped',
+    notifAllow: 'Allow Notifications',
+    notifAllowed: 'Allowed',
+    notifOpenSettings: 'Allow in Settings',
+    notifDeniedNote: 'Notifications are off. Turn them on in iOS Settings → intava → Notifications.',
+    liveTitle: 'Your timer at a glance,\nwithout opening the app',
+    liveDesc: 'See time left in other apps and on the Lock Screen.',
+    liveTitleLock: 'Your timer at a glance\non the Lock Screen',
+    liveDescLock: 'See time left right on the Lock Screen.',
+    liveLock: 'Lock Screen timer',
+    liveNote: 'Shows time left and the next interval',
+    keepAwake: 'Keep screen on during workouts',
+    keepAwakeNote: 'Keeps the screen on while you work out',
+    healthTitle: 'Log workouts to Health',
+    healthDesc: 'Saves your workouts to Apple Health.',
+    healthNote: 'Logs each workout to Health when you finish',
+    healthDenied: 'Access is off. Turn it on in ',
+    healthPath: 'Settings → Health → Data Access & Devices → intava',
+    healthDeniedTail: '.',
+    sampleWorkout: 'Interval Training',
+    sampleMeta: 'intava · Today 7:12 AM',
+    sampleRoutine: 'Morning Full Body',
+  },
+
+  /** 라이브 액티비티 출시 팝업 — 설치 뒤 한 번 */
+  announce: {
+    kicker: 'NEW · LIVE ACTIVITIES',
+    title: 'See time left at a glance,\nwithout opening the app',
+    desc: 'Check your workout progress right from the Dynamic Island and Lock Screen.',
+    island: 'Dynamic Island',
+    lock: 'Lock Screen',
+    ok: 'Get started',
+    sampleName: 'Pec Deck Fly',
+  },
+
   live: {
     next: 'Next: {{what}}',
     subWork: '{{sub}} · Next: {{next}}',

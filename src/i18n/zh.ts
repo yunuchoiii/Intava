@@ -294,6 +294,53 @@ export const zh: Catalog = {
   },
 
   /** 라이브 액티비티 — 다이내믹 아일랜드 · 잠금화면 */
+  /** 첫 설치 온보딩 — 초기 설정 4장(Onboarding.tsx) */
+  onboarding: {
+    skip: '跳过',
+    next: '下一步',
+    start: '开始使用',
+    colorsTitle: '看颜色\n就知道现在处于哪个阶段',
+    colorsDesc: '屏幕颜色会随训练阶段变化。',
+    alertsTitle: '熄屏也会提醒你',
+    soundNote: '区间切换提示音和倒数',
+    vibrationNote: '无声也能提醒区间切换',
+    iosPerm: 'iOS 权限',
+    notif: '通知',
+    notifNote: 'App 停止运行时也会提醒区间切换',
+    notifAllow: '允许通知',
+    notifAllowed: '已允许',
+    notifOpenSettings: '在设置中允许',
+    notifDeniedNote: '通知已关闭。可在 iOS 设置 → intava → 通知 中打开。',
+    liveTitle: '无需打开 App\n计时一目了然',
+    liveDesc: '在其他 App 和锁屏上也能查看剩余时间。',
+    liveTitleLock: '在锁屏上\n计时一目了然',
+    liveDescLock: '在锁屏上也能查看剩余时间。',
+    liveLock: '锁屏计时',
+    liveNote: '显示剩余时间和下一个区间',
+    keepAwake: '训练时保持屏幕常亮',
+    keepAwakeNote: '训练期间屏幕保持开启',
+    healthTitle: '把训练记录到健康',
+    healthDesc: '将训练记录保存到 Apple「健康」。',
+    healthNote: '训练结束后记录到「健康」',
+    healthDenied: '权限已关闭。可在 ',
+    healthPath: '设置 → 健康 → 数据访问与设备 → intava',
+    healthDeniedTail: ' 中打开。',
+    sampleWorkout: '间歇训练',
+    sampleMeta: 'intava · 今天 上午7:12',
+    sampleRoutine: '晨间全身训练',
+  },
+
+  /** 라이브 액티비티 출시 팝업 — 설치 뒤 한 번 */
+  announce: {
+    kicker: '新功能 · 实时活动',
+    title: '无需打开 App\n剩余时间一目了然',
+    desc: '在灵动岛和锁屏上随时查看训练进度。',
+    island: '灵动岛',
+    lock: '锁屏',
+    ok: '开始使用',
+    sampleName: '蝴蝶机夹胸',
+  },
+
   live: {
     next: '下一个：{{what}}',
     subWork: '{{sub}} · 下一个：{{next}}',

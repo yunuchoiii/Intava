@@ -323,6 +323,53 @@ export const ko = {
     imageSaved: '이미지를 사진 앱에 저장했습니다',
   },
 
+  /** 첫 설치 온보딩 — 초기 설정 4장(Onboarding.tsx) */
+  onboarding: {
+    skip: '건너뛰기',
+    next: '다음',
+    start: '시작하기',
+    colorsTitle: '색만 봐도 지금\n어떤 단계인지 알 수 있어요',
+    colorsDesc: '운동 단계에 따라 화면 색상이 바뀌어요.',
+    alertsTitle: '화면을 꺼도 알려드려요',
+    soundNote: '구간 전환 알림음과 카운트다운',
+    vibrationNote: '소리 없이도 구간 전환을 알려줘요',
+    iosPerm: 'iOS 권한',
+    notif: '알림',
+    notifNote: '앱이 중단되어도 구간 전환을 알려줘요',
+    notifAllow: '알림 허용',
+    notifAllowed: '허용됨',
+    notifOpenSettings: '설정에서 허용',
+    notifDeniedNote: '알림이 꺼져 있어요. iOS 설정 → intava → 알림에서 켤 수 있어요.',
+    liveTitle: '앱을 열지 않아도\n타이머를 한눈에',
+    liveDesc: '다른 앱이나 잠금화면에서도 남은 시간을 확인해요.',
+    liveTitleLock: '잠금화면에서도\n타이머를 한눈에',
+    liveDescLock: '잠금화면에서도 남은 시간을 확인해요.',
+    liveLock: '잠금화면 타이머',
+    liveNote: '남은 시간과 다음 구간 표시',
+    keepAwake: '운동 중 화면 꺼짐 방지',
+    keepAwakeNote: '운동하는 동안 화면을 계속 켜둬요',
+    healthTitle: '운동을 건강 앱에 남겨요',
+    healthDesc: '운동 기록을 Apple 건강 앱에 저장해요.',
+    healthNote: '운동을 마치면 건강 앱에 기록해요',
+    healthDenied: '권한이 꺼져 있어요. ',
+    healthPath: '설정 → 건강 → 데이터 접근 및 기기 → intava',
+    healthDeniedTail: '에서 켤 수 있어요.',
+    sampleWorkout: '인터벌 트레이닝',
+    sampleMeta: 'intava · 오늘 오전 7:12',
+    sampleRoutine: '아침 전신 루틴',
+  },
+
+  /** 라이브 액티비티 출시 팝업 — 설치 뒤 한 번 */
+  announce: {
+    kicker: '새 기능 · 라이브 액티비티',
+    title: '앱을 열지 않아도\n남은 시간을 한눈에',
+    desc: '다이내믹 아일랜드와 잠금화면에서 운동 진행 상황을 바로 확인하세요.',
+    island: '다이내믹 아일랜드',
+    lock: '잠금화면',
+    ok: '시작하기',
+    sampleName: '펙덱플라이',
+  },
+
   /** 라이브 액티비티 — 다이내믹 아일랜드 · 잠금화면 */
   live: {
     next: '다음: {{what}}',

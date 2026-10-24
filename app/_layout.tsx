@@ -148,6 +148,11 @@ export default function RootLayout() {
             <Stack.Screen name="records" />
             {/* 방침·지원 — 설정에서 옆으로 들어온다 */}
             <Stack.Screen name="legal" />
+            {/* 첫 설치 온보딩 — 앱 창 안의 모달이라 건강 앱 권한 창이 그 위에 뜬다(Onboarding.tsx) */}
+            <Stack.Screen
+              name="onboarding"
+              options={{ presentation: 'fullScreenModal', animation: 'fade', gestureEnabled: false }}
+            />
           </Stack>
 
           <MiniTimer />
