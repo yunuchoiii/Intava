@@ -17,7 +17,6 @@ import * as Notifications from 'expo-notifications';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Animated,
   AppState,
   Linking,
   Platform,
@@ -136,8 +135,9 @@ export function OnboardingPages({ onDone }: { onDone: () => void }) {
  * 큰 링 + 단계 링 다섯 — 시안 4g.
  *
  * 실행 화면의 링과 유리 원판을 큰 링 하나로 가져오고, 아래 작은 링 다섯 개를 단계
- * 버튼으로 둔다. 누르면 큰 링이 그 단계의 색으로 바뀐다 — 원판은 실행 화면과 같은
- * PhaseFlood라 색이 녹아들듯 건너간다. 설명 대신 직접 눌러 「색이 곧 단계」를 겪게 한다.
+ * 버튼으로 둔다. 누르면 큰 링(원판·링)이 그 단계의 색으로 바로 바뀐다. 설명 대신
+ * 직접 눌러 「색이 곧 단계」를 겪게 한다. 원판만 녹아들고 링은 휙 바뀌니 따로 놀았고,
+ * 둘 다 녹아들게도 해 봤지만 둘 다 즉시 바뀌는 쪽으로 정했다(사용자 결정).
  *
  * 처음에는 실행 화면 목업 다섯 장(부채꼴)을, 다음엔 색 띠(4a)를 썼다. 목업은 실제
  * 화면과 달라 보였고, 색 띠는 정적이었다(사용자 결정).
@@ -154,16 +154,6 @@ const STEPS: Step[] = [
 function ColorsPage() {
   const [sel, setSel] = useState(1);
   const step = STEPS[sel];
-  /**
-   * 링도 원판처럼 녹아들며 바뀐다 — 다섯 단계의 링을 겹쳐 두고 고른 것만 0.6초에 걸쳐 드러낸다.
-   * 원판(PhaseFlood)과 같은 길이라, 한쪽만 휙 바뀌어 따로 놀지 않는다(사용자 지적).
-   */
-  const fades = useRef(STEPS.map((_, i) => new Animated.Value(i === 1 ? 1 : 0))).current;
-  useEffect(() => {
-    Animated.parallel(
-      fades.map((v, i) => Animated.timing(v, { toValue: i === sel ? 1 : 0, duration: 600, useNativeDriver: true }))
-    ).start();
-  }, [sel, fades]);
   const big = 250;
   const r = 114;
   const c = 2 * Math.PI * r;
@@ -171,23 +161,18 @@ function ColorsPage() {
     <View style={styles.colorsPage}>
       <View style={styles.colorsStage}>
         <View style={{ width: big, height: big }}>
-          {/* 유리 원판 — 실행 화면 바탕과 같은 PhaseFlood라 단계를 바꾸면 색이 녹아들며 건너간다 */}
+          {/* 유리 원판 — 실행 화면 바탕과 같은 PhaseFlood 그림 */}
           <View style={styles.bigDisc}>
-            <PhaseFlood color={PHASE_COLOR[step.phase]} />
+            {/* key로 새로 그려 휙 바꾼다 — 링과 같이 바로 바뀌게(사용자 결정, 둘 다 즉시) */}
+            <PhaseFlood key={step.phase} color={PHASE_COLOR[step.phase]} />
           </View>
-          {STEPS.map((s, i) => (
-            <Animated.View
-              key={s.phase}
-              pointerEvents="none"
-              style={[StyleSheet.absoluteFill, { opacity: fades[i], transform: [{ rotate: '-90deg' }] }]}
-            >
-              <Svg width={big} height={big}>
-                <Circle cx={big / 2} cy={big / 2} r={r} fill="none" stroke={s.track} strokeWidth={12} />
-                <Circle cx={big / 2} cy={big / 2} r={r} fill="none" stroke={s.ring} strokeWidth={12} strokeLinecap="round"
-                  strokeDasharray={`${c} ${c}`} strokeDashoffset={c * 0.3} />
-              </Svg>
-            </Animated.View>
-          ))}
+          <View style={[StyleSheet.absoluteFill, { transform: [{ rotate: '-90deg' }] }]}>
+            <Svg width={big} height={big}>
+              <Circle cx={big / 2} cy={big / 2} r={r} fill="none" stroke={step.track} strokeWidth={12} />
+              <Circle cx={big / 2} cy={big / 2} r={r} fill="none" stroke={step.ring} strokeWidth={12} strokeLinecap="round"
+                strokeDasharray={`${c} ${c}`} strokeDashoffset={c * 0.3} />
+            </Svg>
+          </View>
           <View style={[StyleSheet.absoluteFill, styles.center]} pointerEvents="none">
             <Text style={styles.bigPhase}>{t(`phase.${step.phase}`)}</Text>
             <Text style={[styles.bigClock, TABULAR]}>{step.clock}</Text>
