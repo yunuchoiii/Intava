@@ -112,6 +112,31 @@ export default function Done() {
     }
   }, [edited, id]);
   const preset = tweaked ?? saved;
+
+  /**
+   * 운동 중에 고친 **메모는 묻지 않고** 루틴에 바로 남긴다(사용자 결정).
+   *
+   * 메모는 「다음에 몇 kg」 같은 기록이라 루틴에 남는 것이 당연하다 — 그것까지 「바뀐 내용을
+   * 저장할까요?」로 물으면 메모 한 줄 고친 사람이 매번 창을 만난다. 루틴에 있던 종목의 메모만
+   * 옮긴다(운동 중에 붙인 종목은 루틴에 없다). 이렇게 먼저 맞춰 두면 아래 proposal의 지문에서
+   * 메모 차이가 사라져, 메모만 바뀐 운동은 아무것도 묻지 않는다. 다른 것도 바뀌어 「저장 안 함」을
+   * 골라도 메모는 이미 남아 있다.
+   */
+  const memoSaved = useRef(false);
+  useEffect(() => {
+    if (viewing || memoSaved.current || !saved || !tweaked) return;
+    memoSaved.current = true;
+    const memoOf = new Map(tweaked.blocks.map((b) => [b.id, b.memo]));
+    let changed = false;
+    const blocks = saved.blocks.map((b) => {
+      if (!memoOf.has(b.id)) return b;
+      const memo = memoOf.get(b.id);
+      if ((memo ?? '').trim() === (b.memo ?? '').trim()) return b;
+      changed = true;
+      return { ...b, memo };
+    });
+    if (changed) savePreset({ ...saved, blocks });
+  }, [viewing, saved, tweaked, savePreset]);
   /** 실행 중에 바꾼 차례 — 라운드별. 마지막 라운드의 것이 최종 차례다 */
   const rounds = useMemo<RoundOrders | undefined>(() => parseRounds(orders), [orders]);
 
