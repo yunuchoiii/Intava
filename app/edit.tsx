@@ -176,7 +176,11 @@ export default function Edit() {
    * 않는다. 고친 것이 지금 운동에 안 들어간 채 실행 화면이 열리면, 사용자는 고친
    * 대로 돌 거라 믿고 옛 계획대로 운동하게 된다.
    */
-  useMiniTimerGate(needsApply, askApply);
+  useMiniTimerGate((go) => {
+    // 이 화면 위에 다른 화면(설정 등)이 떠 있으면 그 화면에서 누른 것이다 — 묻지 않는다
+    if (needsApply && navigation.isFocused()) askApply(go);
+    else go();
+  });
 
   /**
    * 우리 손으로 떠나는 길 — 저장·시작처럼 이미 결론이 난 것들이다.

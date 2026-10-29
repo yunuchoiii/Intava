@@ -57,23 +57,26 @@ type OpenGate = (go: () => void) => void;
 let openGate: OpenGate | null = null;
 
 /**
- * `active`인 동안 바로 실행 화면을 열려는 손을 `ask`로 붙잡는다.
+ * 이 화면이 떠 있는 동안 바로 실행 화면을 열려는 손을 `ask`로 붙잡는다.
  *
  * 편집 화면이 쓴다. 지금 도는 루틴을 고쳤으면 뒤로가기와 똑같이 「지금 운동에도
- * 적용할까요?」를 묻고 나서 연다. `ask`는 그릴 때마다 새로 만들어져도 된다 —
- * 걸어 두는 것은 마지막 것을 부르는 고정된 손잡이다.
+ * 적용할까요?」를 묻고 나서 연다. 물을 일이 없으면 `ask`가 바로 `go`를 부른다.
+ *
+ * **물음은 화면이 사는 내내 걸어 두고, 물을지는 누르는 순간 `ask`가 정한다.**
+ * 물을 일이 있을 때만 걸고 없어지면 떼는 식으로 두면, 한 번 묻고 「지금 운동에도」를
+ * 고른 뒤 다시 고쳤을 때 물음이 걸리지 않고 그냥 열렸다. `ask`는 그릴 때마다 새로
+ * 만들어져도 된다 — 걸어 두는 것은 마지막 것을 부르는 고정된 손잡이다.
  */
-export function useMiniTimerGate(active: boolean, ask: OpenGate): void {
+export function useMiniTimerGate(ask: OpenGate): void {
   const askRef = useRef(ask);
   askRef.current = ask;
   useEffect(() => {
-    if (!active) return;
     const gate: OpenGate = (go) => askRef.current(go);
     openGate = gate;
     return () => {
       if (openGate === gate) openGate = null;
     };
-  }, [active]);
+  }, []);
 }
 
 /**
@@ -135,10 +138,6 @@ export function MiniTimer() {
   }, [morph]);
 
   /**
-   * 바를 위로 끌어올리면 실행 화면이 자라 오른다. 손가락이 잡는 순간 화면을 띄우고,
-   * 끝까지 올리지 않고 놓으면 다시 접으면서 방금 띄운 화면을 물린다.
-   */
-  /**
    * 눌러서 연다. 걸린 물음이 있으면 먼저 묻는다.
    *
    * 물음이 떠 있는 동안 또 누르거나 끌어도 창을 겹쳐 띄우지 않는다. 답을 고른 뒤에는
@@ -159,12 +158,16 @@ export function MiniTimer() {
     });
   }, [mayOpen, router]);
 
+  /**
+   * 바를 위로 끌어올리면 실행 화면이 자라 오른다. 손가락이 잡는 순간 화면을 띄우고,
+   * 끝까지 올리지 않고 놓으면 다시 접으면서 방금 띄운 화면을 물린다.
+   */
   const openPan = useMemo(
     () =>
       PanResponder.create({
         onMoveShouldSetPanResponder: (_e, g) => {
           if (!mayOpen() || !(g.dy < -8 && Math.abs(g.dy) > Math.abs(g.dx) * 1.5)) return false;
-          // 물을 것이 있으면 끌어올리는 화면을 띄우지 않고 누른 것처럼 묻는다 —
+          // 물음이 걸린 화면에서는 끌어올리는 화면을 띄우지 않고 누른 것처럼 연다 —
           // 반쯤 올라온 실행 화면 위에 물음이 얹히면 답하는 동안 화면이 걸려 있다
           if (openGate || asking.current) {
             open();
