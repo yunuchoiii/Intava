@@ -44,6 +44,38 @@ export function useMiniTimerSpace(): number {
   return running && pathname !== '/run' ? BAR_H + BAR_GAP : 0;
 }
 
+/** 실행 화면을 열기 전에 끼어드는 물음 — `go`를 부르면 그제야 연다 */
+type OpenGate = (go: () => void) => void;
+
+/**
+ * 지금 걸려 있는 물음. 한 번에 한 화면만 건다.
+ *
+ * 바는 지금 화면을 남겨 둔 채 실행 화면을 위에 얹는다. 그래서 화면이 스택에서
+ * 빠질 때 거는 문지기(usePreventRemove)에 걸리지 않는다 — 바로 여는 길에서도
+ * 물어야 할 것이 있는 화면은 여기에 물음을 건다.
+ */
+let openGate: OpenGate | null = null;
+
+/**
+ * `active`인 동안 바로 실행 화면을 열려는 손을 `ask`로 붙잡는다.
+ *
+ * 편집 화면이 쓴다. 지금 도는 루틴을 고쳤으면 뒤로가기와 똑같이 「지금 운동에도
+ * 적용할까요?」를 묻고 나서 연다. `ask`는 그릴 때마다 새로 만들어져도 된다 —
+ * 걸어 두는 것은 마지막 것을 부르는 고정된 손잡이다.
+ */
+export function useMiniTimerGate(active: boolean, ask: OpenGate): void {
+  const askRef = useRef(ask);
+  askRef.current = ask;
+  useEffect(() => {
+    if (!active) return;
+    const gate: OpenGate = (go) => askRef.current(go);
+    openGate = gate;
+    return () => {
+      if (openGate === gate) openGate = null;
+    };
+  }, [active]);
+}
+
 /**
  * 접어 내린 직후 이만큼은 열지 않는다.
  *
@@ -106,11 +138,40 @@ export function MiniTimer() {
    * 바를 위로 끌어올리면 실행 화면이 자라 오른다. 손가락이 잡는 순간 화면을 띄우고,
    * 끝까지 올리지 않고 놓으면 다시 접으면서 방금 띄운 화면을 물린다.
    */
+  /**
+   * 눌러서 연다. 걸린 물음이 있으면 먼저 묻는다.
+   *
+   * 물음이 떠 있는 동안 또 누르거나 끌어도 창을 겹쳐 띄우지 않는다. 답을 고른 뒤에는
+   * 그사이 다른 화면으로 떠났어도 열어도 된다 — 바를 누른 뜻은 실행 화면을 보는 것이다.
+   */
+  const asking = useRef(false);
+  const open = useCallback(() => {
+    if (!mayOpen() || asking.current) return;
+    const gate = openGate;
+    if (!gate) {
+      router.push('/run');
+      return;
+    }
+    asking.current = true;
+    gate(() => {
+      asking.current = false;
+      router.push('/run');
+    });
+  }, [mayOpen, router]);
+
   const openPan = useMemo(
     () =>
       PanResponder.create({
-        onMoveShouldSetPanResponder: (_e, g) =>
-          mayOpen() && g.dy < -8 && Math.abs(g.dy) > Math.abs(g.dx) * 1.5,
+        onMoveShouldSetPanResponder: (_e, g) => {
+          if (!mayOpen() || !(g.dy < -8 && Math.abs(g.dy) > Math.abs(g.dx) * 1.5)) return false;
+          // 물을 것이 있으면 끌어올리는 화면을 띄우지 않고 누른 것처럼 묻는다 —
+          // 반쯤 올라온 실행 화면 위에 물음이 얹히면 답하는 동안 화면이 걸려 있다
+          if (openGate || asking.current) {
+            open();
+            return false;
+          }
+          return true;
+        },
         onPanResponderGrant: () => {
           morph.stop();
           owning.current = true;
@@ -134,7 +195,7 @@ export function MiniTimer() {
           morph.animate(1, { duration: 220, onDone: () => router.back() });
         },
       }),
-    [morph, router, screenH, mayOpen, release]
+    [morph, router, screenH, mayOpen, release, open]
   );
 
   /** 실행 화면이 접히는 만큼 아래에서 올라오며 드러난다 */
@@ -172,7 +233,7 @@ export function MiniTimer() {
       {...openPan.panHandlers}
     >
       <PressBox
-        onPress={() => mayOpen() && router.push('/run')}
+        onPress={open}
         radius={0}
         scaleTo={0.99}
         dim={0.16}

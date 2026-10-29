@@ -27,7 +27,7 @@ import { Checkbox } from '../src/components/Checkbox';
 import { ClearButton } from '../src/components/ClearButton';
 import { BlockPickerSheet } from '../src/components/BlockPickerSheet';
 import { BlockSheet } from '../src/components/BlockSheet';
-import { useMiniTimerSpace, useTimerRunning } from '../src/components/MiniTimer';
+import { useMiniTimerGate, useMiniTimerSpace, useTimerRunning } from '../src/components/MiniTimer';
 import { WhiteButton } from '../src/components/Buttons';
 import { Surface } from '../src/components/Surface';
 import { PressBox } from '../src/components/PressBox';
@@ -168,6 +168,15 @@ export default function Edit() {
       },
     ]);
   };
+
+  /**
+   * 하단 미니 바를 눌러 실행 화면으로 가는 길에도 같은 것을 묻는다.
+   *
+   * 미니 바는 이 화면을 남겨 둔 채 실행 화면을 위에 얹어서 아래 문지기에 걸리지
+   * 않는다. 고친 것이 지금 운동에 안 들어간 채 실행 화면이 열리면, 사용자는 고친
+   * 대로 돌 거라 믿고 옛 계획대로 운동하게 된다.
+   */
+  useMiniTimerGate(needsApply, askApply);
 
   /**
    * 우리 손으로 떠나는 길 — 저장·시작처럼 이미 결론이 난 것들이다.
