@@ -1,0 +1,7 @@
+{
+  "ios": {
+    "NSHealthShareUsageDescription": "Intava 不会读取你的健康数据。",
+    "NSHealthUpdateUsageDescription": "训练时开启 iOS 体能训练会话，让锁定屏幕和灵动岛上的计时器持续运行。",
+    "NSPhotoLibraryAddUsageDescription": "将训练记录卡片保存到照片。"
+  }
+}

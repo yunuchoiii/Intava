@@ -14,7 +14,8 @@ import { ja } from './ja';
 import { ko } from './ko';
 import { zh } from './zh';
 
-const FALLBACK = 'ko';
+/** 기기 언어가 4개 언어 중 어디에도 없을 때 — 해외 사용자에게 한국어가 뜨지 않게 영어로 */
+const FALLBACK = 'en';
 const RESOURCES = {
   ko: { translation: ko },
   en: { translation: en },

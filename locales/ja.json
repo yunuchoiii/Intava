@@ -1,0 +1,7 @@
+{
+  "ios": {
+    "NSHealthShareUsageDescription": "インタバはヘルスケアのデータを読み取りません。",
+    "NSHealthUpdateUsageDescription": "運動中にiOSのワークアウトセッションを使い、ロック画面とDynamic Islandのタイマーを動かし続けます。",
+    "NSPhotoLibraryAddUsageDescription": "運動の記録カードを写真アプリに保存します。"
+  }
+}

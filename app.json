@@ -21,8 +21,8 @@
         "UIBackgroundModes": [
           "audio"
         ],
-        "NSHealthShareUsageDescription": "인타바는 건강 데이터를 읽지 않습니다.",
-        "NSHealthUpdateUsageDescription": "운동 중 iOS 운동 세션을 켜서 잠금화면·다이내믹 아일랜드 타이머를 이어 갑니다.",
+        "NSHealthShareUsageDescription": "Intava does not read your health data.",
+        "NSHealthUpdateUsageDescription": "Intava starts an iOS workout session during your workout to keep the Lock Screen and Dynamic Island timer running.",
         "UIUserInterfaceStyle": "Dark",
         "CFBundleLocalizations": [
           "ko",
@@ -31,7 +31,7 @@
           "zh-Hans"
         ],
         "CFBundleAllowMixedLocalizations": true,
-        "NSPhotoLibraryAddUsageDescription": "운동 기록 카드를 사진 앱에 저장합니다."
+        "NSPhotoLibraryAddUsageDescription": "Intava saves your workout card to Photos."
       }
     },
     "android": {
@@ -127,6 +127,12 @@
         "projectId": "defcb786-3397-4794-8bf4-aedc581c9e27"
       }
     },
-    "owner": "yunuchoiii"
+    "owner": "yunuchoiii",
+    "locales": {
+      "ko": "./locales/ko.json",
+      "en": "./locales/en.json",
+      "ja": "./locales/ja.json",
+      "zh-Hans": "./locales/zh-Hans.json"
+    }
   }
 }
