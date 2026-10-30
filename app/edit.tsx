@@ -27,7 +27,7 @@ import { Checkbox } from '../src/components/Checkbox';
 import { ClearButton } from '../src/components/ClearButton';
 import { BlockPickerSheet } from '../src/components/BlockPickerSheet';
 import { BlockSheet } from '../src/components/BlockSheet';
-import { useMiniTimerSpace, useTimerRunning } from '../src/components/MiniTimer';
+import { useMiniTimerGate, useMiniTimerSpace, useTimerRunning } from '../src/components/MiniTimer';
 import { WhiteButton } from '../src/components/Buttons';
 import { Surface } from '../src/components/Surface';
 import { PressBox } from '../src/components/PressBox';
@@ -143,14 +143,21 @@ export default function Edit() {
    *
    * 저장 자체는 위의 자동 저장이 이미 했다. 묻는 것은 **지금 운동에도** 넣을지뿐이다.
    * 고친 직후 바로 바뀌면 세트 한가운데서 계획이 발밑에서 바뀌므로, 한 번 확인받는다.
-   * 이 화면에서 아무것도 안 고쳤으면(dirty가 아니면) 묻지 않는다 — 운동 중에 고친
-   * 사본이 루틴과 다른 것은 이 화면이 끼어들 일이 아니다(완료 화면이 묻는다).
+   * 지난번 물은 뒤로 아무것도 안 고쳤으면 묻지 않는다 — 운동 중에 고친 사본이 루틴과
+   * 다른 것은 이 화면이 끼어들 일이 아니다(완료 화면이 묻는다).
+   *
+   * 「고쳤는가」의 기준은 **이 화면에 들어온 때가 아니라 마지막으로 물은 때**다. 들어온
+   * 때와 비교하면, 고쳐서 「지금 운동에도」를 고른 뒤 원래 값으로 되돌렸을 때 「안
+   * 고쳤다」가 되어 묻지 않는다 — 운동은 고친 값으로 도는데 루틴만 되돌아간다.
    */
+  // 물은 뒤 needsApply가 바로 다시 계산되도록 ref가 아니라 상태로 둔다
+  const [askedAt, setAskedAt] = useState(() => fingerprint(initial));
+  const touched = fingerprint(draft) !== askedAt;
   const onAirHere = running && session.preset?.id === draft.id;
   const needsApply =
     !isNew &&
     onAirHere &&
-    dirty &&
+    touched &&
     !!session.preset &&
     fingerprint(normalizedOf(draft, simple)) !== fingerprint(session.preset);
 
@@ -158,16 +165,36 @@ export default function Edit() {
   const askApply = (then: () => void) => {
     commit();
     Alert.alert(t('edit.applyTitle'), t('edit.applyBody'), [
-      { text: t('edit.applyRoutineOnly'), onPress: then },
+      {
+        text: t('edit.applyRoutineOnly'),
+        onPress: () => {
+          setAskedAt(fingerprint(draftRef.current));
+          then();
+        },
+      },
       {
         text: t('edit.applyConfirm'),
         onPress: () => {
+          setAskedAt(fingerprint(draftRef.current));
           session.adopt(normalizedOf(draftRef.current, kindOf(draftRef.current) === 'timer'));
           then();
         },
       },
     ]);
   };
+
+  /**
+   * 하단 미니 바를 눌러 실행 화면으로 가는 길에도 같은 것을 묻는다.
+   *
+   * 미니 바는 이 화면을 남겨 둔 채 실행 화면을 위에 얹어서 아래 문지기에 걸리지
+   * 않는다. 고친 것이 지금 운동에 안 들어간 채 실행 화면이 열리면, 사용자는 고친
+   * 대로 돌 거라 믿고 옛 계획대로 운동하게 된다.
+   */
+  useMiniTimerGate((go) => {
+    // 이 화면 위에 다른 화면(설정 등)이 떠 있으면 그 화면에서 누른 것이다 — 묻지 않는다
+    if (needsApply && navigation.isFocused()) askApply(go);
+    else go();
+  });
 
   /**
    * 우리 손으로 떠나는 길 — 저장·시작처럼 이미 결론이 난 것들이다.
