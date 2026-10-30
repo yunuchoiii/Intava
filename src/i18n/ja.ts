@@ -402,6 +402,7 @@ export const ja: Catalog = {
     dateLabel: '{{m}}月{{d}}日 {{w}}曜日',
     daySummary: '{{count}}回 · {{time}}',
     minutes: '{{m}}分',
+    underMinute: '1分未満',
     hours: '{{h}}時間',
     hoursMinutes: '{{h}}時間{{m}}分',
     startedAt: '{{time}} 開始 · {{shape}}',
