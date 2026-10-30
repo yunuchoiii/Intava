@@ -2,7 +2,7 @@
   "expo": {
     "name": "intava",
     "slug": "Intava",
-    "version": "1.5.1",
+    "version": "1.5.2",
     "scheme": "intava",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
