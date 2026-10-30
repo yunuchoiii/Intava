@@ -10,7 +10,11 @@ export default function OnboardingScreen() {
   return (
     <OnboardingPages
       onDone={() => {
-        void finishOnboarding().then(() => router.back());
+        void finishOnboarding().then(() => {
+          // 딥링크(intava://onboarding)로 앱을 처음 열면 아래에 홈이 없다 — 돌아갈 곳이 없으면 홈으로
+          if (router.canGoBack()) router.back();
+          else router.replace('/');
+        });
       }}
     />
   );
