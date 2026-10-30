@@ -409,6 +409,7 @@ export const en: Catalog = {
     dateLabel: '{{w}}, {{m}} {{d}}',
     daySummary: '{{count}} sessions · {{time}}',
     minutes: '{{m}} min',
+    underMinute: 'under 1 min',
     hours: '{{h}} hr',
     hoursMinutes: '{{h}} hr {{m}} min',
     startedAt: 'Started {{time}} · {{shape}}',

@@ -401,6 +401,7 @@ export const zh: Catalog = {
     dateLabel: '{{m}}月{{d}}日 星期{{w}}',
     daySummary: '{{count}}次 · {{time}}',
     minutes: '{{m}}分钟',
+    underMinute: '不到1分钟',
     hours: '{{h}}小时',
     hoursMinutes: '{{h}}小时{{m}}分钟',
     startedAt: '{{time}} 开始 · {{shape}}',

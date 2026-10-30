@@ -36,6 +36,17 @@ import type { WorkoutRecord } from '../src/types';
 
 /** 날짜 셀 한 칸의 높이 — 두 줄(날짜·분)이 들어간다 */
 const CELL_H = 54;
+
+/** 칸을 일곱 개씩 끊는다. 마지막 주의 빈자리는 빈칸으로 채워야 남은 칸이 넓어지지 않는다 */
+function chunkWeeks(cells: React.ReactNode[]): React.ReactNode[][] {
+  const weeks: React.ReactNode[][] = [];
+  for (let i = 0; i < cells.length; i += 7) {
+    const week = cells.slice(i, i + 7);
+    while (week.length < 7) week.push(<View key={`tail${week.length}`} style={styles.cell} />);
+    weeks.push(week);
+  }
+  return weeks;
+}
 /**
  * 셀 농도 — 기록이 있으면 최소 이만큼 깔고, 그 달 최대치에 가까울수록 짙어진다.
  * 바닥값이 없으면 짧게 한 날이 아예 안 보여서 "한 날"과 "안 한 날"이 구분되지 않는다.
@@ -187,12 +198,19 @@ export default function Records() {
             ))}
           </View>
 
-          <View style={styles.grid}>
-            {/* 1일 앞의 빈칸 — 요일을 맞춘다 */}
-            {Array.from({ length: firstDow }, (_, i) => (
+          {/*
+            한 주씩 한 줄로 그린다. 예전엔 칸 너비를 100/7%로 주고 줄바꿈에 맡겼는데,
+            화면 폭에 따라(아이폰 13 mini) 반올림 오차로 일곱 칸이 줄을 넘쳐 여섯 칸씩
+            밀렸다 — 토요일 칸이 비고 모든 날짜가 한 요일씩 어긋났다. 요일 머리줄처럼
+            flex: 1로 나누면 폭이 어떻든 정확히 일곱 등분된다.
+          */}
+          <View>
+            {chunkWeeks([
+            // 1일 앞의 빈칸 — 요일을 맞춘다
+            ...Array.from({ length: firstDow }, (_, i) => (
               <View key={`pad${i}`} style={styles.cell} />
-            ))}
-            {Array.from({ length }, (_, i) => {
+            )),
+            ...Array.from({ length }, (_, i) => {
               const day = i + 1;
               const mins = dayMinutes(byDay.get(makeKey(view.y, view.m, day)));
               const dow = (firstDow + i) % 7;
@@ -266,7 +284,12 @@ export default function Records() {
                   </View>
                 </Pressable>
               );
-            })}
+            }),
+            ]).map((week, w) => (
+              <View key={`w${w}`} style={styles.week}>
+                {week}
+              </View>
+            ))}
           </View>
 
           <View style={styles.divider} />
@@ -279,7 +302,7 @@ export default function Records() {
               <Text style={[styles.daySummary, TABULAR]}>
                 {t('records.daySummary', {
                   count: sessions.length,
-                  time: humanMinutes(selMinutes),
+                  time: humanMinutes(selMinutes) || t('records.underMinute'),
                 })}
               </Text>
             )}
@@ -567,9 +590,9 @@ const styles = StyleSheet.create({
     color: C.textTertiary,
     paddingBottom: 8,
   },
-  grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  /** 일곱 칸 — 퍼센트로 나눠야 기기 폭이 달라도 요일이 어긋나지 않는다 */
-  cell: { width: `${100 / 7}%`, height: CELL_H, padding: 1 },
+  week: { flexDirection: 'row' },
+  /** 일곱 칸 — 한 줄 안에서 flex로 나눠야 기기 폭이 달라도 요일이 어긋나지 않는다 */
+  cell: { flex: 1, height: CELL_H, padding: 1 },
   cellBox: {
     flex: 1,
     borderRadius: 14,
