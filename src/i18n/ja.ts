@@ -153,7 +153,7 @@ export const ja: Catalog = {
     version: 'バージョン',
     privacy: 'プライバシーポリシー',
     support: 'サポート・お問い合わせ',
-    language: '言語',
+    language: '言語 / Language',
     volume: '音量',
     volumeLabel: '通知音の大きさ',
     duckMusic: '通知音のあいだ音楽を下げる',

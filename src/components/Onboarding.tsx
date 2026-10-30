@@ -204,7 +204,13 @@ function ColorsPage() {
                       strokeDasharray={`${sc} ${sc}`} strokeDashoffset={sc * 0.3} />
                   </Svg>
                 </View>
-                <Text style={[styles.stepName, on && styles.stepNameOn]} numberOfLines={1}>
+                {/* 영어 「Next exercise」 「Cool-down」은 칸보다 길다 — 말줄임 대신 글씨를 줄여 다 보인다 */}
+                <Text
+                  style={[styles.stepName, on && styles.stepNameOn]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.6}
+                >
                   {t(`phase.${s.phase}`)}
                 </Text>
               </PressBox>

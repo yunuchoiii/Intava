@@ -172,7 +172,7 @@ export const ko = {
     version: '버전',
     privacy: '개인정보 처리방침',
     support: '지원 · 문의',
-    language: '언어',
+    language: '언어 / Language',
     volume: '볼륨',
     volumeLabel: '알림음 크기',
     duckMusic: '알림음 나올 때 음악 줄이기',

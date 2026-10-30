@@ -1,0 +1,47 @@
+# EAS 빌드에 올리지 않을 것 — 이 파일이 있으면 EAS는 .gitignore 대신 이것만 본다.
+# 그래서 .gitignore 내용을 그대로 옮겨 두고, 그 아래에 빌드에서만 뺄 것을 더한다.
+
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+# generated native folders
+/ios
+/android
+
+# 스토어 스크린샷(약 61MB) — 저장소에는 두되 빌드 업로드에서는 뺀다
+store-listing/screenshots/
