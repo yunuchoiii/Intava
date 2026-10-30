@@ -153,7 +153,7 @@ export const zh: Catalog = {
     version: '版本',
     privacy: '隐私政策',
     support: '支持与反馈',
-    language: '语言',
+    language: '语言 / Language',
     volume: '音量',
     volumeLabel: '提示音音量',
     duckMusic: '提示音响起时降低音乐',
