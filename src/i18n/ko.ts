@@ -172,7 +172,7 @@ export const ko = {
     version: '버전',
     privacy: '개인정보 처리방침',
     support: '지원 · 문의',
-    language: '언어',
+    language: '언어 / Language',
     volume: '볼륨',
     volumeLabel: '알림음 크기',
     duckMusic: '알림음 나올 때 음악 줄이기',
@@ -436,6 +436,8 @@ export const ko = {
     dateLabel: '{{m}}월 {{d}}일 {{w}}요일',
     daySummary: '{{count}}회 · {{time}}',
     minutes: '{{m}}분',
+    /** 1분이 안 되는 기록 — 「1회 ·」 뒤가 비지 않게 */
+    underMinute: '1분 미만',
     hours: '{{h}}시간',
     hoursMinutes: '{{h}}시간 {{m}}분',
     startedAt: '{{time}} 시작 · {{shape}}',
