@@ -110,7 +110,8 @@
           "bundleIdentifier": "com.intava.app.ExpoWidgetsTarget",
           "groupIdentifier": "group.com.intava.app",
           "enablePushNotifications": false,
-          "widgets": []
+          "widgets": [],
+          "frequentUpdates": true
         }
       ],
       [

@@ -351,6 +351,7 @@ export const en: Catalog = {
   live: {
     next: 'Next: {{what}}',
     subWork: '{{sub}} · Next: {{next}}',
+    waiting: 'Updating…',
   },
 
   story: {

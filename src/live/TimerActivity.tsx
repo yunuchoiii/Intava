@@ -68,6 +68,8 @@ export type TimerActivityProps = {
   runFraction: number;
   /** 다 끝났다 — 숫자 대신 단계말만 */
   done: boolean;
+  /** 워치에 다음 구간이 늦게 닿는 동안 숫자 대신 보일 말 「불러오는 중」 */
+  waiting: string;
 };
 
 const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
@@ -299,7 +301,30 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
       욱여넣어져 이름이 「새…」, 숫자가 「0…」으로 잘렸다(실기기). 워치에는 링 · 단계와
       이름 두 줄 · 큰 숫자만 한 줄로 둔다. 막대와 곁말은 뺀다.
     */
-    bannerSmall: (
+    /*
+      다음 구간이 늦게 닿아 「오래된 정보」가 되면(isStale — 구간 끝+3초, live/index.ts)
+      0:00에 멈춘 숫자와 지난 단계 대신 「불러오는 중」을 보인다. 워치는 아이폰보다 갱신을
+      늦게 받아 멈춘 0:00이 오래 남았다(실기기). 정상일 때는 잠금화면과 같은 구간 숫자다.
+    */
+    bannerSmall: env.isStale && !still ? (
+      <HStack
+        spacing={10}
+        alignment="center"
+        modifiers={[padding({ horizontal: 12, vertical: 8 }), activityBackgroundTint('#000000')]}
+      >
+        <Text
+          modifiers={[
+            font({ size: 15, weight: 'bold' }),
+            foregroundStyle('#9AA0A8'),
+            lineLimit(1),
+            minimumScaleFactor(0.75),
+            frame({ maxWidth: 10000, alignment: 'leading' }),
+          ]}
+        >
+          {p.waiting}
+        </Text>
+      </HStack>
+    ) : (
       <HStack
         spacing={10}
         alignment="center"
