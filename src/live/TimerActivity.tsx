@@ -84,13 +84,12 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
   */
   const segText = seg;
   /*
-    워치(bannerSmall)만 2초 미룬다. 워치는 다음 구간 갱신을 1~2초 늦게 받아, 정확한 시각이면
-    구간 끝에서 0에 멈췄다가 28·29로 건너뛰었다(실기기). 1초로는 4-3-2-1-0-29였다(실기기) —
-    2초로 늘려 기다림 동안 1이 서고 다음 구간이 30부터 보이게 한다. 숫자는 앱보다 2초 늦다
-    (사용자 결정 2026-11-03). 잠금화면·아일랜드는 정확한 시각 그대로.
+    워치(bannerSmall)만 1초 미룬다. 워치는 다음 구간 갱신을 1~2초 늦게 받아, 정확한 시각이면
+    구간 끝에서 0에 멈췄다가 28·29로 건너뛰었다(실기기). 1초 미루면 그 기다림 동안 1이 서고
+    다음 구간이 30부터 보인다 — 숫자는 앱보다 1초 늦다(사용자 결정 2026-11-03). 잠금화면·
+    아일랜드는 정확한 시각 그대로.
   */
-  const WATCH_LAG = 2000;
-  const segWatch = { lower: new Date(p.start + WATCH_LAG), upper: new Date(p.end + WATCH_LAG) };
+  const segWatch = { lower: new Date(p.start + 1000), upper: new Date(p.end + 1000) };
   const whole = { lower: new Date(p.runStart), upper: new Date(p.runEnd) };
   const still = p.paused || p.done;
 
@@ -307,7 +306,7 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
       이름 두 줄 · 큰 숫자만 한 줄로 둔다. 막대와 곁말은 뺀다.
     */
     /*
-      다음 구간이 늦게 닿아 「오래된 정보」가 되면(isStale — 구간 끝+4초, live/index.ts)
+      다음 구간이 늦게 닿아 「오래된 정보」가 되면(isStale — 구간 끝+3초, live/index.ts)
       0:00에 멈춘 숫자와 지난 단계 대신 「불러오는 중」을 보인다. 워치는 아이폰보다 갱신을
       늦게 받아 멈춘 0:00이 오래 남았다(실기기). 정상일 때는 잠금화면과 같은 구간 숫자다.
     */
