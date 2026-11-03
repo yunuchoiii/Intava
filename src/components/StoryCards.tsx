@@ -79,6 +79,14 @@ function tight(size: number, lh: number, top = 0) {
   return { fontSize: size, lineHeight: box, marginTop: top - pad, marginBottom: -pad };
 }
 
+/**
+ * 음수 자간은 마지막 글자 뒤에도 붙어 iOS가 글자 상자를 그만큼 좁게 잡는다 — 오른쪽 끝 글자가
+ * 상자 밖으로 나가 잘렸다. 빠진 만큼 안쪽 오른쪽 여백을 주고 바깥 여백으로 되돌려 자리는 그대로 둔다.
+ */
+function trail(letterSpacing: number) {
+  return { letterSpacing, paddingRight: -letterSpacing, marginRight: letterSpacing };
+}
+
 // ---- 조각 --------------------------------------------------------------------
 
 /** 로고 마크 — 링 두 구간. 컬러판과 사진 위 흰색판 */
@@ -198,12 +206,8 @@ function PhotoStack({ record, photo }: { record: WorkoutRecord; photo?: string }
       <Glows
         id="sa"
         glows={[
-          // 시안은 모서리(100% 100% · 0% 0%)에 옅게 깔았지만, 흰 화면 같은 밝은 사진에선 글자가 사라졌다
-          // (사용자 지적 2026-11-03). 그늘의 중심을 정보 묶음 가운데(약 221, 491)와 로고 가운데(약 64, 81)로
-          // 옮기고 묶음을 다 덮을 만큼 넓힌다.
-          // 경계가 보이면 얼룩처럼 읽혀서(같은 날 두 번째 지적), 넓게 잡고 바깥으로 천천히 사라지게 한다.
-          { cx: 0.62, cy: 0.79, rx: 0.88, ry: 0.36, stops: [[0, '#000', 0.52], [0.35, '#000', 0.38], [0.7, '#000', 0.12], [1, '#000', 0]] },
-          { cx: 0.16, cy: 0.125, rx: 0.46, ry: 0.12, stops: [[0, '#000', 0.36], [0.45, '#000', 0.22], [1, '#000', 0]] },
+          { cx: 1, cy: 1, rx: 0.95, ry: 0.5, stops: [[0, '#000', 0.62], [0.55, '#000', 0.2], [0.8, '#000', 0]] },
+          { cx: 0, cy: 0, rx: 0.7, ry: 0.22, stops: [[0, '#000', 0.35], [0.8, '#000', 0]] },
         ]}
       />
       <View style={{ position: 'absolute', left: 24, top: 72 }}>
@@ -216,7 +220,7 @@ function PhotoStack({ record, photo }: { record: WorkoutRecord; photo?: string }
         </Text>
         <View style={[s.row, { gap: 12, marginTop: 6 }]}>
           <StoryRing size={46} stroke={26} gap={60} ratio={n.ratio} restColor="rgba(255,255,255,0.45)" workColor="#FFFFFF" />
-          <Text style={[s.num, TABULAR, { ...tight(60, 54, 6), letterSpacing: -3 }]}>
+          <Text style={[s.num, TABULAR, { ...tight(60, 54, 6), ...trail(-3) }]}>
             {storyTime(n.total)}
           </Text>
         </View>
@@ -257,7 +261,7 @@ function PhotoStrip({ record, photo }: { record: WorkoutRecord; photo?: string }
             <Text style={[s.photoSub, { fontSize: 12 }]} numberOfLines={1}>
               {record.presetName}
             </Text>
-            <Text style={[s.num, TABULAR, { ...tight(52, 47), letterSpacing: -2.6 }]}>
+            <Text style={[s.num, TABULAR, { ...tight(52, 47), ...trail(-2.6) }]}>
               {storyTime(n.total)}
             </Text>
           </View>
@@ -324,7 +328,7 @@ function RingHero({ record }: { record: WorkoutRecord }) {
         <View style={{ alignItems: 'center', marginTop: 28 }}>
           <StoryRing size={232} stroke={20} gap={36} ratio={n.ratio} restColor={CARD.rest} workColor={CARD.work}>
             {/* 시간만 링 한가운데 — 「총 시간」 문구는 뺐다(사용자 요청 2026-11-03) */}
-            <Text style={[s.num, TABULAR, { fontSize: n.long ? 49 : 58, letterSpacing: -0.045 * (n.long ? 49 : 58), paddingTop: 4, color: CARD.text }]}>
+            <Text style={[s.num, TABULAR, { fontSize: n.long ? 49 : 58, ...trail(-0.045 * (n.long ? 49 : 58)), paddingTop: 4, color: CARD.text }]}>
               {storyTime(n.total)}
             </Text>
           </StoryRing>
@@ -393,7 +397,7 @@ function TypePoster({ record }: { record: WorkoutRecord }) {
               TABULAR,
               {
                 ...tight(big, big * 0.82, n.long ? 22 : 16),
-                letterSpacing: -0.065 * big,
+                ...trail(-0.065 * big),
                 marginLeft: n.long ? -4 : -6,
               },
             ]}
