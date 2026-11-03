@@ -83,6 +83,13 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
     1초 늦게 보였다 — 미룸을 뺐다. 끝에 0이 다시 서면 이 판단이 틀린 것이다.
   */
   const segText = seg;
+  /*
+    워치(bannerSmall)만 1초 미룬다. 워치는 다음 구간 갱신을 1~2초 늦게 받아, 정확한 시각이면
+    구간 끝에서 0에 멈췄다가 28·29로 건너뛰었다(실기기). 1초 미루면 그 기다림 동안 1이 서고
+    다음 구간이 30부터 보인다 — 숫자는 앱보다 1초 늦다(사용자 결정 2026-11-03). 잠금화면·
+    아일랜드는 정확한 시각 그대로.
+  */
+  const segWatch = { lower: new Date(p.start + 1000), upper: new Date(p.end + 1000) };
   const whole = { lower: new Date(p.runStart), upper: new Date(p.runEnd) };
   const still = p.paused || p.done;
 
@@ -105,7 +112,7 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
     겹이라, 간격만큼 경계가 번져 보이고 불투명한 컬러 호만 두꺼워 보였다(7%일 때).
     간격을 줄이면 번지는 폭이 같이 줄어든다 — 두께 이득도 그만큼 작다.
   */
-  const ring = (size: number) => {
+  const ring = (size: number, range = seg) => {
     const hide: Record<string, boolean> = { hidesValueLabel: true };
     const layers = [0, 1];
     return (
@@ -122,7 +129,7 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
           return still ? (
             <ProgressView key={k} value={p.done ? 0 : p.fraction} modifiers={mods} />
           ) : (
-            <ProgressView key={k} timerInterval={seg} countsDown {...hide} modifiers={mods} />
+            <ProgressView key={k} timerInterval={range} countsDown {...hide} modifiers={mods} />
           );
         })}
       </ZStack>
@@ -152,7 +159,7 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
     다른 라이브 액티비티(음악 등)가 같이 떠 있으면 iOS가 아일랜드를 둘로 나누어 이쪽
     폭이 좁아진다. 46pt로 못 박았을 때 거기서 「2:5」까지만 보이고 잘렸다(실기기).
   */
-  const clock = (size: number, weight: 'bold' | 'heavy', width: number) =>
+  const clock = (size: number, weight: 'bold' | 'heavy', width: number, range = segText) =>
     still ? (
       <Text
         modifiers={[
@@ -168,7 +175,7 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
       </Text>
     ) : (
       <Text
-        timerInterval={segText}
+        timerInterval={range}
         countsDown
         modifiers={[
           font({ size, weight }),
@@ -327,7 +334,7 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
         alignment="center"
         modifiers={[padding({ horizontal: 10, vertical: 8 }), activityBackgroundTint('#000000')]}
       >
-        {ring(34)}
+        {ring(34, segWatch)}
         <VStack
           alignment="leading"
           spacing={1}
@@ -347,7 +354,7 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
             {p.name}
           </Text>
         </VStack>
-        {clock(26, 'heavy', 70)}
+        {clock(26, 'heavy', 70, segWatch)}
       </HStack>
     ),
     compactLeading: ringOrNothing(22),
