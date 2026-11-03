@@ -70,15 +70,6 @@ export type TimerActivityProps = {
   done: boolean;
   /** 워치에 다음 구간이 늦게 닿는 동안 숫자 대신 보일 말 「불러오는 중」 */
   waiting: string;
-  /**
-   * 다음 구간 — 워치 배너(bannerSmall)만 쓴다. 지금 구간이 끝나면(staleDate = end) 다음
-   * 갱신이 닿기 전에도 이것으로 넘어간다. 다음 구간은 지금 구간 끝(end)에서 시작한다.
-   * 없거나 멈춘 동안에는 nextEnd = 0.
-   */
-  nextPhase: string;
-  nextName: string;
-  nextColor: string;
-  nextEnd: number;
 };
 
 const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
@@ -114,7 +105,7 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
     겹이라, 간격만큼 경계가 번져 보이고 불투명한 컬러 호만 두꺼워 보였다(7%일 때).
     간격을 줄이면 번지는 폭이 같이 줄어든다 — 두께 이득도 그만큼 작다.
   */
-  const ring = (size: number, range = seg, color = p.color) => {
+  const ring = (size: number) => {
     const hide: Record<string, boolean> = { hidesValueLabel: true };
     const layers = [0, 1];
     return (
@@ -127,11 +118,11 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
       <ZStack modifiers={[frame({ width: size, height: size }), scaleEffect({ x: -1, y: 1 })]}>
         {layers.map((k) => {
           const d = size * (1 - 0.035 * k);
-          const mods = [progressViewStyle('circular'), tint(color), frame({ width: d, height: d })];
+          const mods = [progressViewStyle('circular'), tint(p.color), frame({ width: d, height: d })];
           return still ? (
             <ProgressView key={k} value={p.done ? 0 : p.fraction} modifiers={mods} />
           ) : (
-            <ProgressView key={k} timerInterval={range} countsDown {...hide} modifiers={mods} />
+            <ProgressView key={k} timerInterval={seg} countsDown {...hide} modifiers={mods} />
           );
         })}
       </ZStack>
@@ -161,7 +152,7 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
     다른 라이브 액티비티(음악 등)가 같이 떠 있으면 iOS가 아일랜드를 둘로 나누어 이쪽
     폭이 좁아진다. 46pt로 못 박았을 때 거기서 「2:5」까지만 보이고 잘렸다(실기기).
   */
-  const clock = (size: number, weight: 'bold' | 'heavy', width: number, range = segText, color = p.color) =>
+  const clock = (size: number, weight: 'bold' | 'heavy', width: number) =>
     still ? (
       <Text
         modifiers={[
@@ -177,12 +168,12 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
       </Text>
     ) : (
       <Text
-        timerInterval={range}
+        timerInterval={segText}
         countsDown
         modifiers={[
           font({ size, weight }),
           monospacedDigit(),
-          foregroundStyle(color),
+          foregroundStyle(p.color),
           multilineTextAlignment('trailing'),
           lineLimit(1),
           minimumScaleFactor(0.6),
@@ -308,68 +299,57 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
       이름 두 줄 · 큰 숫자만 한 줄로 둔다. 막대와 곁말은 뺀다.
     */
     /*
-      워치는 아이폰의 갱신을 1~2초 늦게 받는다 — 구간 끝에서 0에 멈췄다가 28·29로 건너뛰었다
-      (실기기). 그래서 갱신마다 다음 구간을 함께 싣고, 지금 구간이 끝나는 순간(staleDate = end,
-      live/index.ts) **받아 둔 다음 구간**을 그린다. 다음 갱신이 닿아도 같은 구간·같은 시각이라
-      숫자가 다시 시작되지 않는다. 실을 다음이 없는데 오래되면(마지막 구간 뒤 갱신이 늦음)
-      0:00 대신 「불러오는 중」. 잠금화면·아일랜드는 isStale을 보지 않는다 — 아이폰은 제때 받는다.
+      다음 구간이 늦게 닿아 「오래된 정보」가 되면(isStale — 구간 끝+3초, live/index.ts)
+      0:00에 멈춘 숫자와 지난 단계 대신 「불러오는 중」을 보인다. 워치는 아이폰보다 갱신을
+      늦게 받아 멈춘 0:00이 오래 남았다(실기기). 정상일 때는 잠금화면과 같은 구간 숫자다.
     */
-    bannerSmall: (() => {
-      const stale = env.isStale && !still;
-      const ahead = stale && p.nextEnd > p.end;
-      if (stale && !ahead) {
-        return (
-          <HStack
-            spacing={10}
-            alignment="center"
-            modifiers={[padding({ horizontal: 12, vertical: 8 }), activityBackgroundTint('#000000')]}
-          >
-            <Text
-              modifiers={[
-                font({ size: 15, weight: 'bold' }),
-                foregroundStyle('#9AA0A8'),
-                lineLimit(1),
-                minimumScaleFactor(0.75),
-                frame({ maxWidth: 10000, alignment: 'leading' }),
-              ]}
-            >
-              {p.waiting}
-            </Text>
-          </HStack>
-        );
-      }
-      const range = ahead ? { lower: new Date(p.end), upper: new Date(p.nextEnd) } : seg;
-      const color = ahead ? p.nextColor : p.color;
-      return (
-        <HStack
-          spacing={10}
-          alignment="center"
-          modifiers={[padding({ horizontal: 10, vertical: 8 }), activityBackgroundTint('#000000')]}
+    bannerSmall: env.isStale && !still ? (
+      <HStack
+        spacing={10}
+        alignment="center"
+        modifiers={[padding({ horizontal: 12, vertical: 8 }), activityBackgroundTint('#000000')]}
+      >
+        <Text
+          modifiers={[
+            font({ size: 15, weight: 'bold' }),
+            foregroundStyle('#9AA0A8'),
+            lineLimit(1),
+            minimumScaleFactor(0.75),
+            frame({ maxWidth: 10000, alignment: 'leading' }),
+          ]}
         >
-          {ring(34, range, color)}
-          <VStack
-            alignment="leading"
-            spacing={1}
-            modifiers={[frame({ maxWidth: 10000, alignment: 'leading' })]}
+          {p.waiting}
+        </Text>
+      </HStack>
+    ) : (
+      <HStack
+        spacing={10}
+        alignment="center"
+        modifiers={[padding({ horizontal: 10, vertical: 8 }), activityBackgroundTint('#000000')]}
+      >
+        {ring(34)}
+        <VStack
+          alignment="leading"
+          spacing={1}
+          modifiers={[frame({ maxWidth: 10000, alignment: 'leading' })]}
+        >
+          <Text modifiers={[font({ size: 11, weight: 'bold' }), kerning(1.2), foregroundStyle(p.color)]}>
+            {p.phase}
+          </Text>
+          <Text
+            modifiers={[
+              font({ size: 15, weight: 'bold' }),
+              foregroundStyle('#FFFFFF'),
+              lineLimit(1),
+              minimumScaleFactor(0.75),
+            ]}
           >
-            <Text modifiers={[font({ size: 11, weight: 'bold' }), kerning(1.2), foregroundStyle(color)]}>
-              {ahead ? p.nextPhase : p.phase}
-            </Text>
-            <Text
-              modifiers={[
-                font({ size: 15, weight: 'bold' }),
-                foregroundStyle('#FFFFFF'),
-                lineLimit(1),
-                minimumScaleFactor(0.75),
-              ]}
-            >
-              {ahead ? p.nextName : p.name}
-            </Text>
-          </VStack>
-          {clock(26, 'heavy', 70, range, color)}
-        </HStack>
-      );
-    })(),
+            {p.name}
+          </Text>
+        </VStack>
+        {clock(26, 'heavy', 70)}
+      </HStack>
+    ),
     compactLeading: ringOrNothing(22),
     compactTrailing: clock(15, 'bold', 46),
     minimal: ring(22),

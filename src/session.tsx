@@ -530,13 +530,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       const { stages, stageOf } = planStages(plan);
       const cursor = seg ? (stageOf[shot.idx] ?? -1) : stages.length;
       const text = liveText(seg, plan.segs[shot.idx + 1], preset);
-      /*
-        다음 구간을 미리 싣는다 — 워치는 아이폰의 갱신을 1~2초 늦게 받아, 구간 끝에서 0에
-        멈췄다가 28·29로 건너뛰었다(실기기). 워치 배너는 지금 구간이 끝나면(staleDate) 이미
-        받아 둔 다음 구간을 그린다(TimerActivity bannerSmall).
-      */
-      const nextSeg = plan.segs[shot.idx + 1];
-      const nextText = nextSeg ? liveText(nextSeg, plan.segs[shot.idx + 2], preset) : null;
       // 멈춘 동안에는 시각을 0으로 둔다 — 쓰지 않는 값이 바뀔 때마다 갱신이 나가지 않게
       const moving = !paused && !shot.done;
       syncLiveActivity(
@@ -558,10 +551,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
             paused && plan.total > 0 ? Math.round((e / plan.total) * 100) / 100 : 0,
           done: shot.done,
           waiting: t('live.waiting'),
-          nextPhase: nextText?.phase ?? '',
-          nextName: nextText?.name ?? '',
-          nextColor: LIVE_COLOR[nextSeg?.phase ?? 'DONE'],
-          nextEnd: moving && seg && nextSeg ? stored.zeroAt + (nextSeg.start + nextSeg.dur) * 1000 : 0,
         },
         force
       );
