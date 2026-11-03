@@ -337,7 +337,7 @@ export const en: Catalog = {
     sampleRoutine: 'Morning Full Body',
   },
 
-  /** 새 기능 팝업(1.5.3 공유 카드) — 설치 뒤 한 번. sampleName은 온보딩의 잠금화면 예시가 쓴다 */
+  /** 새 기능 팝업(1.6.0 공유 카드) — 설치 뒤 한 번. sampleName은 온보딩의 잠금화면 예시가 쓴다 */
   announce: {
     kicker: 'NEW · SHARE YOUR WORKOUTS',
     title: 'Turn today\'s workout\ninto a card',

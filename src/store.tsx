@@ -39,7 +39,7 @@ const KEY_LAST_COUNTDOWN = 'intava:lastCountdown';
 const KEY_ONBOARDING = 'intava:onboarding';
 /**
  * 새 기능 팝업(NewsAnnounce)을 본 표시. 1.5.1~1.5.2의 라이브 액티비티 팝업은 'intava:seen:liveAnnounce'였고,
- * 1.5.3 공유 카드 팝업은 새 키라 그것을 본 사람에게도 한 번 뜬다. 새 사용자는 온보딩을 끝낼 때 같이
+ * 1.6.0 공유 카드 팝업은 새 키라 그것을 본 사람에게도 한 번 뜬다. 새 사용자는 온보딩을 끝낼 때 같이
  * 적는다 — 막 설치한 사람에게 「새 기능」은 맞지 않는다.
  */
 export const KEY_SEEN_SHARE_ANNOUNCE = 'intava:seen:shareAnnounce';

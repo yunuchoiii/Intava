@@ -330,7 +330,7 @@ export const zh: Catalog = {
     sampleRoutine: '晨间全身训练',
   },
 
-  /** 새 기능 팝업(1.5.3 공유 카드) — 설치 뒤 한 번. sampleName은 온보딩의 잠금화면 예시가 쓴다 */
+  /** 새 기능 팝업(1.6.0 공유 카드) — 설치 뒤 한 번. sampleName은 온보딩의 잠금화면 예시가 쓴다 */
   announce: {
     kicker: '新功能 · 分享训练记录',
     title: '把今天的训练\n做成卡片',

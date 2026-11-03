@@ -359,7 +359,7 @@ export const ko = {
     sampleRoutine: '아침 전신 루틴',
   },
 
-  /** 새 기능 팝업(1.5.3 공유 카드) — 설치 뒤 한 번. sampleName은 온보딩의 잠금화면 예시가 쓴다 */
+  /** 새 기능 팝업(1.6.0 공유 카드) — 설치 뒤 한 번. sampleName은 온보딩의 잠금화면 예시가 쓴다 */
   announce: {
     kicker: '새 기능 · 운동 기록 공유',
     title: '오늘의 운동을\n카드로 남겨 보세요',
