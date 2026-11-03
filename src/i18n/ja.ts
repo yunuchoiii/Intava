@@ -344,6 +344,7 @@ export const ja: Catalog = {
   live: {
     next: '次: {{what}}',
     subWork: '{{sub}} · 次: {{next}}',
+    waiting: '更新中…',
   },
 
   story: {

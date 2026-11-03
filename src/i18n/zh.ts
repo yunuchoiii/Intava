@@ -344,6 +344,7 @@ export const zh: Catalog = {
   live: {
     next: '下一个：{{what}}',
     subWork: '{{sub}} · 下一个：{{next}}',
+    waiting: '更新中…',
   },
 
   story: {

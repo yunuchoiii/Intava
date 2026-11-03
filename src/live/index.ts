@@ -96,6 +96,13 @@ export function syncLiveActivity(props: TimerActivityProps | null, force = false
   lastTry = Date.now();
   failed = false;
 
+  /*
+    구간이 끝난 뒤 다음 구간이 오지 않으면 「오래된 정보」로 표시되게 한다(staleDate).
+    아이폰은 다음 구간을 바로 받지만 워치는 늦게 받거나 건너뛰어, 0:00에 멈춘 숫자가
+    오래 남았다. 숫자 끝(구간 끝+1초) 뒤 2초를 더 기다린다. 멈춤·완료에는 걸지 않는다.
+  */
+  const stale = !props.paused && !props.done && props.end > 0 ? new Date(props.end + 3000) : undefined;
+
   const send = () => {
     try {
       if (!current) {
@@ -103,14 +110,14 @@ export function syncLiveActivity(props: TimerActivityProps | null, force = false
         current = f.getInstances()[0] ?? null;
       }
       if (current) {
-        void current.update(props).catch(() => {
+        void current.update(props, stale).catch(() => {
           // 거절됐거나 시스템이 이미 걷었다 — 몇 초 뒤 tick이 다시 보낸다. 걷힌 것이면
           // 그때 getInstances가 비어 새로 만든다
           current = null;
           failed = true;
         });
       } else {
-        current = f.start(props, 'intava://run');
+        current = f.start(props, 'intava://run', stale);
       }
     } catch {
       // 설정에서 라이브 액티비티를 껐거나 시스템이 시작을 거절했다 — 앱은 그대로 돈다.

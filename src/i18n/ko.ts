@@ -374,6 +374,8 @@ export const ko = {
   live: {
     next: '다음: {{what}}',
     subWork: '{{sub}} · 다음: {{next}}',
+    /** 워치에 다음 구간이 늦게 닿는 동안 — 0:00에 멈춘 숫자 대신 */
+    waiting: '불러오는 중',
   },
 
   /** 스토리 공유 카드(3a·3c·3d·3e) */
