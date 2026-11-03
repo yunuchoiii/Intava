@@ -13,10 +13,9 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, PixelRatio, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
-import { captureRef } from 'react-native-view-shot';
 import { WhiteButton } from '../src/components/Buttons';
 import { PressBox } from '../src/components/PressBox';
 import {
@@ -25,7 +24,6 @@ import {
   CARD,
   Legend,
   Logo,
-  ShareImage,
   SplitRing,
   cardDateLine,
   cardStyles,
@@ -45,15 +43,7 @@ import { presetFingerprint, type Preset } from '../src/types';
  * 1080×1920(인스타 스토리) — view-shot의 width·height는 기기 배율이 한 번 더 곱해져
  * 그대로 주면 3배(3240×5760)로 찍혔다. 배율로 나눠 준다.
  */
-const SHOT = {
-  format: 'png' as const,
-  width: 1080 / PixelRatio.get(),
-  height: 1920 / PixelRatio.get(),
-  result: 'tmpfile' as const,
-};
 
-/** iOS 공유 창의 「이미지 저장」 */
-const SAVE_TO_PHOTOS = 'com.apple.UIKit.activity.SaveToCameraRoll';
 
 export default function Done() {
   const { id, record, full, orders, edited, view } = useLocalSearchParams<{
@@ -73,8 +63,6 @@ export default function Done() {
   const { getPreset, savePreset, records } = useStore();
   const toast = useToast();
   const session = useSession();
-  const shot = useRef<View>(null);
-  const [sharing, setSharing] = useState(false);
   /** 종목 목록이 판보다 길어 스크롤되는가 — 그때만 아래에 흐려짐을 깐다(시안 2c) */
   const [overflow, setOverflow] = useState(false);
   const listBox = useRef(0);
@@ -191,28 +179,9 @@ export default function Done() {
     ]);
   };
 
-  /**
-   * 공유 — 숨겨 둔 360×640 카드를 1080×1920으로 찍어 iOS 공유 창에 넘긴다.
-   * 그 창에 인스타그램(스토리·피드·DM)과 「이미지 저장」이 함께 있다.
-   *
-   * RN의 Share를 쓴다 — expo-sharing은 창에서 무엇을 골랐는지 돌려주지 않아, 사진에
-   * 저장됐는지 알 수 없었다. Share는 iOS가 끝낸 활동의 종류(activityType)를 준다.
-   * 저장은 끝났을 때만 sharedAction으로 돌아오므로 그때만 「저장했습니다」를 띄운다.
-   */
-  const share = async () => {
-    if (!shot.current || sharing) return;
-    setSharing(true);
-    try {
-      const uri = await captureRef(shot, SHOT);
-      const res = await Share.share({ url: uri });
-      if (res.action === Share.sharedAction && res.activityType === SAVE_TO_PHOTOS) {
-        toast(t('doneScreen.imageSaved'));
-      }
-    } catch {
-      Alert.alert(t('doneScreen.shareFailTitle'), t('doneScreen.shareFailBody'));
-    } finally {
-      setSharing(false);
-    }
+  /** 공유 — 카드 고르기 화면을 띄운다(시안 TURN 4). 찍고 공유 창에 넘기는 일은 거기서 한다 */
+  const share = () => {
+    if (entry) router.push({ pathname: '/share-card', params: { record: entry.id } });
   };
 
   const leaveLabel = t(viewing ? 'doneScreen.close' : 'doneScreen.home');
@@ -232,8 +201,6 @@ export default function Done() {
 
   return (
     <View style={styles.root}>
-      {/* 찍을 카드 — 바탕 뒤에 가려 둔다. 찍는 것은 가려져 있어도 된다 */}
-      <ShareImage ref={shot} record={entry} />
       <Backdrop id="done" />
 
       <View style={{ flex: 1, paddingTop: insets.top + 16, paddingHorizontal: 24 }}>
@@ -297,7 +264,6 @@ export default function Done() {
       <View style={[styles.actions, { paddingBottom: bottomPad }]}>
         <PressBox
           onPress={share}
-          disabled={sharing}
           haptic="tap"
           radius={18}
           scaleTo={0.97}

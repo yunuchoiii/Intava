@@ -353,6 +353,33 @@ export const en: Catalog = {
     subWork: '{{sub}} · Next: {{next}}',
   },
 
+  story: {
+    sets: 'Sets',
+    blocks: 'Exercises',
+    rounds: 'Rounds',
+    setsAnd: 'sets · {{blocks}}',
+    totalWorkout: 'Total workout time',
+    workPct: 'Work {{p}}%',
+    restPct: 'Rest {{p}}%',
+  },
+
+  shareCard: {
+    title: 'Share card',
+    base: 'Classic · exercise list',
+    photoStack: 'Photo · stacked stats',
+    photoStrip: 'Photo · ratio bar',
+    ringHero: 'Ring',
+    typePoster: 'Big numbers',
+    addPhoto: 'Add photo',
+    needPhoto: 'Add a photo to share',
+    changePhoto: 'Change photo',
+    pickAlbum: 'Choose from library',
+    takePhoto: 'Take photo',
+    cameraDeniedTitle: "Camera isn't available",
+    cameraDeniedBody: 'Allow camera access for Intava in Settings.',
+    openSettings: 'Open Settings',
+  },
+
   /** 건강·피트니스 운동 종류 */
   workoutType: {
     hiit: 'High Intensity Interval Training',

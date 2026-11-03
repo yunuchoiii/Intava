@@ -346,6 +346,33 @@ export const zh: Catalog = {
     subWork: '{{sub}} · 下一个：{{next}}',
   },
 
+  story: {
+    sets: '组',
+    blocks: '动作',
+    rounds: '轮',
+    setsAnd: '组 · {{blocks}}',
+    totalWorkout: '总训练时长',
+    workPct: '运动 {{p}}%',
+    restPct: '休息 {{p}}%',
+  },
+
+  shareCard: {
+    title: '分享卡片',
+    base: '基本 · 动作列表',
+    photoStack: '照片 · 数字堆叠',
+    photoStrip: '照片 · 比例条',
+    ringHero: '圆环',
+    typePoster: '大字海报',
+    addPhoto: '添加照片',
+    needPhoto: '添加照片后即可分享',
+    changePhoto: '更换照片',
+    pickAlbum: '从相册选择',
+    takePhoto: '拍照',
+    cameraDeniedTitle: '无法使用相机',
+    cameraDeniedBody: '请在设置中允许 Intava 访问相机。',
+    openSettings: '打开设置',
+  },
+
   /** 건강·피트니스 운동 종류 */
   workoutType: {
     hiit: '高强度间歇训练',

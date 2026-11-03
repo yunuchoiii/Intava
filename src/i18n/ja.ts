@@ -346,6 +346,33 @@ export const ja: Catalog = {
     subWork: '{{sub}} · 次: {{next}}',
   },
 
+  story: {
+    sets: 'セット',
+    blocks: '種目',
+    rounds: 'ラウンド',
+    setsAnd: 'セット · {{blocks}}',
+    totalWorkout: '合計トレーニング時間',
+    workPct: '運動 {{p}}%',
+    restPct: '休憩 {{p}}%',
+  },
+
+  shareCard: {
+    title: 'シェアカード',
+    base: '基本 · 種目リスト',
+    photoStack: '写真 · 数字スタック',
+    photoStrip: '写真 · 比率バー',
+    ringHero: 'リング',
+    typePoster: 'タイポポスター',
+    addPhoto: '写真を追加',
+    needPhoto: '写真を追加するとシェアできます',
+    changePhoto: '写真を変更',
+    pickAlbum: 'アルバムから選ぶ',
+    takePhoto: '写真を撮る',
+    cameraDeniedTitle: 'カメラを使えません',
+    cameraDeniedBody: '設定でインタバのカメラへのアクセスを許可してください。',
+    openSettings: '設定を開く',
+  },
+
   /** 건강·피트니스 운동 종류 */
   workoutType: {
     hiit: '高強度インターバルトレーニング',
