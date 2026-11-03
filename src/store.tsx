@@ -39,10 +39,14 @@ const KEY_LAST_COUNTDOWN = 'intava:lastCountdown';
 const KEY_ONBOARDING = 'intava:onboarding';
 /**
  * 새 기능 팝업(NewsAnnounce)을 본 표시. 1.5.1~1.5.2의 라이브 액티비티 팝업은 'intava:seen:liveAnnounce'였고,
- * 1.6.0 공유 카드 팝업은 새 키라 그것을 본 사람에게도 한 번 뜬다. 새 사용자는 온보딩을 끝낼 때 같이
- * 적는다 — 막 설치한 사람에게 「새 기능」은 맞지 않는다.
+ * 1.6.0 공유 카드 팝업은 새 키라 그것을 본 사람에게도 한 번 뜬다. **새 사용자도 온보딩을 마치면 본다** —
+ * 공유 카드는 온보딩이 소개하지 않는다(라이브 액티비티 팝업 때는 온보딩이 같은 소개를 해서 새 사용자에겐
+ * 뺐는데, 1.6.0에서 그 규칙을 그대로 둬 새 사용자에게 안 떴다. 사용자 지적 2026-11-04).
+ * 다음 팝업을 만들 때도 온보딩이 같은 내용을 소개하는지부터 보고 정한다.
  */
-export const KEY_SEEN_SHARE_ANNOUNCE = 'intava:seen:shareAnnounce';
+// 1.6.1에서 키를 바꿨다 — 1.6.0을 새로 설치한 사람은 옛 키(intava:seen:shareAnnounce)가 온보딩 때 적혀 팝업을
+// 못 봤다. 새 키라 그들에게도 뜨고, 1.6.0에서 이미 본 사람에게도 한 번 더 뜬다(사용자 결정 2026-11-04).
+export const KEY_SEEN_SHARE_ANNOUNCE = 'intava:seen:shareAnnounce.v2';
 
 type Envelope<T> = { version: number; data: T };
 
@@ -267,8 +271,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       deletePreset: (id: string) => persist((prev) => prev.filter((p) => p.id !== id)),
       onboarding,
       finishOnboarding: async () => {
-        // 새 기능 팝업 표시를 먼저 적는다 — 온보딩이 닫히는 순간 팝업이 저장소를 읽는다
-        await AsyncStorage.setItem(KEY_SEEN_SHARE_ANNOUNCE, '1').catch(() => undefined);
         await save(KEY_ONBOARDING, 'done');
         setOnboarding('done');
       },
