@@ -317,7 +317,7 @@ function RingHero({ record }: { record: WorkoutRecord }) {
       <View style={s.darkBody}>
         <DarkHead record={record} />
         <Text style={s.heroName} numberOfLines={1}>{record.presetName}</Text>
-        <View style={{ alignItems: 'center', marginTop: 24 }}>
+        <View style={{ alignItems: 'center', marginTop: 28 }}>
           <StoryRing size={232} stroke={20} gap={36} ratio={n.ratio} restColor={CARD.rest} workColor={CARD.work}>
             {/* 시간이 링 한가운데 — 「총 시간」은 그 아래에 매달아 가운데를 흩뜨리지 않는다(사용자 요청) */}
             <View>
@@ -328,7 +328,7 @@ function RingHero({ record }: { record: WorkoutRecord }) {
             </View>
           </StoryRing>
         </View>
-        <View style={[s.row, { gap: 10, marginTop: 26 }]}>
+        <View style={[s.row, { gap: 10, marginTop: 52 }]}>
           <HeroCard tone="work" label={t('doneScreen.legendWork')} value={storyTime(n.work)} />
           <HeroCard tone="rest" label={t('doneScreen.legendRest')} value={storyTime(n.rest)} />
         </View>
@@ -376,13 +376,13 @@ function TypePoster({ record }: { record: WorkoutRecord }) {
         id="se"
         base={CARD.bg}
         glows={[
-          { cx: -0.1, cy: 0.54, rx: 0.9, ry: 0.55, stops: [[0, CARD.work, 0.42], [0.45, CARD.work, 0.12], [0.72, CARD.work, 0]] },
-          { cx: 1.1, cy: 0.54, rx: 0.9, ry: 0.55, stops: [[0, CARD.rest, 0.42], [0.45, CARD.rest, 0.12], [0.72, CARD.rest, 0]] },
+          { cx: -0.1, cy: 0.67, rx: 0.9, ry: 0.55, stops: [[0, CARD.work, 0.42], [0.45, CARD.work, 0.12], [0.72, CARD.work, 0]] },
+          { cx: 1.1, cy: 0.67, rx: 0.9, ry: 0.55, stops: [[0, CARD.rest, 0.42], [0.45, CARD.rest, 0.12], [0.72, CARD.rest, 0]] },
         ]}
       />
       <View style={s.darkBody}>
         <DarkHead record={record} />
-        <View style={{ marginTop: 44 }}>
+        <View style={{ marginTop: 140 }}>
           <Text style={s.posterName} numberOfLines={1}>{record.presetName}</Text>
           <Text
             numberOfLines={1}
@@ -478,7 +478,7 @@ const s = StyleSheet.create({
   darkBody: { flex: 1, paddingTop: 68, paddingHorizontal: 24 },
   darkDate: { fontSize: 11, fontWeight: '600', color: CARD.sub },
   heroName: {
-    marginTop: 30,
+    marginTop: 48,
     textAlign: 'center',
     fontSize: 24,
     fontWeight: '800',
