@@ -2,6 +2,8 @@
   "ios": {
     "NSHealthShareUsageDescription": "Intava does not read your health data.",
     "NSHealthUpdateUsageDescription": "Intava starts an iOS workout session during your workout to keep the Lock Screen and Dynamic Island timer running.",
-    "NSPhotoLibraryAddUsageDescription": "Intava saves your workout card to Photos."
+    "NSPhotoLibraryAddUsageDescription": "Intava saves your workout card to Photos.",
+    "NSCameraUsageDescription": "Intava uses the camera to put a photo on your workout card.",
+    "NSPhotoLibraryUsageDescription": "Intava puts a photo from your library on your workout card."
   }
 }

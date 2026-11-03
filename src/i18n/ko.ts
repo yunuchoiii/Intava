@@ -376,6 +376,35 @@ export const ko = {
     subWork: '{{sub}} · 다음: {{next}}',
   },
 
+  /** 스토리 공유 카드(3a·3c·3d·3e) */
+  story: {
+    sets: '세트',
+    blocks: '종목',
+    rounds: '라운드',
+    /** 「세트 · 6종목」 — blocks는 count.blocks */
+    setsAnd: '세트 · {{blocks}}',
+    workPct: '운동 {{p}}%',
+    restPct: '휴식 {{p}}%',
+  },
+
+  /** 공유 카드 고르기(시안 TURN 4) */
+  shareCard: {
+    title: '공유 카드',
+    base: '기본 · 종목 목록',
+    photoStack: '사진 · 숫자 스택',
+    photoStrip: '사진 · 비율 막대',
+    ringHero: '링 히어로',
+    typePoster: '타이포 포스터',
+    addPhoto: '사진 넣기',
+    needPhoto: '사진을 넣으면 공유할 수 있어요',
+    changePhoto: '사진 바꾸기',
+    pickAlbum: '앨범에서 고르기',
+    takePhoto: '사진 찍기',
+    cameraDeniedTitle: '카메라를 쓸 수 없어요',
+    cameraDeniedBody: '설정에서 인타바의 카메라 접근을 허용해 주세요.',
+    openSettings: '설정 열기',
+  },
+
   /** 건강·피트니스 운동 종류 */
   workoutType: {
     hiit: '고강도 인터벌 트레이닝',
@@ -453,7 +482,6 @@ export const ko = {
     emptyToday: '운동을 기록해보세요.',
     emptyFuture: '아직 오지 않은 날입니다.',
     /** 카드 아래 — 그날의 완료 카드를 다시 연다 */
-    viewCard: '공유 카드 보기',
     deleteTitle: '이 기록을 지울까요?',
     deleteBody: '지운 기록은 되돌릴 수 없습니다.',
     deleted: '기록을 삭제했습니다',

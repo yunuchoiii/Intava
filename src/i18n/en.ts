@@ -353,6 +353,32 @@ export const en: Catalog = {
     subWork: '{{sub}} · Next: {{next}}',
   },
 
+  story: {
+    sets: 'Sets',
+    blocks: 'Exercises',
+    rounds: 'Rounds',
+    setsAnd: 'sets · {{blocks}}',
+    workPct: 'Work {{p}}%',
+    restPct: 'Rest {{p}}%',
+  },
+
+  shareCard: {
+    title: 'Share card',
+    base: 'Classic · exercise list',
+    photoStack: 'Photo · stacked stats',
+    photoStrip: 'Photo · ratio bar',
+    ringHero: 'Ring',
+    typePoster: 'Big numbers',
+    addPhoto: 'Add photo',
+    needPhoto: 'Add a photo to share',
+    changePhoto: 'Change photo',
+    pickAlbum: 'Choose from library',
+    takePhoto: 'Take photo',
+    cameraDeniedTitle: "Camera isn't available",
+    cameraDeniedBody: 'Allow camera access for Intava in Settings.',
+    openSettings: 'Open Settings',
+  },
+
   /** 건강·피트니스 운동 종류 */
   workoutType: {
     hiit: 'High Intensity Interval Training',
@@ -425,7 +451,6 @@ export const en: Catalog = {
     emptyToday: 'Log a workout today.',
     emptyFuture: 'This day hasn’t come yet.',
     /** 카드 아래 — 그날의 완료 카드를 다시 연다 */
-    viewCard: 'View share card',
     deleteTitle: 'Delete this record?',
     deleteBody: 'Deleted records can’t be restored.',
     deleted: 'Record deleted',

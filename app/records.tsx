@@ -12,7 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React, { useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BackIcon, ChevronIcon } from '../src/components/Icons';
+import { BackIcon, ChevronIcon, ShareIcon } from '../src/components/Icons';
 import { useMiniTimerSpace } from '../src/components/MiniTimer';
 import { PressBox } from '../src/components/PressBox';
 import { Screen } from '../src/components/Screen';
@@ -332,7 +332,7 @@ export default function Records() {
                   key={r.id}
                   record={r}
                   onLongPress={() => askDelete(r)}
-                  onOpen={() => router.push({ pathname: '/done', params: { record: r.id, view: '1' } })}
+                  onOpen={() => router.push({ pathname: '/share-card', params: { record: r.id } })}
                 />
               ))}
             </View>
@@ -499,10 +499,10 @@ function SessionCard({
           dim={0.12}
           dimColor="#FFF"
           style={styles.cardOpen}
-          accessibilityLabel={t('records.viewCard')}
+          accessibilityLabel={t('doneScreen.share')}
         >
-          <Text style={styles.cardOpenLabel}>{t('records.viewCard')}</Text>
-          <ChevronIcon size={16} dir="right" color={C.textSecondary} />
+          <ShareIcon size={15} color={C.textSecondary} />
+          <Text style={styles.cardOpenLabel}>{t('doneScreen.share')}</Text>
         </PressBox>
       </Glass>
     </Pressable>
@@ -659,7 +659,7 @@ const styles = StyleSheet.create({
   cardStatValue: { marginTop: 4, fontSize: 17, fontWeight: '700', letterSpacing: -0.34, color: C.textPrimary },
   cardStatLabel: { fontSize: 11, color: C.textTertiary },
 
-  /** 카드 맨 아래 — 완료 카드 다시 보기. 줄 전체가 눌리되 글자는 한 걸음 물러서 있다 */
+  /** 카드 맨 아래 — 공유하기(카드 고르기로 바로). 줄 전체가 눌리되 글자는 한 걸음 물러서 있다 */
   cardOpen: {
     marginTop: 12,
     height: 44,
@@ -668,7 +668,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
+    gap: 6,
     backgroundColor: 'rgba(255,255,255,0.06)',
   },
   cardOpenLabel: { fontSize: 14, fontWeight: '600', color: C.textSecondary },

@@ -346,6 +346,32 @@ export const zh: Catalog = {
     subWork: '{{sub}} · 下一个：{{next}}',
   },
 
+  story: {
+    sets: '组',
+    blocks: '动作',
+    rounds: '轮',
+    setsAnd: '组 · {{blocks}}',
+    workPct: '运动 {{p}}%',
+    restPct: '休息 {{p}}%',
+  },
+
+  shareCard: {
+    title: '分享卡片',
+    base: '基本 · 动作列表',
+    photoStack: '照片 · 数字堆叠',
+    photoStrip: '照片 · 比例条',
+    ringHero: '圆环',
+    typePoster: '大字海报',
+    addPhoto: '添加照片',
+    needPhoto: '添加照片后即可分享',
+    changePhoto: '更换照片',
+    pickAlbum: '从相册选择',
+    takePhoto: '拍照',
+    cameraDeniedTitle: '无法使用相机',
+    cameraDeniedBody: '请在设置中允许 Intava 访问相机。',
+    openSettings: '打开设置',
+  },
+
   /** 건강·피트니스 운동 종류 */
   workoutType: {
     hiit: '高强度间歇训练',
@@ -417,7 +443,6 @@ export const zh: Catalog = {
     emptyToday: '记录今天的训练吧。',
     emptyFuture: '这一天还没有到来。',
     /** 카드 아래 — 그날의 완료 카드를 다시 연다 */
-    viewCard: '查看分享卡片',
     deleteTitle: '删除这条记录吗？',
     deleteBody: '删除后无法恢复。',
     deleted: '已删除记录',

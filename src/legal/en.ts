@@ -5,7 +5,7 @@ const EMAIL = 'chltjdnjs529@gmail.com';
 export const en: LegalPack = {
   privacy: {
     title: 'Privacy Policy',
-    updated: 'Last updated: October 23, 2026',
+    updated: 'Last updated: November 3, 2026',
     lead: 'intava does not collect personal information.',
     sections: [
       {
@@ -58,7 +58,9 @@ export const en: LegalPack = {
       {
         heading: 'Share image',
         body: [
-          '“Share” on the finish screen turns the day\'s workout card into an image and hands it to the system share sheet. If you choose “Save Image,” iOS asks for permission to add it to Photos. The app never reads your photo library and keeps no copy of the image.',
+          '“Share” on the finish screen turns the day\'s workout into a card image and hands it to the system share sheet. If you choose “Save Image,” iOS asks for permission to add it to Photos.',
+          'Photo cards let you pick a background photo from Photos or take one with the camera. Picking from Photos uses the iOS photo picker, so the app receives only the one photo you choose and never accesses the rest of your library. Camera permission is requested only when you choose “Take photo.”',
+          'The photo you pick and the image the app makes are used only to build the share card. They sit in the app\'s temporary storage while you work, and the app neither keeps them nor sends them anywhere.',
         ],
       },
       {
