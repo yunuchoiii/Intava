@@ -341,7 +341,7 @@ export const en: Catalog = {
   announce: {
     kicker: 'NEW · SHARE CARDS',
     title: 'Turn today\'s workout\ninto a card',
-    desc: 'Tap Share on the finish screen or in your records, pick a card, and post it straight to your Instagram story.',
+    desc: 'Tap Share on the finish screen or in your records, pick a card, and share it right away.',
     rowPhoto: 'Put your stats on a workout photo',
     rowCards: 'Choose from five card styles',
     ok: 'Got it',

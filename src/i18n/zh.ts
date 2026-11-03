@@ -334,7 +334,7 @@ export const zh: Catalog = {
   announce: {
     kicker: '新功能 · 分享卡片',
     title: '把今天的训练\n做成卡片',
-    desc: '在完成页面或训练记录中点「分享」选择卡片，即可直接发布到 Instagram 快拍。',
+    desc: '在完成页面或训练记录中点「分享」选择卡片，即可直接分享。',
     rowPhoto: '把记录叠在训练照片上',
     rowCards: '五种卡片任你选',
     ok: '好的',

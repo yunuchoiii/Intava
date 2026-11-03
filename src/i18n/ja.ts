@@ -334,7 +334,7 @@ export const ja: Catalog = {
   announce: {
     kicker: '新機能 · シェアカード',
     title: '今日のトレーニングを\nカードに残そう',
-    desc: '完了画面や記録の「共有」からカードを選んで、Instagramストーリーにそのまま投稿できます。',
+    desc: '完了画面や記録の「共有」からカードを選んで、そのまま共有できます。',
     rowPhoto: 'トレーニング写真に記録をのせる',
     rowCards: '5種類のカードから選ぶ',
     ok: 'OK',
