@@ -3,8 +3,8 @@
  * 시안 「인타바 스토리 공유 카드」 TURN 3 (3a · 3c · 3d · 3e, 2026-11 handoff).
  *
  * 모두 360×640으로 그려 3배로 찍는다(1080×1920). 시안 문서의 px 값도 이 좌표계다.
- * 위 84pt(인스타 프로필·닫기)와 아래 60pt(하단 바)에는 정보를 두지 않는다 — 사진 배경만
- * 그 자리까지 채운다.
+ * 위아래 여백은 시안 2026-11-03 개정값이다 — 글은 위 68(사진 카드 로고 72), 아래 64부터.
+ * 인스타 프로필 줄과 하단 바 바로 안쪽이다. 사진 배경은 끝까지 채운다.
  *
  * 3a·3c는 사진 위에 얹는다. 사진이 없으면 프레임 기본색(#2A2A2E)이 깔린다 — 고르는 화면이
  * 사진 없이는 공유를 막는다.
@@ -202,10 +202,10 @@ function PhotoStack({ record, photo }: { record: WorkoutRecord; photo?: string }
           { cx: 0, cy: 0, rx: 0.7, ry: 0.22, stops: [[0, '#000', 0.35], [0.8, '#000', 0]] },
         ]}
       />
-      <View style={{ position: 'absolute', left: 24, top: 96 }}>
+      <View style={{ position: 'absolute', left: 24, top: 72 }}>
         <StoryLogo mark={18} word={18} onPhoto />
       </View>
-      <View style={{ position: 'absolute', right: 24, bottom: 84, left: 24, alignItems: 'flex-end' }}>
+      <View style={{ position: 'absolute', right: 24, bottom: 64, left: 24, alignItems: 'flex-end' }}>
         <Text style={[s.shadow, s.photoSub]}>{storyDate(record, false)}</Text>
         <Text style={[s.shadow, s.photoName, { marginTop: 8 }]} numberOfLines={1}>
           {record.presetName}
@@ -247,7 +247,7 @@ function PhotoStrip({ record, photo }: { record: WorkoutRecord; photo?: string }
         locations={[0.45, 0.88]}
         style={StyleSheet.absoluteFill}
       />
-      <View style={{ position: 'absolute', left: 24, right: 24, bottom: 84 }}>
+      <View style={{ position: 'absolute', left: 24, right: 24, bottom: 64 }}>
         <View style={[s.row, { justifyContent: 'space-between', alignItems: 'flex-end', gap: 12 }]}>
           <View style={{ flexShrink: 1, gap: 9 }}>
             <Text style={[s.shadow, s.photoSub, { fontSize: 12 }]} numberOfLines={1}>
@@ -451,10 +451,10 @@ export const StoryCard = React.forwardRef<
 
 /**
  * 사진 카드에서 글자가 없는 사진 자리의 세로 가운데(360×640 좌표) — 「사진 넣기」를 여기에 띄운다.
- * 3a는 로고(아래 끝 114) ~ 오른쪽 아래 숫자 스택(위 끝 약 390), 3c는 인스타 위 안전 영역(84) ~
- * 아래 스트립(위 끝 약 390)의 가운데다.
+ * 3a는 로고(아래 끝 90) ~ 오른쪽 아래 숫자 스택(위 끝 약 410), 3c는 위 글 여백(68) ~
+ * 아래 스트립(위 끝 약 410)의 가운데다.
  */
-export const PHOTO_SPOT: Record<'photoStack' | 'photoStrip', number> = { photoStack: 252, photoStrip: 237 };
+export const PHOTO_SPOT: Record<'photoStack' | 'photoStrip', number> = { photoStack: 250, photoStrip: 239 };
 
 /** 사진이 있어야 공유할 수 있는 카드 */
 export const needsPhoto = (t: StoryTemplate) => t === 'photoStack' || t === 'photoStrip';
@@ -475,7 +475,7 @@ const s = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.25)',
   },
-  darkBody: { flex: 1, paddingTop: 92, paddingHorizontal: 24 },
+  darkBody: { flex: 1, paddingTop: 68, paddingHorizontal: 24 },
   darkDate: { fontSize: 11, fontWeight: '600', color: CARD.sub },
   heroName: {
     marginTop: 30,

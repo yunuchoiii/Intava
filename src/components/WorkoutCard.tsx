@@ -386,7 +386,8 @@ const styles = StyleSheet.create({
     height: SHARE_H,
     overflow: 'hidden',
     backgroundColor: CARD.bg,
-    paddingTop: 92,
+    // 위 여백 68 — 시안 2026-11-03 개정(92 → 68, 인스타 위 바 바로 아래)
+    paddingTop: 68,
     paddingHorizontal: 24,
   },
   shareHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
