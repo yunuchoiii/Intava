@@ -332,12 +332,13 @@ export const zh: Catalog = {
 
   /** 새 기능 팝업(1.5.3 공유 카드) — 설치 뒤 한 번. sampleName은 온보딩의 잠금화면 예시가 쓴다 */
   announce: {
-    kicker: '新功能 · 分享卡片',
-    title: '把今天的训练\n做成卡片',
-    desc: '在完成页面或训练记录中点「分享」选择卡片，即可直接分享。',
-    rowPhoto: '把记录叠在训练照片上',
-    rowCards: '五种卡片任你选',
+    kicker: '新功能 · 分享训练记录',
+    title: '练完了，就该晒一晒。',
+    desc: '把完成的训练用喜欢的风格分享或保存吧。',
+    rowPhoto: '在照片上叠加记录',
+    rowCards: '5 种卡片风格',
     ok: '好的',
+    sampleBlocks: '引体向上|高位下拉|T 杠划船|坐姿推胸|哑铃卧推|侧平举',
     cardName: '5-01 · 上半身',
     sampleName: '蝴蝶机夹胸',
   },

@@ -9,25 +9,24 @@
  * 다시 띄우지 않는다. 운동이 돌고 있지 않을 때만 — 앱을 껐다 켜서 실행 화면이 복원되는
  * 자리에 팝업이 그 위를 덮으면 안 된다.
  *
- * 미리보기는 캡처가 아니라 실제 공유 카드(StoryCard)를 예시 기록으로 줄여 그린다 — 네 언어
- * 모두 그 언어로 나온다. 아래의 IslandPill · LockCard · PreviewGlow는 온보딩이 쓴다.
+ * 미리보기는 시안 「1.5.3 · 스토리 공유 카드 팝업」 3a(다섯 장 부채) — 캡처가 아니라 실제 공유 카드를
+ * 예시 기록으로 줄여 그린다. 네 언어 모두 그 언어로 나온다. 아래의 IslandPill · LockCard · PreviewGlow는 온보딩이 쓴다.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Animated, Image, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { t } from '../i18n';
 import { TABULAR } from '../theme';
 import { KEY_SEEN_SHARE_ANNOUNCE } from '../store';
 import type { WorkoutRecord } from '../types';
-import { ShareIcon } from './Icons';
 import { Portal } from './Overlay';
 import { PressBox } from './PressBox';
 import { StoryCard, type StoryTemplate } from './StoryCards';
-import { SHARE_H, SHARE_W } from './WorkoutCard';
+import { SHARE_H, SHARE_W, ShareImage } from './WorkoutCard';
 
 const KEY = KEY_SEEN_SHARE_ANNOUNCE;
 const RED = '#FF4D5E';
@@ -85,7 +84,7 @@ function Card({ onClose }: { onClose: () => void }) {
         {/* 바탕 Svg는 숫자로 크기를 준다 — 100%로 두면 판의 오른쪽·아래가 비었다 */}
         <View style={styles.preview} onLayout={(e) => setBox(e.nativeEvent.layout)}>
           <PreviewGlow w={box.width} h={box.height} />
-          <CardFan />
+          <CardFan width={box.width} />
         </View>
 
         <View style={styles.body}>
@@ -97,7 +96,7 @@ function Card({ onClose }: { onClose: () => void }) {
           <View style={styles.rule} />
           <View style={{ gap: 14 }}>
             <Row icon={<PhotoGlyph />} title={t('announce.rowPhoto')} />
-            <Row icon={<ShareIcon size={20} color="#F7F7F8" />} title={t('announce.rowCards')} />
+            <Row icon={<CardsGlyph />} title={t('announce.rowCards')} />
           </View>
           <PressBox onPress={onClose} haptic="tap" radius={16} scaleTo={0.97} dim={0.1} accessibilityLabel={t('announce.ok')}>
             <LinearGradient colors={['#FFFFFF', '#E4E7EC']} style={styles.button}>
@@ -114,6 +113,7 @@ function Card({ onClose }: { onClose: () => void }) {
 function sampleRecord(): WorkoutRecord {
   const start = new Date();
   start.setHours(8, 36, 0, 0);
+  const names = t('announce.sampleBlocks').split('|');
   return {
     id: 'announce',
     presetId: 'announce',
@@ -125,54 +125,94 @@ function sampleRecord(): WorkoutRecord {
     completedSets: 30,
     completed: true,
     shape: '',
-    blocks: Array.from({ length: 6 }, () => ({ name: '', spec: '', durSec: 300 })),
+    blocks: names.map((name, i) => ({ name, spec: '', durSec: [600, 600, 563, 600, 594, 419][i] ?? 600 })),
     segs: [],
   };
 }
 
+/** 사진 카드 두 장의 예시 사진(Unsplash, 360×640) — 어두운 카드들과 색으로 갈리게 */
+const PHOTO_A = Image.resolveAssetSource(require('../../assets/announce/photo-a.jpg')).uri;
+const PHOTO_C = Image.resolveAssetSource(require('../../assets/announce/photo-c.jpg')).uri;
+
+/** 시안 3a의 판 폭(393pt 폰) — 위치·크기를 이 폭 기준으로 적고 실제 폭에 비례해 늘인다 */
+const FAN_W = 317;
+const FAN_H = 262;
+const FAN_K = 0.32;
+
+/** 뒤에서 앞으로 — 시안 3a 「다섯 장 부채」(left · top · 기울기) */
+const FAN: { kind: 'base' | StoryTemplate; left: number; top: number; rot: number; photo?: string }[] = [
+  { kind: 'base', left: 8.9, top: 40, rot: -14 },
+  { kind: 'typePoster', left: 192.9, top: 40, rot: 14 },
+  { kind: 'ringHero', left: 52.9, top: 22, rot: -7 },
+  { kind: 'photoStrip', left: 148.9, top: 22, rot: 7, photo: PHOTO_C },
+  { kind: 'photoStack', left: 100.9, top: 14, rot: 0, photo: PHOTO_A },
+];
 
 /**
- * 카드 세 장 부채 — 가운데 링, 왼쪽 포스터, 오른쪽 사진 카드(사진 자리는 비어 있다).
- * 크기는 고정 배율(transform)로 줄인다 — 고정이면 글자가 또렷하다(애니메이션 배율만 깨졌다).
+ * 카드 다섯 장 부채 — 시안 3a. 모두 불투명, 맨 앞은 사진 카드.
+ * 크기·기울기는 고정 transform이다 — 고정이면 글자가 또렷하다(스크롤에 맞춰 바뀌는 배율만 깨졌다).
  */
-function CardFan() {
+function CardFan({ width }: { width: number }) {
   const record = React.useMemo(sampleRecord, []);
-  // 가운데 카드는 화면 높이의 30%까지(18 Pro에서 0.42배 = 269pt). SE 같은 작은 화면에서 팝업이 넘치지 않게
-  const { height } = useWindowDimensions();
-  const FAN_MID = Math.min(0.42, (height * 0.3) / SHARE_H);
-  const FAN_SIDE = FAN_MID * 0.8;
-  const midW = SHARE_W * FAN_MID;
-  const midH = SHARE_H * FAN_MID;
-  const sideW = SHARE_W * FAN_SIDE;
-  const sideH = SHARE_H * FAN_SIDE;
-  const card = (template: StoryTemplate, k: number) => (
-    <View style={{ width: SHARE_W * k, height: SHARE_H * k, borderRadius: 12, overflow: 'hidden' }}>
-      <View style={{ width: SHARE_W, height: SHARE_H, transform: [{ scale: k }], transformOrigin: 'top left' }}>
-        <StoryCard template={template} record={record} />
-      </View>
-    </View>
-  );
+  if (!width) return <View style={{ height: FAN_H }} />;
+  const z = width / FAN_W;
+  const k = FAN_K * z;
+  const w = SHARE_W * k;
+  const h = SHARE_H * k;
   return (
-    <View style={{ height: midH, width: '100%', alignItems: 'center', justifyContent: 'center' }}>
-      <View style={[styles.fanSide, { left: '50%', marginLeft: -midW / 2 - sideW * 0.62, top: (midH - sideH) / 2 }]}>
-        {card('typePoster', FAN_SIDE)}
-      </View>
-      <View style={[styles.fanSide, { left: '50%', marginLeft: midW / 2 - sideW * 0.38, top: (midH - sideH) / 2 }]}>
-        {card('photoStrip', FAN_SIDE)}
-      </View>
-      <View style={styles.fanMid}>{card('ringHero', FAN_MID)}</View>
+    <View style={{ width, height: FAN_H * z }}>
+      {FAN.map((c, i) => {
+        const front = i === FAN.length - 1;
+        return (
+          <View
+            key={c.kind}
+            style={[
+              front ? styles.fanFront : styles.fanBack,
+              {
+                position: 'absolute',
+                left: c.left * z,
+                top: c.top * z,
+                width: w,
+                height: h,
+                borderRadius: 7,
+                transform: [{ rotate: `${c.rot}deg` }],
+                transformOrigin: '50% 100%',
+              },
+            ]}
+          >
+            <View style={[styles.fanClip, front && { borderColor: 'rgba(255,255,255,0.14)' }]}>
+              <View style={{ width: SHARE_W, height: SHARE_H, transform: [{ scale: k }], transformOrigin: 'top left' }}>
+                {c.kind === 'base' ? (
+                  <ShareImage record={record} />
+                ) : (
+                  <StoryCard template={c.kind} record={record} photo={c.photo} />
+                )}
+              </View>
+            </View>
+          </View>
+        );
+      })}
     </View>
   );
 }
 
-/** 사진 + 더하기 — 카드 고르기의 「사진 넣기」와 같은 모양 */
+/** 사진 — 시안 3a의 줄 아이콘 */
 function PhotoGlyph() {
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#F7F7F8" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M12 3.5H7A3.5 3.5 0 0 0 3.5 7v10A3.5 3.5 0 0 0 7 20.5h10a3.5 3.5 0 0 0 3.5-3.5v-5.5" />
-      <Circle cx={8.6} cy={8.6} r={1.8} />
-      <Path d="M5.5 20.3l8.1-8.1a1.6 1.6 0 0 1 2.3 0l4.4 4.4" />
-      <Path d="M15.5 5.5h6M18.5 2.5v6" />
+    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="#F7F7F8" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Rect x={3} y={3} width={18} height={18} rx={4} />
+      <Circle cx={9} cy={9} r={1.8} />
+      <Path d="M21 15.5l-5-5L5 21" />
+    </Svg>
+  );
+}
+
+/** 겹친 카드 — 시안 3a의 줄 아이콘 */
+function CardsGlyph() {
+  return (
+    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="#F7F7F8" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Rect x={7} y={3} width={12} height={16} rx={2.5} />
+      <Path d="M4 7v11.5A2.5 2.5 0 0 0 6.5 21H14" />
     </Svg>
   );
 }
@@ -327,10 +367,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     borderCurve: 'continuous',
     overflow: 'hidden',
-    paddingVertical: 18,
-    paddingHorizontal: 12,
     alignItems: 'center',
-    gap: 18,
     backgroundColor: '#000000',
   },
   pill: {
@@ -365,12 +402,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  fanSide: { position: 'absolute', opacity: 0.55 },
-  fanMid: {
-    shadowColor: '#000',
-    shadowOpacity: 0.6,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 10 },
+  fanBack: { shadowColor: '#000', shadowOpacity: 0.55, shadowRadius: 13, shadowOffset: { width: 0, height: 10 } },
+  fanFront: { shadowColor: '#000', shadowOpacity: 0.7, shadowRadius: 17, shadowOffset: { width: 0, height: 14 } },
+  fanClip: {
+    flex: 1,
+    borderRadius: 7,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
   rowTitle: { fontSize: 15, fontWeight: '600', color: '#F7F7F8' },
   button: { height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
