@@ -34,7 +34,8 @@ export function useToast() {
   return useContext(ToastCtx);
 }
 
-export function ToastHost({ children }: { children: React.ReactNode }) {
+/** lift — 바닥에 버튼이 붙은 화면(전체 화면 모달 등)에서 그만큼 띄운다 */
+export function ToastHost({ children, lift = 0 }: { children: React.ReactNode; lift?: number }) {
   const [message, setMessage] = useState<string | null>(null);
   const anim = useRef(new Animated.Value(0)).current;
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -70,12 +71,12 @@ export function ToastHost({ children }: { children: React.ReactNode }) {
   return (
     <ToastCtx.Provider value={show}>
       {children}
-      {message != null && <Bubble message={message} anim={anim} />}
+      {message != null && <Bubble message={message} anim={anim} lift={lift} />}
     </ToastCtx.Provider>
   );
 }
 
-function Bubble({ message, anim }: { message: string; anim: Animated.Value }) {
+function Bubble({ message, anim, lift }: { message: string; anim: Animated.Value; lift: number }) {
   const insets = useSafeAreaInsets();
   const miniSpace = useMiniTimerSpace();
   const rise = useMemo(
@@ -89,7 +90,7 @@ function Bubble({ message, anim }: { message: string; anim: Animated.Value }) {
       pointerEvents="none"
       style={[
         styles.wrap,
-        { bottom: insets.bottom + 20 + miniSpace, opacity: anim, transform: [{ translateY: rise }] },
+        { bottom: insets.bottom + 20 + miniSpace + lift, opacity: anim, transform: [{ translateY: rise }] },
       ]}
     >
       <View style={[styles.bubble, E3]}>

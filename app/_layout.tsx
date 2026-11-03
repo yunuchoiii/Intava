@@ -146,6 +146,8 @@ export default function RootLayout() {
             />
             {/* 기록은 홈에서 옆으로 미끄러져 들어온다 — 목록 옆의 또 다른 목록이다 */}
             <Stack.Screen name="records" />
+            {/* 공유 카드 고르기 — 완료 화면 위로 전체 화면 시트처럼 올라온다(시안 TURN 4) */}
+            <Stack.Screen name="share-card" options={{ presentation: 'fullScreenModal' }} />
             {/* 방침·지원 — 설정에서 옆으로 들어온다 */}
             <Stack.Screen name="legal" />
             {/* 첫 설치 온보딩 — 앱 창 안의 모달이라 건강 앱 권한 창이 그 위에 뜬다(Onboarding.tsx) */}

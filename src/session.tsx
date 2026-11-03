@@ -550,6 +550,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           runFraction:
             paused && plan.total > 0 ? Math.round((e / plan.total) * 100) / 100 : 0,
           done: shot.done,
+          waiting: t('live.waiting'),
         },
         force
       );

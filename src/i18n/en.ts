@@ -337,20 +337,49 @@ export const en: Catalog = {
     sampleRoutine: 'Morning Full Body',
   },
 
-  /** 라이브 액티비티 출시 팝업 — 설치 뒤 한 번 */
+  /** 새 기능 팝업(1.6.0 공유 카드) — 설치 뒤 한 번. sampleName은 온보딩의 잠금화면 예시가 쓴다 */
   announce: {
-    kicker: 'NEW · LIVE ACTIVITIES',
-    title: 'See time left at a glance,\nwithout opening the app',
-    desc: 'Check your workout progress right from the Dynamic Island and Lock Screen.',
-    island: 'Dynamic Island',
-    lock: 'Lock Screen',
-    ok: 'Get started',
+    kicker: 'NEW · SHARE YOUR WORKOUTS',
+    title: 'Turn today\'s workout\ninto a card',
+    desc: 'Share or save a finished workout in the style you like.',
+    rowPhoto: 'Add your stats to a photo',
+    rowCards: '5 card styles',
+    ok: 'Got it',
+    sampleBlocks: 'Pull-up|Lat pulldown|T-bar row|Chest press|Dumbbell press|Lateral raise',
+    cardName: '5-01 · Upper body',
     sampleName: 'Pec Deck Fly',
   },
 
   live: {
     next: 'Next: {{what}}',
     subWork: '{{sub}} · Next: {{next}}',
+    waiting: 'Updating…',
+  },
+
+  story: {
+    sets: 'Sets',
+    blocks: 'Exercises',
+    rounds: 'Rounds',
+    setsAnd: 'sets · {{blocks}}',
+    workPct: 'Work {{p}}%',
+    restPct: 'Rest {{p}}%',
+  },
+
+  shareCard: {
+    title: 'Share card',
+    base: 'Classic · exercise list',
+    photoStack: 'Photo · stacked stats',
+    photoStrip: 'Photo · ratio bar',
+    ringHero: 'Ring',
+    typePoster: 'Big numbers',
+    addPhoto: 'Add photo',
+    needPhoto: 'Add a photo to share',
+    changePhoto: 'Change photo',
+    pickAlbum: 'Choose from library',
+    takePhoto: 'Take photo',
+    cameraDeniedTitle: "Camera isn't available",
+    cameraDeniedBody: 'Allow camera access for Intava in Settings.',
+    openSettings: 'Open Settings',
   },
 
   /** 건강·피트니스 운동 종류 */
@@ -425,7 +454,6 @@ export const en: Catalog = {
     emptyToday: 'Log a workout today.',
     emptyFuture: 'This day hasn’t come yet.',
     /** 카드 아래 — 그날의 완료 카드를 다시 연다 */
-    viewCard: 'View share card',
     deleteTitle: 'Delete this record?',
     deleteBody: 'Deleted records can’t be restored.',
     deleted: 'Record deleted',

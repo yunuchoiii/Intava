@@ -2,7 +2,7 @@
   "expo": {
     "name": "intava",
     "slug": "Intava",
-    "version": "1.5.2",
+    "version": "1.6.0",
     "scheme": "intava",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -99,7 +99,8 @@
         {
           "fonts": [
             "node_modules/@expo-google-fonts/league-spartan/600SemiBold/LeagueSpartan_600SemiBold.ttf",
-            "node_modules/@expo-google-fonts/league-spartan/700Bold/LeagueSpartan_700Bold.ttf"
+            "node_modules/@expo-google-fonts/league-spartan/700Bold/LeagueSpartan_700Bold.ttf",
+            "node_modules/@expo-google-fonts/league-spartan/800ExtraBold/LeagueSpartan_800ExtraBold.ttf"
           ]
         }
       ],
@@ -109,7 +110,8 @@
           "bundleIdentifier": "com.intava.app.ExpoWidgetsTarget",
           "groupIdentifier": "group.com.intava.app",
           "enablePushNotifications": false,
-          "widgets": []
+          "widgets": [],
+          "frequentUpdates": true
         }
       ],
       [
@@ -118,6 +120,14 @@
           "ios": {
             "enableSceneSupport": true
           }
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Intava puts a photo from your library on your workout card.",
+          "cameraPermission": "Intava uses the camera to put a photo on your workout card.",
+          "microphonePermission": false
         }
       ]
     ],

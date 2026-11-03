@@ -68,22 +68,21 @@ export type TimerActivityProps = {
   runFraction: number;
   /** 다 끝났다 — 숫자 대신 단계말만 */
   done: boolean;
+  /** 워치에 다음 구간이 늦게 닿는 동안 숫자 대신 보일 말 「불러오는 중」 */
+  waiting: string;
 };
 
 const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
   'widget';
   const seg = { lower: new Date(p.start), upper: new Date(p.end) };
   /*
-    숫자만 끝을 1초 늦춘다 — 앱 타이머와 같은 올림(clock의 Math.ceil)으로 맞추려고.
-    iOS의 타이머 글자는 남은 시간을 내림해서 3·2·1 뒤에 0이 1초 서 있다가 다음 구간이
-    29부터 보였다. 끝을 1초 미루면 내림이 곧 올림이 되어 3·2·1 → 30으로 넘어간다.
-    링은 실제 시각 그대로 둔다(1초 어긋나면 링이 덜 비고 넘어간다).
+    숫자도 앱과 같은 실제 구간 시각을 쓴다.
 
-    시작도 1초 미룬다. 타이머 글자는 시작 전이면 구간 길이(끝−시작)를 그대로 보여서,
-    끝만 미루면 갱신이 시작 시각보다 먼저 그려질 때 30초 구간이 31로 한 번 떴다(실기기).
-    둘 다 미루면 길이가 30 그대로이고, 첫 1초 동안 보이는 값도 어차피 30이라 같다.
+    예전엔 iOS 타이머 글자가 남은 시간을 내림해서(3·2·1 뒤 0이 1초 섬) 시작·끝을 1초씩
+    미뤄 앱의 올림과 맞췄다. 2026-11 실기기에서는 그 1초 때문에 잠금화면·워치가 앱보다
+    1초 늦게 보였다 — 미룸을 뺐다. 끝에 0이 다시 서면 이 판단이 틀린 것이다.
   */
-  const segText = { lower: new Date(p.start + 1000), upper: new Date(p.end + 1000) };
+  const segText = seg;
   const whole = { lower: new Date(p.runStart), upper: new Date(p.runEnd) };
   const still = p.paused || p.done;
 
@@ -299,7 +298,30 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
       욱여넣어져 이름이 「새…」, 숫자가 「0…」으로 잘렸다(실기기). 워치에는 링 · 단계와
       이름 두 줄 · 큰 숫자만 한 줄로 둔다. 막대와 곁말은 뺀다.
     */
-    bannerSmall: (
+    /*
+      다음 구간이 늦게 닿아 「오래된 정보」가 되면(isStale — 구간 끝+3초, live/index.ts)
+      0:00에 멈춘 숫자와 지난 단계 대신 「불러오는 중」을 보인다. 워치는 아이폰보다 갱신을
+      늦게 받아 멈춘 0:00이 오래 남았다(실기기). 정상일 때는 잠금화면과 같은 구간 숫자다.
+    */
+    bannerSmall: env.isStale && !still ? (
+      <HStack
+        spacing={10}
+        alignment="center"
+        modifiers={[padding({ horizontal: 12, vertical: 8 }), activityBackgroundTint('#000000')]}
+      >
+        <Text
+          modifiers={[
+            font({ size: 15, weight: 'bold' }),
+            foregroundStyle('#9AA0A8'),
+            lineLimit(1),
+            minimumScaleFactor(0.75),
+            frame({ maxWidth: 10000, alignment: 'leading' }),
+          ]}
+        >
+          {p.waiting}
+        </Text>
+      </HStack>
+    ) : (
       <HStack
         spacing={10}
         alignment="center"

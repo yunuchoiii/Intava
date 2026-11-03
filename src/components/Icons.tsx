@@ -68,6 +68,18 @@ export function ChevronIcon({
   );
 }
 
+/** 공유 — 위로 나가는 화살표와 트레이. 완료 화면·기록 카드·공유 카드 고르기의 「공유하기」 */
+export function ShareIcon({ size = 19, color = '#FFFFFF' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.2}
+      strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M12 3v11" />
+      <Path d="M7.5 7.5L12 3l4.5 4.5" />
+      <Path d="M5 12v6a2.5 2.5 0 0 0 2.5 2.5h9A2.5 2.5 0 0 0 19 18v-6" />
+    </Svg>
+  );
+}
+
 /** 목록 — 실행 화면에서 종목 순서 시트를 여는 자리 */
 export function ListIcon({ size = 22, color = '#FFFFFF' }: IconProps) {
   return (

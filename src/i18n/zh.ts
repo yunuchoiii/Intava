@@ -330,20 +330,49 @@ export const zh: Catalog = {
     sampleRoutine: '晨间全身训练',
   },
 
-  /** 라이브 액티비티 출시 팝업 — 설치 뒤 한 번 */
+  /** 새 기능 팝업(1.6.0 공유 카드) — 설치 뒤 한 번. sampleName은 온보딩의 잠금화면 예시가 쓴다 */
   announce: {
-    kicker: '新功能 · 实时活动',
-    title: '无需打开 App\n剩余时间一目了然',
-    desc: '在灵动岛和锁屏上随时查看训练进度。',
-    island: '灵动岛',
-    lock: '锁屏',
-    ok: '开始使用',
+    kicker: '新功能 · 分享训练记录',
+    title: '把今天的训练\n做成卡片',
+    desc: '把完成的训练用喜欢的风格分享或保存吧。',
+    rowPhoto: '在照片上叠加记录',
+    rowCards: '5 种卡片风格',
+    ok: '好的',
+    sampleBlocks: '引体向上|高位下拉|T 杠划船|坐姿推胸|哑铃卧推|侧平举',
+    cardName: '5-01 · 上半身',
     sampleName: '蝴蝶机夹胸',
   },
 
   live: {
     next: '下一个：{{what}}',
     subWork: '{{sub}} · 下一个：{{next}}',
+    waiting: '更新中…',
+  },
+
+  story: {
+    sets: '组',
+    blocks: '动作',
+    rounds: '轮',
+    setsAnd: '组 · {{blocks}}',
+    workPct: '运动 {{p}}%',
+    restPct: '休息 {{p}}%',
+  },
+
+  shareCard: {
+    title: '分享卡片',
+    base: '基本 · 动作列表',
+    photoStack: '照片 · 数字堆叠',
+    photoStrip: '照片 · 比例条',
+    ringHero: '圆环',
+    typePoster: '大字海报',
+    addPhoto: '添加照片',
+    needPhoto: '添加照片后即可分享',
+    changePhoto: '更换照片',
+    pickAlbum: '从相册选择',
+    takePhoto: '拍照',
+    cameraDeniedTitle: '无法使用相机',
+    cameraDeniedBody: '请在设置中允许 Intava 访问相机。',
+    openSettings: '打开设置',
   },
 
   /** 건강·피트니스 운동 종류 */
@@ -417,7 +446,6 @@ export const zh: Catalog = {
     emptyToday: '记录今天的训练吧。',
     emptyFuture: '这一天还没有到来。',
     /** 카드 아래 — 그날의 완료 카드를 다시 연다 */
-    viewCard: '查看分享卡片',
     deleteTitle: '删除这条记录吗？',
     deleteBody: '删除后无法恢复。',
     deleted: '已删除记录',

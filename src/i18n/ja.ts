@@ -330,20 +330,49 @@ export const ja: Catalog = {
     sampleRoutine: '朝の全身ルーティン',
   },
 
-  /** 라이브 액티비티 출시 팝업 — 설치 뒤 한 번 */
+  /** 새 기능 팝업(1.6.0 공유 카드) — 설치 뒤 한 번. sampleName은 온보딩의 잠금화면 예시가 쓴다 */
   announce: {
-    kicker: '新機能 · ライブアクティビティ',
-    title: 'アプリを開かなくても\n残り時間がひと目で',
-    desc: 'ダイナミックアイランドとロック画面で、トレーニングの進み具合をすぐに確認できます。',
-    island: 'ダイナミックアイランド',
-    lock: 'ロック画面',
-    ok: 'はじめる',
+    kicker: '新機能 · トレーニング記録をシェア',
+    title: '今日のトレーニングを\nカードに残そう',
+    desc: '終えたトレーニングを好きなスタイルで共有・保存しましょう。',
+    rowPhoto: '写真に記録を重ねる',
+    rowCards: '5種類のカードスタイル',
+    ok: 'OK',
+    sampleBlocks: '懸垂|ラットプルダウン|Tバーロウ|チェストプレス|ダンベルプレス|サイドレイズ',
+    cardName: '5-01 · 上半身',
     sampleName: 'ペックデックフライ',
   },
 
   live: {
     next: '次: {{what}}',
     subWork: '{{sub}} · 次: {{next}}',
+    waiting: '更新中…',
+  },
+
+  story: {
+    sets: 'セット',
+    blocks: '種目',
+    rounds: 'ラウンド',
+    setsAnd: 'セット · {{blocks}}',
+    workPct: '運動 {{p}}%',
+    restPct: '休憩 {{p}}%',
+  },
+
+  shareCard: {
+    title: 'シェアカード',
+    base: '基本 · 種目リスト',
+    photoStack: '写真 · 数字スタック',
+    photoStrip: '写真 · 比率バー',
+    ringHero: 'リング',
+    typePoster: 'タイポポスター',
+    addPhoto: '写真を追加',
+    needPhoto: '写真を追加するとシェアできます',
+    changePhoto: '写真を変更',
+    pickAlbum: 'アルバムから選ぶ',
+    takePhoto: '写真を撮る',
+    cameraDeniedTitle: 'カメラを使えません',
+    cameraDeniedBody: '設定でインタバのカメラへのアクセスを許可してください。',
+    openSettings: '設定を開く',
   },
 
   /** 건강·피트니스 운동 종류 */
@@ -418,7 +447,6 @@ export const ja: Catalog = {
     emptyToday: 'トレーニングを記録しましょう。',
     emptyFuture: 'まだ来ていない日です。',
     /** 카드 아래 — 그날의 완료 카드를 다시 연다 */
-    viewCard: 'シェアカードを見る',
     deleteTitle: 'この記録を削除しますか？',
     deleteBody: '削除した記録は元に戻せません。',
     deleted: '記録を削除しました',

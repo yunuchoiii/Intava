@@ -359,14 +359,16 @@ export const ko = {
     sampleRoutine: '아침 전신 루틴',
   },
 
-  /** 라이브 액티비티 출시 팝업 — 설치 뒤 한 번 */
+  /** 새 기능 팝업(1.6.0 공유 카드) — 설치 뒤 한 번. sampleName은 온보딩의 잠금화면 예시가 쓴다 */
   announce: {
-    kicker: '새 기능 · 라이브 액티비티',
-    title: '앱을 열지 않아도\n남은 시간을 한눈에',
-    desc: '다이내믹 아일랜드와 잠금화면에서 운동 진행 상황을 바로 확인하세요.',
-    island: '다이내믹 아일랜드',
-    lock: '잠금화면',
-    ok: '시작하기',
+    kicker: '새 기능 · 운동 기록 공유',
+    title: '오늘의 운동을\n카드로 남겨 보세요',
+    desc: '완료한 운동을 원하는 스타일로 공유하거나 저장해 보세요.',
+    rowPhoto: '사진 위에 기록 더하기',
+    rowCards: '5가지 카드 스타일',
+    ok: '확인',
+    sampleBlocks: '풀업|랫풀다운|티바로우|체스트 프레스|덤벨 프레스|사이드 레터럴 레이즈',
+    cardName: '5-01 · 상체',
     sampleName: '펙덱플라이',
   },
 
@@ -374,6 +376,37 @@ export const ko = {
   live: {
     next: '다음: {{what}}',
     subWork: '{{sub}} · 다음: {{next}}',
+    /** 워치에 다음 구간이 늦게 닿는 동안 — 0:00에 멈춘 숫자 대신 */
+    waiting: '불러오는 중',
+  },
+
+  /** 스토리 공유 카드(3a·3c·3d·3e) */
+  story: {
+    sets: '세트',
+    blocks: '종목',
+    rounds: '라운드',
+    /** 「세트 · 6종목」 — blocks는 count.blocks */
+    setsAnd: '세트 · {{blocks}}',
+    workPct: '운동 {{p}}%',
+    restPct: '휴식 {{p}}%',
+  },
+
+  /** 공유 카드 고르기(시안 TURN 4) */
+  shareCard: {
+    title: '공유 카드',
+    base: '기본 · 종목 목록',
+    photoStack: '사진 · 숫자 스택',
+    photoStrip: '사진 · 비율 막대',
+    ringHero: '링 히어로',
+    typePoster: '타이포 포스터',
+    addPhoto: '사진 넣기',
+    needPhoto: '사진을 넣으면 공유할 수 있어요',
+    changePhoto: '사진 바꾸기',
+    pickAlbum: '앨범에서 고르기',
+    takePhoto: '사진 찍기',
+    cameraDeniedTitle: '카메라를 쓸 수 없어요',
+    cameraDeniedBody: '설정에서 인타바의 카메라 접근을 허용해 주세요.',
+    openSettings: '설정 열기',
   },
 
   /** 건강·피트니스 운동 종류 */
@@ -453,7 +486,6 @@ export const ko = {
     emptyToday: '운동을 기록해보세요.',
     emptyFuture: '아직 오지 않은 날입니다.',
     /** 카드 아래 — 그날의 완료 카드를 다시 연다 */
-    viewCard: '공유 카드 보기',
     deleteTitle: '이 기록을 지울까요?',
     deleteBody: '지운 기록은 되돌릴 수 없습니다.',
     deleted: '기록을 삭제했습니다',

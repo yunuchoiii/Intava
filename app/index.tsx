@@ -24,7 +24,7 @@ import { totalSec } from '../src/engine/segments';
 import { t } from '../src/i18n';
 import { selectionTick } from '../src/feedback';
 import { useSessionStable } from '../src/session';
-import { LiveAnnounce } from '../src/components/LiveAnnounce';
+import { NewsAnnounce } from '../src/components/LiveAnnounce';
 import { useToast } from '../src/components/Toast';
 import { sortPresets, useStore, type SortKey } from '../src/store';
 import { C, E2, GUTTER, LIFT, RADIUS, TABULAR } from '../src/theme';
@@ -290,7 +290,7 @@ export default function Home() {
         처음 설치한 사람은 온보딩(초기 설정)부터, 업데이트한 사람은 출시 팝업만.
         온보딩이 끝나기 전에는 팝업을 막는다 — 끝낼 때 팝업도 본 것으로 적힌다(store).
       */}
-      <LiveAnnounce blocked={!!session.preset || onboarding !== 'done'} />
+      <NewsAnnounce blocked={!!session.preset || onboarding !== 'done'} />
     </Screen>
   );
 }
