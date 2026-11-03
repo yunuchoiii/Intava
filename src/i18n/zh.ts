@@ -333,7 +333,7 @@ export const zh: Catalog = {
   /** 새 기능 팝업(1.5.3 공유 카드) — 설치 뒤 한 번. sampleName은 온보딩의 잠금화면 예시가 쓴다 */
   announce: {
     kicker: '新功能 · 分享训练记录',
-    title: '练完了，就该晒一晒。',
+    title: '把今天的训练\n做成卡片',
     desc: '把完成的训练用喜欢的风格分享或保存吧。',
     rowPhoto: '在照片上叠加记录',
     rowCards: '5 种卡片风格',

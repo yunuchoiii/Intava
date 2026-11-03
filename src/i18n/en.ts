@@ -340,7 +340,7 @@ export const en: Catalog = {
   /** 새 기능 팝업(1.5.3 공유 카드) — 설치 뒤 한 번. sampleName은 온보딩의 잠금화면 예시가 쓴다 */
   announce: {
     kicker: 'NEW · SHARE YOUR WORKOUTS',
-    title: 'Worked out? Show it off.',
+    title: 'Turn today\'s workout\ninto a card',
     desc: 'Share or save a finished workout in the style you like.',
     rowPhoto: 'Add your stats to a photo',
     rowCards: '5 card styles',
