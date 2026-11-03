@@ -28,6 +28,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { captureRef } from 'react-native-view-shot';
+import { ShareIcon } from '../src/components/Icons';
 import { PressBox } from '../src/components/PressBox';
 import { needsPhoto, PHOTO_SPOT, StoryCard, type StoryTemplate } from '../src/components/StoryCards';
 import { ToastHost, useToast } from '../src/components/Toast';
@@ -286,16 +287,6 @@ function ShareCard() {
 }
 
 // ---- 아이콘(시안의 24 격자 선 아이콘) ---------------------------------------------
-
-function ShareIcon({ color }: { color: string }) {
-  return (
-    <Svg width={19} height={19} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M12 3v11" />
-      <Path d="M7.5 7.5L12 3l4.5 4.5" />
-      <Path d="M5 12v6a2.5 2.5 0 0 0 2.5 2.5h9A2.5 2.5 0 0 0 19 18v-6" />
-    </Svg>
-  );
-}
 
 /** 사진 + 더하기 — 사진 넣기 */
 function AddPhotoIcon() {

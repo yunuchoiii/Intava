@@ -444,7 +444,6 @@ export const zh: Catalog = {
     emptyToday: '记录今天的训练吧。',
     emptyFuture: '这一天还没有到来。',
     /** 카드 아래 — 그날의 완료 카드를 다시 연다 */
-    viewCard: '查看分享卡片',
     deleteTitle: '删除这条记录吗？',
     deleteBody: '删除后无法恢复。',
     deleted: '已删除记录',

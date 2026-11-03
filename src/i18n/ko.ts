@@ -483,7 +483,6 @@ export const ko = {
     emptyToday: '운동을 기록해보세요.',
     emptyFuture: '아직 오지 않은 날입니다.',
     /** 카드 아래 — 그날의 완료 카드를 다시 연다 */
-    viewCard: '공유 카드 보기',
     deleteTitle: '이 기록을 지울까요?',
     deleteBody: '지운 기록은 되돌릴 수 없습니다.',
     deleted: '기록을 삭제했습니다',

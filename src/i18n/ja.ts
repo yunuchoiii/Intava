@@ -445,7 +445,6 @@ export const ja: Catalog = {
     emptyToday: 'トレーニングを記録しましょう。',
     emptyFuture: 'まだ来ていない日です。',
     /** 카드 아래 — 그날의 완료 카드를 다시 연다 */
-    viewCard: 'シェアカードを見る',
     deleteTitle: 'この記録を削除しますか？',
     deleteBody: '削除した記録は元に戻せません。',
     deleted: '記録を削除しました',

@@ -15,7 +15,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
+import { ShareIcon } from '../src/components/Icons';
 import { WhiteButton } from '../src/components/Buttons';
 import { PressBox } from '../src/components/PressBox';
 import {
@@ -273,7 +273,7 @@ export default function Done() {
           style={styles.shareButton}
           accessibilityLabel={t('doneScreen.share')}
         >
-          <ShareIcon />
+          <ShareIcon color={CARD.text} />
           <Text style={styles.shareLabel}>{t('doneScreen.share')}</Text>
         </PressBox>
         <WhiteButton
@@ -287,17 +287,6 @@ export default function Done() {
         />
       </View>
     </View>
-  );
-}
-
-function ShareIcon() {
-  return (
-    <Svg width={19} height={19} viewBox="0 0 24 24" fill="none" stroke={CARD.text} strokeWidth={2.2}
-      strokeLinecap="round" strokeLinejoin="round">
-      <Path d="M12 3v11" />
-      <Path d="M7.5 7.5L12 3l4.5 4.5" />
-      <Path d="M5 12v6a2.5 2.5 0 0 0 2.5 2.5h9A2.5 2.5 0 0 0 19 18v-6" />
-    </Svg>
   );
 }
 

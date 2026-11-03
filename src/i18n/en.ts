@@ -452,7 +452,6 @@ export const en: Catalog = {
     emptyToday: 'Log a workout today.',
     emptyFuture: 'This day hasn’t come yet.',
     /** 카드 아래 — 그날의 완료 카드를 다시 연다 */
-    viewCard: 'View share card',
     deleteTitle: 'Delete this record?',
     deleteBody: 'Deleted records can’t be restored.',
     deleted: 'Record deleted',
