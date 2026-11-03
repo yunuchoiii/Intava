@@ -309,15 +309,15 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
     */
     /*
       워치는 아이폰의 갱신을 1~2초 늦게 받는다 — 구간 끝에서 0에 멈췄다가 28·29로 건너뛰었다
-      (실기기). 그래서 갱신마다 다음 구간을 함께 싣고, 지금 구간이 끝나는 순간(staleDate = end,
-      live/index.ts) **받아 둔 다음 구간**을 그린다. 다음 갱신이 닿아도 같은 구간·같은 시각이라
-      숫자가 다시 시작되지 않는다. 실을 다음이 없는데 오래되면(마지막 구간 뒤 갱신이 늦음)
-      0:00 대신 「불러오는 중」. 잠금화면·아일랜드는 isStale을 보지 않는다 — 아이폰은 제때 받는다.
+      (실기기). 그래서 갱신마다 다음 구간을 함께 싣고, 지금 구간 끝(end) 순간 **받아 둔 다음
+      구간**으로 저절로 바꾼다(TimedSwapView). 다음 갱신이 닿아도 같은 구간·같은 시각이라 숫자가
+      다시 시작되지 않는다. 실을 다음이 없는데 오래되면(마지막 구간 뒤 갱신이 늦음) 0:00 대신
+      「불러오는 중」. 잠금화면·아일랜드는 이것을 쓰지 않는다 — 아이폰은 제때 받는다.
     */
     bannerSmall: (() => {
       const stale = env.isStale && !still;
-      const ahead = stale && p.nextEnd > p.end;
-      if (stale && !ahead) {
+      const hasNext = !still && p.nextEnd > p.end;
+      if (stale && !hasNext) {
         return (
           <HStack
             spacing={10}
@@ -338,9 +338,7 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
           </HStack>
         );
       }
-      const range = ahead ? { lower: new Date(p.end), upper: new Date(p.nextEnd) } : seg;
-      const color = ahead ? p.nextColor : p.color;
-      return (
+      const small = (range: { lower: Date; upper: Date }, color: string, phase: string, name: string) => (
         <HStack
           spacing={10}
           alignment="center"
@@ -353,7 +351,7 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
             modifiers={[frame({ maxWidth: 10000, alignment: 'leading' })]}
           >
             <Text modifiers={[font({ size: 11, weight: 'bold' }), kerning(1.2), foregroundStyle(color)]}>
-              {ahead ? p.nextPhase : p.phase}
+              {phase}
             </Text>
             <Text
               modifiers={[
@@ -363,11 +361,27 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
                 minimumScaleFactor(0.75),
               ]}
             >
-              {ahead ? p.nextName : p.name}
+              {name}
             </Text>
           </VStack>
           {clock(26, 'heavy', 70, range, color)}
         </HStack>
+      );
+      const now = small(seg, p.color, p.phase, p.name);
+      if (!hasNext) return now;
+      const next = small({ lower: new Date(p.end), upper: new Date(p.nextEnd) }, p.nextColor, p.nextPhase, p.nextName);
+      /*
+        'TimedSwapView'는 패치로 위젯 렌더러에 더한 이름이다(patches/expo-widgets+*.patch). at 시각에
+        첫 자식에서 둘째 자식으로 **갱신 없이** 바뀐다 — 시간에 따라 스스로 차는 막대를 가림막으로
+        쓴다. isStale로 바꾸는 것만으로는 워치가 새로 그리지 않아 그대로 0에 멈췄다(실기기).
+      */
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const Swap: any = 'TimedSwapView';
+      return (
+        <Swap at={p.end}>
+          {now}
+          {next}
+        </Swap>
       );
     })(),
     compactLeading: ringOrNothing(22),

@@ -97,14 +97,14 @@ export function syncLiveActivity(props: TimerActivityProps | null, force = false
   failed = false;
 
   /*
-    지금 구간이 끝나는 순간을 「오래된 정보」 시각으로 건다(staleDate). 워치는 다음 구간
-    갱신을 1~2초 늦게 받아 0에 멈췄다 — 그 순간 워치 배너가 미리 받은 다음 구간(nextEnd)으로
-    넘어간다(TimerActivity bannerSmall). 실을 다음이 없으면(마지막 구간) 끝 뒤 3초를 기다려
-    「불러오는 중」으로. 멈춤·완료에는 걸지 않는다.
+    갱신이 끊긴 채 미리 받은 구간까지 다 지나면 「오래된 정보」로 둔다(staleDate) — 워치 배너가
+    0:00 대신 「불러오는 중」을 보인다. 다음 구간을 실었으면 그 끝, 없으면 지금 구간 끝에서 3초 뒤.
+    구간 경계는 staleDate가 아니라 TimedSwapView가 넘긴다 — isStale로는 워치가 새로 그리지 않았다
+    (실기기). 멈춤·완료에는 걸지 않는다.
   */
   const stale =
     !props.paused && !props.done && props.end > 0
-      ? new Date(props.nextEnd > props.end ? props.end : props.end + 3000)
+      ? new Date((props.nextEnd > props.end ? props.nextEnd : props.end) + 3000)
       : undefined;
 
   const send = () => {
