@@ -159,6 +159,7 @@ function ShareCard() {
   if (!entry || start == null) return <View style={styles.root} />;
 
   const side = (width - CARD_W) / 2;
+  const bottomPad = Math.max(insets.bottom - 4, 16);
 
   return (
     <View style={styles.root}>
@@ -176,75 +177,83 @@ function ShareCard() {
         <Text style={styles.title}>{t('shareCard.title')}</Text>
       </View>
 
-      <Animated.FlatList
-        data={order}
-        keyExtractor={(k) => k}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        snapToInterval={STEP}
-        contentOffset={{ x: start * STEP, y: 0 }}
-        getItemLayout={(_, i) => ({ length: STEP, offset: STEP * i, index: i })}
-        decelerationRate="fast"
-        style={{ flexGrow: 0, marginTop: 6 }}
-        contentContainerStyle={{ paddingHorizontal: side - (STEP - CARD_W) / 2 }}
-        onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
-          useNativeDriver: true,
-          listener: (e: { nativeEvent: { contentOffset: { x: number } } }) => {
-            const i = Math.round(e.nativeEvent.contentOffset.x / STEP);
-            if (i !== index && i >= 0 && i < order.length) setIndex(i);
-          },
-        })}
-        scrollEventThrottle={16}
-        renderItem={({ item, index: i }) => {
-          const range = [(i - 1) * STEP, i * STEP, (i + 1) * STEP];
-          const opacity = scrollX.interpolate({ inputRange: range, outputRange: [0.4, 1, 0.4], extrapolate: 'clamp' });
-          const empty = item !== 'base' && needsPhoto(item) && !photo;
-          return (
-            <Animated.View style={{ width: STEP, height: CARD_H, alignItems: 'center', opacity }}>
-              <Pressable
-                disabled={!empty || i !== index}
-                onPress={() => setPicking(true)}
-                style={styles.card}
-                accessibilityLabel={empty ? t('shareCard.addPhoto') : t(NAME[item])}
-              >
-                <View style={styles.cardInner}>
-                  {item === 'base' ? (
-                    <ShareImage record={entry} />
-                  ) : (
-                    <StoryCard template={item} record={entry} photo={photo} />
-                  )}
-                </View>
-                {empty && (
-                  // 카드 전체가 아니라 사진이 들어갈 빈 자리 가운데에
-                  <View style={[styles.addSpot, { height: PHOTO_SPOT[item as keyof typeof PHOTO_SPOT] * 2 * SCALE }]}>
-                    <AddPhotoIcon />
-                    <Text style={styles.addTitle}>{t('shareCard.addPhoto')}</Text>
-                  </View>
-                )}
-              </Pressable>
-            </Animated.View>
-          );
-        }}
-      />
+      {/*
+        카드를 헤더와 아래 버튼 사이 한가운데에 — 헤더 바로 밑에 붙어 보였다(사용자 지적 2026-11-03).
+        점·사진 바꾸기는 카드 바로 아래에 매달아 계산에서 뺀다(카드마다 있고 없어 높이가 흔들린다).
+      */}
+      <View style={{ flex: 1, justifyContent: 'center', marginBottom: 16 + 56 + bottomPad }}>
+        <View style={{ height: CARD_H }}>
+          <Animated.FlatList
+            data={order}
+            keyExtractor={(k) => k}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            snapToInterval={STEP}
+            contentOffset={{ x: start * STEP, y: 0 }}
+            getItemLayout={(_, i) => ({ length: STEP, offset: STEP * i, index: i })}
+            decelerationRate="fast"
+            style={{ flexGrow: 0 }}
+            contentContainerStyle={{ paddingHorizontal: side - (STEP - CARD_W) / 2 }}
+            onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
+              useNativeDriver: true,
+              listener: (e: { nativeEvent: { contentOffset: { x: number } } }) => {
+                const i = Math.round(e.nativeEvent.contentOffset.x / STEP);
+                if (i !== index && i >= 0 && i < order.length) setIndex(i);
+              },
+            })}
+            scrollEventThrottle={16}
+            renderItem={({ item, index: i }) => {
+              const range = [(i - 1) * STEP, i * STEP, (i + 1) * STEP];
+              const opacity = scrollX.interpolate({ inputRange: range, outputRange: [0.4, 1, 0.4], extrapolate: 'clamp' });
+              const empty = item !== 'base' && needsPhoto(item) && !photo;
+              return (
+                <Animated.View style={{ width: STEP, height: CARD_H, alignItems: 'center', opacity }}>
+                  <Pressable
+                    disabled={!empty || i !== index}
+                    onPress={() => setPicking(true)}
+                    style={styles.card}
+                    accessibilityLabel={empty ? t('shareCard.addPhoto') : t(NAME[item])}
+                  >
+                    <View style={styles.cardInner}>
+                      {item === 'base' ? (
+                        <ShareImage record={entry} />
+                      ) : (
+                        <StoryCard template={item} record={entry} photo={photo} />
+                      )}
+                    </View>
+                    {empty && (
+                      // 카드 전체가 아니라 사진이 들어갈 빈 자리 가운데에
+                      <View style={[styles.addSpot, { height: PHOTO_SPOT[item as keyof typeof PHOTO_SPOT] * 2 * SCALE }]}>
+                        <AddPhotoIcon />
+                        <Text style={styles.addTitle}>{t('shareCard.addPhoto')}</Text>
+                      </View>
+                    )}
+                  </Pressable>
+                </Animated.View>
+              );
+            }}
+          />
 
-      <View style={styles.below}>
-        <View style={styles.dots}>
-          {order.map((k, i) => (
-            <View key={k} style={[styles.dot, i === index && styles.dotOn]} />
-          ))}
+          <View style={[styles.below, { position: 'absolute', top: CARD_H, left: 0, right: 0 }]}>
+            <View style={styles.dots}>
+              {order.map((k, i) => (
+                <View key={k} style={[styles.dot, i === index && styles.dotOn]} />
+              ))}
+            </View>
+            {kind !== 'base' && needsPhoto(kind) &&
+              (photo ? (
+                <PressBox onPress={() => setPicking(true)} radius={18} scaleTo={0.96} dim={0.12} dimColor="#FFF" style={styles.pill}>
+                  <RefreshIcon />
+                  <Text style={styles.pillText}>{t('shareCard.changePhoto')}</Text>
+                </PressBox>
+              ) : (
+                <Text style={styles.hint}>{t('shareCard.needPhoto')}</Text>
+              ))}
+          </View>
         </View>
-        {kind !== 'base' && needsPhoto(kind) &&
-          (photo ? (
-            <PressBox onPress={() => setPicking(true)} radius={18} scaleTo={0.96} dim={0.12} dimColor="#FFF" style={styles.pill}>
-              <RefreshIcon />
-              <Text style={styles.pillText}>{t('shareCard.changePhoto')}</Text>
-            </PressBox>
-          ) : (
-            <Text style={styles.hint}>{t('shareCard.needPhoto')}</Text>
-          ))}
       </View>
 
-      <View style={[styles.actions, { paddingBottom: Math.max(insets.bottom - 4, 16) }]}>
+      <View style={[styles.actions, { paddingBottom: bottomPad }]}>
         <PressBox onPress={() => router.back()} radius={18} scaleTo={0.97} dim={0.12} dimColor="#FFF" outerStyle={{ flex: 1 }} style={styles.close}>
           <Text style={styles.closeText}>{t('common.close')}</Text>
         </PressBox>
