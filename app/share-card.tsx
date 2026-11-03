@@ -61,6 +61,11 @@ const CARD_H = SHARE_H * SCALE;
  * 투명도는 무관, 2026-11-03). 그래서 크기는 고정하고 투명도만 바꾼다.
  */
 const STEP = CARD_W + 12;
+/**
+ * 카드 아래 칸 — 위 여백 16 + 점 6 + 12 + 안내 문구 24(위 6 + 줄 18). 사진 바꾸기(38)는 14만큼 아래로
+ * 넘치지만 absolute라 자리를 밀지 않는다. 문구 기준으로 잡아야 문구~버튼 간격이 헤더~카드 간격과 맞는다.
+ */
+const BELOW_H = 16 + 6 + 12 + 24;
 
 const SHOT = {
   format: 'png' as const,
@@ -178,11 +183,12 @@ function ShareCard() {
       </View>
 
       {/*
-        카드를 헤더와 아래 버튼 사이 한가운데에 — 헤더 바로 밑에 붙어 보였다(사용자 지적 2026-11-03).
-        점·사진 바꾸기는 카드 바로 아래에 매달아 계산에서 뺀다(카드마다 있고 없어 높이가 흔들린다).
+        카드 + 그 아래(점 · 사진 바꾸기 또는 안내 문구) 한 덩어리를 헤더와 버튼 사이 한가운데에 둔다
+        (사용자 지적 2026-11-03). 아래 칸 높이는 고정한다(BELOW_H) — 카드마다 버튼·문구·없음이
+        바뀌어도 카드가 위아래로 흔들리지 않게.
       */}
       <View style={{ flex: 1, justifyContent: 'center', marginBottom: 16 + 56 + bottomPad }}>
-        <View style={{ height: CARD_H }}>
+        <View style={{ height: CARD_H + BELOW_H }}>
           <Animated.FlatList
             data={order}
             keyExtractor={(k) => k}
