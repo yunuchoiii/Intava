@@ -351,7 +351,6 @@ export const zh: Catalog = {
     blocks: '动作',
     rounds: '轮',
     setsAnd: '组 · {{blocks}}',
-    totalWorkout: '总训练时长',
     workPct: '运动 {{p}}%',
     restPct: '休息 {{p}}%',
   },

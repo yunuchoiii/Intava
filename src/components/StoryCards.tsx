@@ -319,13 +319,10 @@ function RingHero({ record }: { record: WorkoutRecord }) {
         <Text style={s.heroName} numberOfLines={1}>{record.presetName}</Text>
         <View style={{ alignItems: 'center', marginTop: 28 }}>
           <StoryRing size={232} stroke={20} gap={36} ratio={n.ratio} restColor={CARD.rest} workColor={CARD.work}>
-            {/* 시간이 링 한가운데 — 「총 시간」은 그 아래에 매달아 가운데를 흩뜨리지 않는다(사용자 요청) */}
-            <View>
-              <Text style={[s.num, TABULAR, { fontSize: n.long ? 49 : 58, letterSpacing: -0.045 * (n.long ? 49 : 58), paddingTop: 4, color: CARD.text }]}>
-                {storyTime(n.total)}
-              </Text>
-              <Text style={s.ringCaption}>{t('doneScreen.totalTime')}</Text>
-            </View>
+            {/* 시간만 링 한가운데 — 「총 시간」 문구는 뺐다(사용자 요청 2026-11-03) */}
+            <Text style={[s.num, TABULAR, { fontSize: n.long ? 49 : 58, letterSpacing: -0.045 * (n.long ? 49 : 58), paddingTop: 4, color: CARD.text }]}>
+              {storyTime(n.total)}
+            </Text>
           </StoryRing>
         </View>
         <View style={[s.row, { gap: 10, marginTop: 52 }]}>
@@ -382,7 +379,8 @@ function TypePoster({ record }: { record: WorkoutRecord }) {
       />
       <View style={s.darkBody}>
         <DarkHead record={record} />
-        <View style={{ marginTop: 140 }}>
+        {/* 「총 운동 시간」을 빼고 그 높이(10 + 16)만큼 제목 묶음을 내린다 — 사용자 요청 2026-11-03 */}
+        <View style={{ marginTop: 166 }}>
           <Text style={s.posterName} numberOfLines={1}>{record.presetName}</Text>
           <Text
             numberOfLines={1}
@@ -398,7 +396,6 @@ function TypePoster({ record }: { record: WorkoutRecord }) {
           >
             {storyTime(n.total)}
           </Text>
-          <Text style={s.posterCaption}>{t('story.totalWorkout')}</Text>
         </View>
         <View style={{ marginTop: 34 }}>
           <RatioBar ratio={n.ratio} height={12} work={CARD.work} rest={CARD.rest} />
@@ -486,7 +483,6 @@ const s = StyleSheet.create({
     lineHeight: 27.6,
     color: CARD.text,
   },
-  ringCaption: { position: 'absolute', top: '100%', left: -40, right: -40, marginTop: 2, textAlign: 'center', fontSize: 12, fontWeight: '600', color: CARD.meta },
   heroCard: { flex: 1, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 14, borderWidth: 1, gap: 6 },
   dot: { width: 7, height: 7, borderRadius: 3.5 },
   heroCardLabel: { fontSize: 11, fontWeight: '600', color: '#C9CBD0' },
@@ -494,7 +490,6 @@ const s = StyleSheet.create({
   metaDot: { fontSize: 12, fontWeight: '600', color: '#4A4D53' },
   posterName: { fontSize: 14, fontWeight: '700', color: CARD.legend },
   posterNum: { fontFamily: NUM_EXTRA, color: CARD.text },
-  posterCaption: { marginTop: 10, fontSize: 13, fontWeight: '600', color: CARD.meta },
   posterLabel: { marginTop: 2, fontSize: 11, fontWeight: '600', color: CARD.sub },
   posterStats: {
     marginTop: 30,

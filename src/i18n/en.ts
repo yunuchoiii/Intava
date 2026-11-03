@@ -358,7 +358,6 @@ export const en: Catalog = {
     blocks: 'Exercises',
     rounds: 'Rounds',
     setsAnd: 'sets · {{blocks}}',
-    totalWorkout: 'Total workout time',
     workPct: 'Work {{p}}%',
     restPct: 'Rest {{p}}%',
   },

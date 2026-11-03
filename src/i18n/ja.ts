@@ -351,7 +351,6 @@ export const ja: Catalog = {
     blocks: '種目',
     rounds: 'ラウンド',
     setsAnd: 'セット · {{blocks}}',
-    totalWorkout: '合計トレーニング時間',
     workPct: '運動 {{p}}%',
     restPct: '休憩 {{p}}%',
   },

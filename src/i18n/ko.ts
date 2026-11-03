@@ -383,7 +383,6 @@ export const ko = {
     rounds: '라운드',
     /** 「세트 · 6종목」 — blocks는 count.blocks */
     setsAnd: '세트 · {{blocks}}',
-    totalWorkout: '총 운동 시간',
     workPct: '운동 {{p}}%',
     restPct: '휴식 {{p}}%',
   },
