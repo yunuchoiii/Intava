@@ -97,11 +97,15 @@ export function syncLiveActivity(props: TimerActivityProps | null, force = false
   failed = false;
 
   /*
-    구간이 끝난 뒤 다음 구간이 오지 않으면 「오래된 정보」로 표시되게 한다(staleDate).
-    아이폰은 다음 구간을 바로 받지만 워치는 늦게 받거나 건너뛰어, 0:00에 멈춘 숫자가
-    오래 남았다. 숫자 끝(구간 끝+1초) 뒤 2초를 더 기다린다. 멈춤·완료에는 걸지 않는다.
+    지금 구간이 끝나는 순간을 「오래된 정보」 시각으로 건다(staleDate). 워치는 다음 구간
+    갱신을 1~2초 늦게 받아 0에 멈췄다 — 그 순간 워치 배너가 미리 받은 다음 구간(nextEnd)으로
+    넘어간다(TimerActivity bannerSmall). 실을 다음이 없으면(마지막 구간) 끝 뒤 3초를 기다려
+    「불러오는 중」으로. 멈춤·완료에는 걸지 않는다.
   */
-  const stale = !props.paused && !props.done && props.end > 0 ? new Date(props.end + 3000) : undefined;
+  const stale =
+    !props.paused && !props.done && props.end > 0
+      ? new Date(props.nextEnd > props.end ? props.end : props.end + 3000)
+      : undefined;
 
   const send = () => {
     try {
