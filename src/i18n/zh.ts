@@ -330,14 +330,15 @@ export const zh: Catalog = {
     sampleRoutine: '晨间全身训练',
   },
 
-  /** 라이브 액티비티 출시 팝업 — 설치 뒤 한 번 */
+  /** 새 기능 팝업(1.5.3 공유 카드) — 설치 뒤 한 번. sampleName은 온보딩의 잠금화면 예시가 쓴다 */
   announce: {
-    kicker: '新功能 · 实时活动',
-    title: '无需打开 App\n剩余时间一目了然',
-    desc: '在灵动岛和锁屏上随时查看训练进度。',
-    island: '灵动岛',
-    lock: '锁屏',
-    ok: '开始使用',
+    kicker: '新功能 · 分享卡片',
+    title: '把今天的训练\n做成卡片',
+    desc: '在完成页面或训练记录中点「分享」选择卡片，即可直接发布到 Instagram 快拍。',
+    rowPhoto: '把记录叠在训练照片上',
+    rowCards: '五种卡片任你选',
+    ok: '好的',
+    cardName: '5-01 · 上半身',
     sampleName: '蝴蝶机夹胸',
   },
 

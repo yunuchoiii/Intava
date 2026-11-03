@@ -1,40 +1,47 @@
 /**
- * 라이브 액티비티 출시 팝업 — 시안 「라이브 액티비티 출시 팝업」 2a(상단에 두 장 모음).
+ * 새 기능 팝업 — 시안 「라이브 액티비티 출시 팝업」 2a의 틀(위 미리보기 판 + 제목 · 설명 · 줄 · 버튼).
+ *
+ * 1.5.1~1.5.2는 라이브 액티비티를 알렸고, 1.5.3부터는 같은 틀로 **스토리 공유 카드**를 알린다
+ * (사용자 결정 2026-11-03). 본 표시 키가 따로라(KEY_SEEN_SHARE_ANNOUNCE) 라이브 액티비티 팝업을
+ * 본 사람에게도 한 번 뜬다.
  *
  * 설치(업데이트 포함) 뒤 **한 번만** 홈 위에 띄운다. 「확인」을 누르면 기기에 적어 두고
- * 다시 띄우지 않는다. iOS에서만(라이브 액티비티는 iOS 기능), 운동이 돌고 있지 않을 때만
- * — 앱을 껐다 켜서 실행 화면이 복원되는 자리에 팝업이 그 위를 덮으면 안 된다.
+ * 다시 띄우지 않는다. 운동이 돌고 있지 않을 때만 — 앱을 껐다 켜서 실행 화면이 복원되는
+ * 자리에 팝업이 그 위를 덮으면 안 된다.
  *
- * 미리보기 두 장은 캡처가 아니라 직접 그린다. 시안은 실제 캡처를 잘라 썼지만, 그리면
- * 네 언어 모두 그 언어의 글자로 나오고 화면 배율에 상관없이 또렷하다.
- * 아일랜드가 없는 기종(상단 안전 영역이 노치 높이)에서는 아일랜드 카드와 줄을 뺀다.
+ * 미리보기는 캡처가 아니라 실제 공유 카드(StoryCard)를 예시 기록으로 줄여 그린다 — 네 언어
+ * 모두 그 언어로 나온다. 아래의 IslandPill · LockCard · PreviewGlow는 온보딩이 쓴다.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Platform, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Animated, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { t } from '../i18n';
 import { TABULAR } from '../theme';
-import { KEY_SEEN_ANNOUNCE } from '../store';
+import { KEY_SEEN_SHARE_ANNOUNCE } from '../store';
+import type { WorkoutRecord } from '../types';
+import { ShareIcon } from './Icons';
 import { Portal } from './Overlay';
 import { PressBox } from './PressBox';
+import { StoryCard, type StoryTemplate } from './StoryCards';
+import { SHARE_H, SHARE_W } from './WorkoutCard';
 
-const KEY = KEY_SEEN_ANNOUNCE;
+const KEY = KEY_SEEN_SHARE_ANNOUNCE;
 const RED = '#FF4D5E';
 const TEAL = '#2BD9C3';
 
 /** 다이내믹 아일랜드가 있는 기종 — 상단 안전 영역이 59pt 안팎이다(노치는 47~50) */
 export const ISLAND_MIN_INSET = 54;
 
-export function LiveAnnounce({ blocked }: { blocked: boolean }) {
+export function NewsAnnounce({ blocked }: { blocked: boolean }) {
   const [show, setShow] = useState(false);
   const fade = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (Platform.OS !== 'ios' || blocked) return;
+    if (blocked) return;
     let alive = true;
     AsyncStorage.getItem(KEY)
       .then((v) => {
@@ -68,11 +75,6 @@ export function LiveAnnounce({ blocked }: { blocked: boolean }) {
 }
 
 function Card({ onClose }: { onClose: () => void }) {
-  const { width } = useWindowDimensions();
-  const insets = useSafeAreaInsets();
-  const island = insets.top >= ISLAND_MIN_INSET;
-  // 모달 = 화면 − 좌우 28, 미리보기 판 = 모달 − 안쪽 10, 그 안 = 판 − 좌우 12
-  const previewW = width - 56 - 20 - 24;
   const [box, setBox] = useState({ width: 0, height: 0 });
 
   return (
@@ -83,22 +85,19 @@ function Card({ onClose }: { onClose: () => void }) {
         {/* 바탕 Svg는 숫자로 크기를 준다 — 100%로 두면 판의 오른쪽·아래가 비었다 */}
         <View style={styles.preview} onLayout={(e) => setBox(e.nativeEvent.layout)}>
           <PreviewGlow w={box.width} h={box.height} />
-          {island && <IslandPill />}
-          <LockCard width={previewW} />
+          <CardFan />
         </View>
 
         <View style={styles.body}>
           <View style={{ gap: 8 }}>
             <Text style={styles.kicker}>{t('announce.kicker')}</Text>
-            <Text style={styles.title}>{t('announce.title')}</Text>
-            <Text style={styles.desc}>{t('announce.desc')}</Text>
+            <Text style={styles.title} lineBreakStrategyIOS="hangul-word">{t('announce.title')}</Text>
+            <Text style={styles.desc} lineBreakStrategyIOS="hangul-word">{t('announce.desc')}</Text>
           </View>
           <View style={styles.rule} />
           <View style={{ gap: 14 }}>
-            {island && (
-              <Row icon={<View style={styles.glyphIsland} />} title={t('announce.island')} />
-            )}
-            <Row icon={<View style={styles.glyphLock} />} title={t('announce.lock')} />
+            <Row icon={<PhotoGlyph />} title={t('announce.rowPhoto')} />
+            <Row icon={<ShareIcon size={20} color="#F7F7F8" />} title={t('announce.rowCards')} />
           </View>
           <PressBox onPress={onClose} haptic="tap" radius={16} scaleTo={0.97} dim={0.1} accessibilityLabel={t('announce.ok')}>
             <LinearGradient colors={['#FFFFFF', '#E4E7EC']} style={styles.button}>
@@ -108,6 +107,73 @@ function Card({ onClose }: { onClose: () => void }) {
         </View>
       </View>
     </View>
+  );
+}
+
+/** 미리보기 카드에 넣을 예시 기록 — 56:26, 운동 15:00, 6종목 30세트 */
+function sampleRecord(): WorkoutRecord {
+  const start = new Date();
+  start.setHours(8, 36, 0, 0);
+  return {
+    id: 'announce',
+    presetId: 'announce',
+    presetName: t('announce.cardName'),
+    startedAt: start.getTime(),
+    endedAt: start.getTime() + 3386_000,
+    totalSec: 3386,
+    workSec: 900,
+    completedSets: 30,
+    completed: true,
+    shape: '',
+    blocks: Array.from({ length: 6 }, () => ({ name: '', spec: '', durSec: 300 })),
+    segs: [],
+  };
+}
+
+
+/**
+ * 카드 세 장 부채 — 가운데 링, 왼쪽 포스터, 오른쪽 사진 카드(사진 자리는 비어 있다).
+ * 크기는 고정 배율(transform)로 줄인다 — 고정이면 글자가 또렷하다(애니메이션 배율만 깨졌다).
+ */
+function CardFan() {
+  const record = React.useMemo(sampleRecord, []);
+  // 가운데 카드는 화면 높이의 30%까지(18 Pro에서 0.42배 = 269pt). SE 같은 작은 화면에서 팝업이 넘치지 않게
+  const { height } = useWindowDimensions();
+  const FAN_MID = Math.min(0.42, (height * 0.3) / SHARE_H);
+  const FAN_SIDE = FAN_MID * 0.8;
+  const midW = SHARE_W * FAN_MID;
+  const midH = SHARE_H * FAN_MID;
+  const sideW = SHARE_W * FAN_SIDE;
+  const sideH = SHARE_H * FAN_SIDE;
+  const card = (template: StoryTemplate, k: number) => (
+    <View style={{ width: SHARE_W * k, height: SHARE_H * k, borderRadius: 12, overflow: 'hidden' }}>
+      <View style={{ width: SHARE_W, height: SHARE_H, transform: [{ scale: k }], transformOrigin: 'top left' }}>
+        <StoryCard template={template} record={record} />
+      </View>
+    </View>
+  );
+  return (
+    <View style={{ height: midH, width: '100%', alignItems: 'center', justifyContent: 'center' }}>
+      <View style={[styles.fanSide, { left: '50%', marginLeft: -midW / 2 - sideW * 0.62, top: (midH - sideH) / 2 }]}>
+        {card('typePoster', FAN_SIDE)}
+      </View>
+      <View style={[styles.fanSide, { left: '50%', marginLeft: midW / 2 - sideW * 0.38, top: (midH - sideH) / 2 }]}>
+        {card('photoStrip', FAN_SIDE)}
+      </View>
+      <View style={styles.fanMid}>{card('ringHero', FAN_MID)}</View>
+    </View>
+  );
+}
+
+/** 사진 + 더하기 — 카드 고르기의 「사진 넣기」와 같은 모양 */
+function PhotoGlyph() {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#F7F7F8" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M12 3.5H7A3.5 3.5 0 0 0 3.5 7v10A3.5 3.5 0 0 0 7 20.5h10a3.5 3.5 0 0 0 3.5-3.5v-5.5" />
+      <Circle cx={8.6} cy={8.6} r={1.8} />
+      <Path d="M5.5 20.3l8.1-8.1a1.6 1.6 0 0 1 2.3 0l4.4 4.4" />
+      <Path d="M15.5 5.5h6M18.5 2.5v6" />
+    </Svg>
   );
 }
 
@@ -261,9 +327,8 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     borderCurve: 'continuous',
     overflow: 'hidden',
-    paddingTop: 16,
+    paddingVertical: 18,
     paddingHorizontal: 12,
-    paddingBottom: 12,
     alignItems: 'center',
     gap: 18,
     backgroundColor: '#000000',
@@ -300,8 +365,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  glyphIsland: { width: 22, height: 8, borderRadius: 4, backgroundColor: '#F7F7F8' },
-  glyphLock: { width: 22, height: 12, borderRadius: 4, borderWidth: 2, borderColor: '#F7F7F8' },
+  fanSide: { position: 'absolute', opacity: 0.55 },
+  fanMid: {
+    shadowColor: '#000',
+    shadowOpacity: 0.6,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+  },
   rowTitle: { fontSize: 15, fontWeight: '600', color: '#F7F7F8' },
   button: { height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   buttonText: { fontSize: 16, fontWeight: '700', color: '#0A0A0C' },

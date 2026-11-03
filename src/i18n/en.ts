@@ -337,14 +337,15 @@ export const en: Catalog = {
     sampleRoutine: 'Morning Full Body',
   },
 
-  /** 라이브 액티비티 출시 팝업 — 설치 뒤 한 번 */
+  /** 새 기능 팝업(1.5.3 공유 카드) — 설치 뒤 한 번. sampleName은 온보딩의 잠금화면 예시가 쓴다 */
   announce: {
-    kicker: 'NEW · LIVE ACTIVITIES',
-    title: 'See time left at a glance,\nwithout opening the app',
-    desc: 'Check your workout progress right from the Dynamic Island and Lock Screen.',
-    island: 'Dynamic Island',
-    lock: 'Lock Screen',
-    ok: 'Get started',
+    kicker: 'NEW · SHARE CARDS',
+    title: 'Turn today\'s workout\ninto a card',
+    desc: 'Tap Share on the finish screen or in your records, pick a card, and post it straight to your Instagram story.',
+    rowPhoto: 'Put your stats on a workout photo',
+    rowCards: 'Choose from five card styles',
+    ok: 'Got it',
+    cardName: '5-01 · Upper body',
     sampleName: 'Pec Deck Fly',
   },
 
