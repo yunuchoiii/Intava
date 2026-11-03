@@ -76,16 +76,13 @@ const TimerActivity = (p: TimerActivityProps, env: LiveActivityEnvironment) => {
   'widget';
   const seg = { lower: new Date(p.start), upper: new Date(p.end) };
   /*
-    숫자만 끝을 1초 늦춘다 — 앱 타이머와 같은 올림(clock의 Math.ceil)으로 맞추려고.
-    iOS의 타이머 글자는 남은 시간을 내림해서 3·2·1 뒤에 0이 1초 서 있다가 다음 구간이
-    29부터 보였다. 끝을 1초 미루면 내림이 곧 올림이 되어 3·2·1 → 30으로 넘어간다.
-    링은 실제 시각 그대로 둔다(1초 어긋나면 링이 덜 비고 넘어간다).
+    숫자도 앱과 같은 실제 구간 시각을 쓴다.
 
-    시작도 1초 미룬다. 타이머 글자는 시작 전이면 구간 길이(끝−시작)를 그대로 보여서,
-    끝만 미루면 갱신이 시작 시각보다 먼저 그려질 때 30초 구간이 31로 한 번 떴다(실기기).
-    둘 다 미루면 길이가 30 그대로이고, 첫 1초 동안 보이는 값도 어차피 30이라 같다.
+    예전엔 iOS 타이머 글자가 남은 시간을 내림해서(3·2·1 뒤 0이 1초 섬) 시작·끝을 1초씩
+    미뤄 앱의 올림과 맞췄다. 2026-11 실기기에서는 그 1초 때문에 잠금화면·워치가 앱보다
+    1초 늦게 보였다 — 미룸을 뺐다. 끝에 0이 다시 서면 이 판단이 틀린 것이다.
   */
-  const segText = { lower: new Date(p.start + 1000), upper: new Date(p.end + 1000) };
+  const segText = seg;
   const whole = { lower: new Date(p.runStart), upper: new Date(p.runEnd) };
   const still = p.paused || p.done;
 
