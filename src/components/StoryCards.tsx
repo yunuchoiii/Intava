@@ -210,13 +210,13 @@ function PhotoStack({ record, photo }: { record: WorkoutRecord; photo?: string }
         <StoryLogo mark={18} word={18} onPhoto />
       </View>
       <View style={{ position: 'absolute', right: 24, bottom: 64, left: 24, alignItems: 'flex-end' }}>
-        <Text style={[s.shadow, s.photoSub]}>{storyDate(record, false)}</Text>
-        <Text style={[s.shadow, s.photoName, { marginTop: 8 }]} numberOfLines={1}>
+        <Text style={[s.photoSub]}>{storyDate(record, false)}</Text>
+        <Text style={[s.photoName, { marginTop: 8 }]} numberOfLines={1}>
           {record.presetName}
         </Text>
         <View style={[s.row, { gap: 12, marginTop: 6 }]}>
           <StoryRing size={46} stroke={26} gap={60} ratio={n.ratio} restColor="rgba(255,255,255,0.45)" workColor="#FFFFFF" />
-          <Text style={[s.shadow, s.num, TABULAR, { ...tight(60, 54, 6), letterSpacing: -3 }]}>
+          <Text style={[s.num, TABULAR, { ...tight(60, 54, 6), letterSpacing: -3 }]}>
             {storyTime(n.total)}
           </Text>
         </View>
@@ -233,8 +233,8 @@ function PhotoStack({ record, photo }: { record: WorkoutRecord; photo?: string }
 function PhotoStat({ value, label }: { value: string; label: string }) {
   return (
     <View style={{ alignItems: 'flex-end', gap: 3 }}>
-      <Text style={[s.shadow, s.num, TABULAR, { fontSize: 24 }]}>{value}</Text>
-      <Text style={[s.shadow, s.photoSub]}>{label}</Text>
+      <Text style={[s.num, TABULAR, { fontSize: 24 }]}>{value}</Text>
+      <Text style={[s.photoSub]}>{label}</Text>
     </View>
   );
 }
@@ -254,16 +254,16 @@ function PhotoStrip({ record, photo }: { record: WorkoutRecord; photo?: string }
       <View style={{ position: 'absolute', left: 24, right: 24, bottom: 64 }}>
         <View style={[s.row, { justifyContent: 'space-between', alignItems: 'flex-end', gap: 12 }]}>
           <View style={{ flexShrink: 1, gap: 9 }}>
-            <Text style={[s.shadow, s.photoSub, { fontSize: 12 }]} numberOfLines={1}>
+            <Text style={[s.photoSub, { fontSize: 12 }]} numberOfLines={1}>
               {record.presetName}
             </Text>
-            <Text style={[s.shadow, s.num, TABULAR, { ...tight(52, 47), letterSpacing: -2.6 }]}>
+            <Text style={[s.num, TABULAR, { ...tight(52, 47), letterSpacing: -2.6 }]}>
               {storyTime(n.total)}
             </Text>
           </View>
           <View style={{ alignItems: 'flex-end', paddingBottom: 4 }}>
-            <Text style={[s.shadow, s.num, TABULAR, { fontSize: 28 }]}>{n.sets}</Text>
-            <Text style={[s.shadow, s.photoSub]}>
+            <Text style={[s.num, TABULAR, { fontSize: 28 }]}>{n.sets}</Text>
+            <Text style={[s.photoSub]}>
               {t('story.setsAnd', { blocks: t('count.blocks', { count: n.blocks }) })}
             </Text>
           </View>
@@ -277,7 +277,7 @@ function PhotoStrip({ record, photo }: { record: WorkoutRecord; photo?: string }
         </View>
         <View style={[s.row, s.stripFoot]}>
           <StoryLogo mark={15} word={15} gap={6} onPhoto />
-          <Text style={[s.shadow, s.photoSub]}>{storyDate(record, true)}</Text>
+          <Text style={[s.photoSub]}>{storyDate(record, true)}</Text>
         </View>
       </View>
     </>
@@ -287,8 +287,8 @@ function PhotoStrip({ record, photo }: { record: WorkoutRecord; photo?: string }
 function BarLabel({ label, value }: { label: string; value: string }) {
   return (
     <View style={[s.row, { gap: 5, alignItems: 'baseline' }]}>
-      <Text style={[s.shadow, s.photoSub, { fontSize: 11, color: 'rgba(255,255,255,0.85)' }]}>{label}</Text>
-      <Text style={[s.shadow, s.num, TABULAR, { fontSize: 15 }]}>{value}</Text>
+      <Text style={[s.photoSub, { fontSize: 11, color: 'rgba(255,255,255,0.85)' }]}>{label}</Text>
+      <Text style={[s.num, TABULAR, { fontSize: 15 }]}>{value}</Text>
     </View>
   );
 }
@@ -466,7 +466,6 @@ const s = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center' },
   word: { fontFamily: 'LeagueSpartan-SemiBold', color: '#FFFFFF' },
   num: { fontFamily: NUM_BOLD, color: '#FFFFFF' },
-  shadow: { textShadowColor: 'rgba(0,0,0,0.3)', textShadowRadius: 14, textShadowOffset: { width: 0, height: 1 } },
   photoSub: { fontSize: 10.5, fontWeight: '600', color: 'rgba(255,255,255,0.82)' },
   photoName: { fontSize: 15, fontWeight: '700', letterSpacing: -0.3, color: '#FFFFFF' },
   stripFoot: {
