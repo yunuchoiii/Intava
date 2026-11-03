@@ -198,9 +198,17 @@ function PhotoStack({ record, photo }: { record: WorkoutRecord; photo?: string }
       <Glows
         id="sa"
         glows={[
-          { cx: 1, cy: 1, rx: 0.95, ry: 0.5, stops: [[0, '#000', 0.62], [0.55, '#000', 0.2], [0.8, '#000', 0]] },
           { cx: 0, cy: 0, rx: 0.7, ry: 0.22, stops: [[0, '#000', 0.35], [0.8, '#000', 0]] },
         ]}
+      />
+      {/*
+        아래는 3c와 같은 세로 그라데이션 — 시안의 오른쪽 아래 둥근 그늘(radial)로는 밝은 사진에서
+        숫자가 묻혔다(사용자 지적 2026-11-03)
+      */}
+      <LinearGradient
+        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.72)']}
+        locations={[0.45, 0.88]}
+        style={StyleSheet.absoluteFill}
       />
       <View style={{ position: 'absolute', left: 24, top: 72 }}>
         <StoryLogo mark={18} word={18} onPhoto />
