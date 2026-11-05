@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { DarkTheme, ThemeProvider } from 'expo-router/react-navigation';
 import * as SplashScreen from 'expo-splash-screen';
+import { markSplashGone } from '../src/splash';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
@@ -60,7 +61,10 @@ export default function RootLayout() {
       duration: 420,
       delay: 120,
       useNativeDriver: true,
-    }).start(() => setSplashGone(true));
+    }).start(() => {
+      setSplashGone(true);
+      markSplashGone();
+    });
   }, [fade]);
 
   return (
