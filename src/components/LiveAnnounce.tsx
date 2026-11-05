@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { t } from '../i18n';
 import { TABULAR } from '../theme';
+import { afterSplash } from '../splash';
 import { KEY_SEEN_SHARE_ANNOUNCE } from '../store';
 import type { WorkoutRecord } from '../types';
 import { Portal } from './Overlay';
@@ -37,7 +38,10 @@ export const ISLAND_MIN_INSET = 54;
 
 export function NewsAnnounce({ blocked }: { blocked: boolean }) {
   const [show, setShow] = useState(false);
+  /** 커지기가 끝났다 — 배율을 걷어 낸다(배율이 걸린 채면 안의 글자가 흐려질 수 있다) */
+  const [settled, setSettled] = useState(false);
   const fade = useRef(new Animated.Value(0)).current;
+  const grow = useRef(new Animated.Value(0.88)).current;
 
   useEffect(() => {
     if (blocked) return;
@@ -52,9 +56,24 @@ export function NewsAnnounce({ blocked }: { blocked: boolean }) {
     };
   }, [blocked]);
 
+  /*
+    시작 화면이 다 걷히고 홈이 보인 뒤에 나타난다 — 걷히는 동안 같이 떠오르면 홈이 보일 때 이미
+    열려 있었다(사용자 지적). 바탕은 서서히, 카드는 작게서 제자리로 커지며.
+  */
   useEffect(() => {
-    if (show) Animated.timing(fade, { toValue: 1, duration: 260, useNativeDriver: true }).start();
-  }, [show, fade]);
+    if (!show) return;
+    let alive = true;
+    void afterSplash().then(() => {
+      if (!alive) return;
+      Animated.parallel([
+        Animated.timing(fade, { toValue: 1, duration: 280, delay: 250, useNativeDriver: true }),
+        Animated.spring(grow, { toValue: 1, delay: 250, damping: 16, stiffness: 180, mass: 0.9, useNativeDriver: true }),
+      ]).start(({ finished }) => finished && alive && setSettled(true));
+    });
+    return () => {
+      alive = false;
+    };
+  }, [show, fade, grow]);
 
   // 띄운 뒤에 운동이 되살아나면(복원이 늦게 끝나면) 거둔다 — 본 것으로 적지는 않는다
   if (!show || blocked) return null;
@@ -67,20 +86,20 @@ export function NewsAnnounce({ blocked }: { blocked: boolean }) {
   return (
     <Portal>
       <Animated.View style={[StyleSheet.absoluteFill, { opacity: fade }]}>
-        <Card onClose={close} />
+        <Card onClose={close} scale={settled ? undefined : grow} />
       </Animated.View>
     </Portal>
   );
 }
 
-function Card({ onClose }: { onClose: () => void }) {
+function Card({ onClose, scale }: { onClose: () => void; scale?: Animated.Value }) {
   const [box, setBox] = useState({ width: 0, height: 0 });
 
   return (
     <View style={styles.backdrop}>
       <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
       <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(4,4,6,0.66)' }]} />
-      <View style={styles.modal}>
+      <Animated.View style={[styles.modal, scale && { transform: [{ scale }] }]}>
         {/* 바탕 Svg는 숫자로 크기를 준다 — 100%로 두면 판의 오른쪽·아래가 비었다 */}
         <View style={styles.preview} onLayout={(e) => setBox(e.nativeEvent.layout)}>
           <PreviewGlow w={box.width} h={box.height} />
@@ -104,7 +123,7 @@ function Card({ onClose }: { onClose: () => void }) {
             </LinearGradient>
           </PressBox>
         </View>
-      </View>
+      </Animated.View>
     </View>
   );
 }
