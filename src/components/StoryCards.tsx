@@ -16,10 +16,8 @@ import Svg, { Circle, Defs, G, RadialGradient, Rect, Stop } from 'react-native-s
 import { t } from '../i18n';
 import { TABULAR } from '../theme';
 import type { WorkoutRecord } from '../types';
-import { CARD, NUM_BOLD, SHARE_H, SHARE_W } from './WorkoutCard';
+import { CARD, NUM_BOLD, NUM_EXTRA, NUM_SEMI, SHARE_H, SHARE_W } from './WorkoutCard';
 
-/** 3e의 큰 숫자 — app.json의 expo-font가 묶어 넣는다 */
-const NUM_EXTRA = 'LeagueSpartan-ExtraBold';
 
 /** 사진 위 색 — 어두운 바탕보다 한 단 밝다 */
 const ON_PHOTO = { work: '#E8414F', rest: '#1AA897' };
@@ -468,7 +466,7 @@ const s = StyleSheet.create({
   card: { width: SHARE_W, height: SHARE_H, overflow: 'hidden', backgroundColor: CARD.bg },
   row: { flexDirection: 'row', alignItems: 'center' },
   center: { alignItems: 'center', justifyContent: 'center' },
-  word: { fontFamily: 'LeagueSpartan-SemiBold', color: '#FFFFFF' },
+  word: { fontFamily: NUM_SEMI, color: '#FFFFFF' },
   num: { fontFamily: NUM_BOLD, color: '#FFFFFF' },
   photoSub: { fontSize: 10.5, fontWeight: '600', color: 'rgba(255,255,255,0.82)' },
   photoName: { fontSize: 15, fontWeight: '700', letterSpacing: -0.3, color: '#FFFFFF' },

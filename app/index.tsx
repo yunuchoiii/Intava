@@ -543,8 +543,14 @@ function AddButton({ kind, primary }: { kind: PresetKind; primary: boolean }) {
    */
   const inner = (color: string, weight: '600' | '700') => (
     <View style={styles.addInner}>
-      {/* 전각 ＋는 em 박스 안에서 작게 그려진다 — 눈에 보이려면 글자보다 훨씬 키워야 한다 */}
-      <Text style={[styles.addPlus, { color }]}>＋</Text>
+      {/*
+        ＋는 글자가 아니라 선 두 개로 그린다 — 전각 ＋ 글자는 폰트마다 세로 자리가 달라
+        iOS에 맞춘 위치가 안드로이드에서는 아래로 처졌다(갤럭시 실기기). 선이면 상자 가운데가 곧 중심이다.
+      */}
+      <View style={styles.addPlus}>
+        <View style={[styles.addPlusBar, { width: 14, height: 1.8, backgroundColor: color }]} />
+        <View style={[styles.addPlusBar, { width: 1.8, height: 14, backgroundColor: color }]} />
+      </View>
       <Text style={{ fontSize: 14, fontWeight: weight, color }}>{label}</Text>
     </View>
   );
@@ -691,7 +697,8 @@ const styles = StyleSheet.create({
     paddingRight: 16,
     gap: 2,
   },
-  /** 전각 ＋는 글리프가 em 박스보다 한참 작다. lineHeight로 세로 중심을 잡는다 */
-  addPlus: { fontSize: 26, fontWeight: '300', lineHeight: 30, marginTop: -1 },
+  /** ＋ — 18 칸 가운데에 가로·세로 선을 겹친다(예전 전각 글자와 같은 크기) */
+  addPlus: { width: 18, height: 18, marginRight: 3, alignItems: 'center', justifyContent: 'center' },
+  addPlusBar: { position: 'absolute', borderRadius: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });

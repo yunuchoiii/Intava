@@ -10,7 +10,7 @@
  * 위 84pt는 인스타 프로필·닫기 버튼, 아래 60pt는 하단 바 자리라 비워 둔다(시안 개정).
  */
 import React from 'react';
-import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Platform, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import Svg, { Circle, Defs, G, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { clock } from '../engine/labels';
 import { t } from '../i18n';
@@ -30,9 +30,15 @@ export const CARD = {
   panelBorder: 'rgba(255,255,255,0.08)',
 };
 
-/** 숫자 글꼴 — app.json의 expo-font가 묶어 넣는다(iOS는 PostScript 이름으로 찾는다) */
-export const NUM_BOLD = 'LeagueSpartan-Bold';
-export const NUM_SEMI = 'LeagueSpartan-SemiBold';
+/**
+ * 숫자 글꼴 — app.json의 expo-font가 묶어 넣는다. **이름이 플랫폼마다 다르다** — iOS는 PostScript 이름
+ * (LeagueSpartan-Bold)으로, 안드로이드는 파일 이름(LeagueSpartan_700Bold)으로 찾는다. iOS 이름만 쓰자
+ * 안드로이드에서 시스템 글꼴로 그려졌다(갤럭시 실기기, 2026-11-05).
+ */
+const spartan = (ios: string, file: string) => (Platform.OS === 'ios' ? ios : file);
+export const NUM_SEMI = spartan('LeagueSpartan-SemiBold', 'LeagueSpartan_600SemiBold');
+export const NUM_BOLD = spartan('LeagueSpartan-Bold', 'LeagueSpartan_700Bold');
+export const NUM_EXTRA = spartan('LeagueSpartan-ExtraBold', 'LeagueSpartan_800ExtraBold');
 
 /** 이미지에 넣는 종목 줄 수 — 넘으면 「외 N개 종목」 */
 export const SHARE_MAX_ROWS = 7;

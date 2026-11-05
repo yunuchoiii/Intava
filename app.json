@@ -75,7 +75,12 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#17171C"
+          "backgroundColor": "#17171C",
+          "android": {
+            "image": "./assets/splash-icon.png",
+            "imageWidth": 170,
+            "backgroundColor": "#17171C"
+          }
         }
       ],
       [

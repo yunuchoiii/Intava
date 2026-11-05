@@ -4,7 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { markSplashGone } from '../src/splash';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
+import { Animated, Platform, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Wordmark } from '../src/components/Wordmark';
@@ -38,8 +38,12 @@ const NAV_THEME = {
   },
 };
 
-/** 네이티브 스플래시의 로고 크기와 같아야 이어붙는 순간이 보이지 않는다 */
-const SPLASH_LOGO_WIDTH = 200;
+/**
+ * 네이티브 스플래시의 로고 크기와 같아야 이어붙는 순간이 보이지 않는다(app.json expo-splash-screen).
+ * 안드로이드 12+는 스플래시 아이콘을 지름 약 192dp 원 안에만 보여서, 200이면 옆으로 긴 로고의 양 끝(왼쪽 링)이
+ * 잘렸다(갤럭시 실기기, 2026-11-05) — 안드로이드는 170.
+ */
+const SPLASH_LOGO_WIDTH = Platform.OS === 'ios' ? 200 : 170;
 
 export default function RootLayout() {
   const [splashGone, setSplashGone] = useState(false);

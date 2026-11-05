@@ -28,7 +28,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { captureRef } from 'react-native-view-shot';
-import { ShareIcon } from '../src/components/Icons';
+import { BackIcon, ShareIcon } from '../src/components/Icons';
 import { PressBox } from '../src/components/PressBox';
 import { needsPhoto, PHOTO_SPOT, StoryCard, type StoryTemplate } from '../src/components/StoryCards';
 import { ToastHost, useToast } from '../src/components/Toast';
@@ -179,6 +179,18 @@ function ShareCard() {
       <View style={[StyleSheet.absoluteFill, { backgroundColor: '#0A0A0D' }]} />
 
       <View style={[styles.header, { marginTop: insets.top }]}>
+        {/* 이전 — 아래 「닫기」와 같은 일. 다른 화면처럼 왼쪽 위에서도 나갈 수 있게(사용자 요청) */}
+        <PressBox
+          onPress={() => router.back()}
+          hitSlop={10}
+          scaleTo={0.9}
+          dim={0}
+          outerStyle={styles.back}
+          style={styles.backBox}
+          accessibilityLabel={t('common.close')}
+        >
+          <BackIcon size={26} color="#B5B8BE" />
+        </PressBox>
         <Text style={styles.title}>{t('shareCard.title')}</Text>
       </View>
 
@@ -347,6 +359,8 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#0A0A0D' },
   hidden: { position: 'absolute', top: 0, left: 0 },
   header: { height: 44, alignItems: 'center', justifyContent: 'center' },
+  back: { position: 'absolute', left: 12, top: 0, bottom: 0, width: 44 },
+  backBox: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 16, fontWeight: '700', letterSpacing: -0.32, color: '#F7F7F8' },
   card: {
     width: CARD_W,
