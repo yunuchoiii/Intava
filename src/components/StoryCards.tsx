@@ -466,8 +466,8 @@ const s = StyleSheet.create({
   card: { width: SHARE_W, height: SHARE_H, overflow: 'hidden', backgroundColor: CARD.bg },
   row: { flexDirection: 'row', alignItems: 'center' },
   center: { alignItems: 'center', justifyContent: 'center' },
-  word: { fontFamily: NUM_SEMI, color: '#FFFFFF' },
-  num: { fontFamily: NUM_BOLD, color: '#FFFFFF' },
+  word: { fontFamily: NUM_SEMI, includeFontPadding: false, color: '#FFFFFF' },
+  num: { fontFamily: NUM_BOLD, includeFontPadding: false, color: '#FFFFFF' },
   photoSub: { fontSize: 10.5, fontWeight: '600', color: 'rgba(255,255,255,0.82)' },
   photoName: { fontSize: 15, fontWeight: '700', letterSpacing: -0.3, color: '#FFFFFF' },
   stripFoot: {
@@ -494,7 +494,7 @@ const s = StyleSheet.create({
   meta: { fontSize: 12, fontWeight: '600', color: CARD.sub },
   metaDot: { fontSize: 12, fontWeight: '600', color: '#4A4D53' },
   posterName: { fontSize: 14, fontWeight: '700', color: CARD.legend },
-  posterNum: { fontFamily: NUM_EXTRA, color: CARD.text },
+  posterNum: { fontFamily: NUM_EXTRA, includeFontPadding: false, color: CARD.text },
   posterLabel: { marginTop: 2, fontSize: 11, fontWeight: '600', color: CARD.sub },
   posterStats: {
     marginTop: 30,

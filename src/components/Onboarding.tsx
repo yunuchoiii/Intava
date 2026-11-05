@@ -372,7 +372,7 @@ function LockClock() {
           w: t('records.weekdays').split(' ')[now.getDay()],
         })}
       </Text>
-      <Text style={[{ fontFamily: NUM_BOLD, fontSize: 50, color: '#F7F7F8', lineHeight: 52 }, TABULAR]}>{time}</Text>
+      <Text style={[{ fontFamily: NUM_BOLD, includeFontPadding: false, fontSize: 50, color: '#F7F7F8', lineHeight: 52 }, TABULAR]}>{time}</Text>
     </View>
   );
 }
@@ -568,7 +568,7 @@ const styles = StyleSheet.create({
   workoutIcon: { width: 34, height: 34, borderRadius: 10 },
   workoutName: { fontSize: 14.5, fontWeight: '600', color: '#F7F7F8' },
   workoutMeta: { fontSize: 12.5, color: SUB },
-  workoutTime: { fontFamily: NUM_BOLD, fontSize: 20, color: '#F7F7F8', paddingTop: 2 },
+  workoutTime: { fontFamily: NUM_BOLD, includeFontPadding: false, fontSize: 20, color: '#F7F7F8', paddingTop: 2 },
   deniedRow: { flexDirection: 'row', gap: 9, alignItems: 'flex-start', paddingTop: 13, paddingBottom: 15, paddingHorizontal: 18 },
   footer: { paddingTop: 16, paddingHorizontal: 24, alignItems: 'center', gap: 20 },
   dots: { flexDirection: 'row', gap: 6 },
