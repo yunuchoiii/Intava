@@ -351,6 +351,8 @@ export const en: Catalog = {
   },
 
   live: {
+    /** 안드로이드 진행 중 알림의 채널 이름(알림 설정에 보인다) */
+    channel: 'Workout timer',
     next: 'Next: {{what}}',
     subWork: '{{sub}} · Next: {{next}}',
     waiting: 'Updating…',

@@ -12,12 +12,14 @@
  * 앱이 죽었다 살아나면 떠 있던 액티비티를 새로 만들지 않고 이어받는다 — 그대로
  * 새로 시작하면 아일랜드에 같은 타이머가 둘 선다.
  *
- * iOS가 아니거나, 사용자가 설정에서 라이브 액티비티를 껐거나, 네이티브 모듈이 없는
- * 빌드(Expo Go)에서는 조용히 아무것도 하지 않는다 — 이것은 안전망 위의 덤이다.
+ * 안드로이드는 라이브 액티비티 대신 진행 중 알림을 띄운다(아래 syncOngoing). 사용자가 설정에서
+ * 껐거나, 네이티브 모듈이 없는 빌드(Expo Go)에서는 조용히 아무것도 하지 않는다 — 이것은 안전망 위의 덤이다.
  */
 import { Platform } from 'react-native';
 import type { LiveActivity, LiveActivityFactory } from 'expo-widgets';
 import type { TimerActivityProps } from './TimerActivity';
+import { hideOngoing, showOngoing } from '../../modules/intava-ongoing';
+import { t } from '../i18n';
 
 let factory: LiveActivityFactory<TimerActivityProps> | null | undefined;
 let current: LiveActivity<TimerActivityProps> | null = null;
@@ -59,6 +61,10 @@ function getFactory(): LiveActivityFactory<TimerActivityProps> | null {
  * 몇 번을 불러도 내용이 같으면 아무것도 보내지 않는다.
  */
 export function syncLiveActivity(props: TimerActivityProps | null, force = false): void {
+  if (Platform.OS === 'android') {
+    syncOngoing(props, force);
+    return;
+  }
   const f = getFactory();
   if (!f) return;
 
@@ -136,4 +142,32 @@ function safeId(a: LiveActivity<TimerActivityProps>): string {
   } catch {
     return String(Math.random());
   }
+}
+
+/**
+ * 안드로이드 — 라이브 액티비티 대신 진행 중 알림 + 포그라운드 서비스(modules/intava-ongoing).
+ *
+ * 같은 props를 받아 같은 때(구간 전환 · 멈춤 · 재개)에만 보낸다. 숫자는 알림의 크로노미터가
+ * 구간 끝 시각까지 스스로 줄인다. 서비스가 떠 있는 동안 안드로이드가 앱을 멈추지 않는다 —
+ * 화면을 꺼도 구간 알림음이 제때 난다.
+ */
+function syncOngoing(props: TimerActivityProps | null, force: boolean): void {
+  if (!props) {
+    if (lastSent) hideOngoing();
+    lastSent = '';
+    return;
+  }
+  const still = props.paused || props.done;
+  const payload = {
+    title: props.phase,
+    text: [props.name, props.sub].filter(Boolean).join(' · '),
+    endMs: still ? 0 : props.end,
+    shortText: props.paused ? props.remain : '',
+    color: props.color,
+    channelName: t('live.channel'),
+  };
+  const key = JSON.stringify(payload);
+  if (!force && key === lastSent) return;
+  lastSent = key;
+  showOngoing(payload);
 }
