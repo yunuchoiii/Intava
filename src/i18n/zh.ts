@@ -344,6 +344,8 @@ export const zh: Catalog = {
   },
 
   live: {
+    /** 안드로이드 진행 중 알림의 채널 이름(알림 설정에 보인다) */
+    channel: '训练计时器',
     next: '下一个：{{what}}',
     subWork: '{{sub}} · 下一个：{{next}}',
     waiting: '更新中…',

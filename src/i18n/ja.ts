@@ -344,6 +344,8 @@ export const ja: Catalog = {
   },
 
   live: {
+    /** 안드로이드 진행 중 알림의 채널 이름(알림 설정에 보인다) */
+    channel: 'ワークアウトタイマー',
     next: '次: {{what}}',
     subWork: '{{sub}} · 次: {{next}}',
     waiting: '更新中…',
