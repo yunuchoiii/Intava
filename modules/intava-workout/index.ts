@@ -1,8 +1,10 @@
 /**
- * iOS 운동 세션 · 건강 앱 기록(ios/IntavaWorkoutModule.swift).
+ * 운동 세션 · 건강 기록 — iOS는 HealthKit(ios/IntavaWorkoutModule.swift), 안드로이드는 헬스 커넥트
+ * (android/…/IntavaWorkoutModule.kt). 안드로이드에는 운동 세션이 없어 start/stop이 "none"을 돌려주고,
+ * 세션이 끝나면 시작 · 끝 시각으로 한 건 써넣는다(saveWorkoutRecord).
  *
- * 네이티브 모듈이 없는 빌드·플랫폼(안드로이드, Expo Go)에서는 조용히 아무것도 하지
- * 않는다 — 운동 세션은 아일랜드와 건강 기록을 거드는 덤이고, 타이머는 그것 없이 돈다.
+ * 네이티브 모듈이 없는 빌드(Expo Go)에서는 조용히 아무것도 하지 않는다 — 운동 세션은 아일랜드와
+ * 건강 기록을 거드는 덤이고, 타이머는 그것 없이 돈다.
  */
 import { requireOptionalNativeModule } from 'expo-modules-core';
 import type { WorkoutType } from '../../src/types';

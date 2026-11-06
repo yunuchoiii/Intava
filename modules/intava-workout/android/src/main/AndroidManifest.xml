@@ -1,0 +1,37 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- 운동을 마치면 헬스 커넥트에 운동 한 건을 쓴다 — 읽지는 않는다 -->
+  <uses-permission android:name="android.permission.health.WRITE_EXERCISE" />
+
+  <!-- 안드로이드 13 이하는 헬스 커넥트가 따로 깔린 앱이다 -->
+  <queries>
+    <package android:name="com.google.android.apps.healthdata" />
+  </queries>
+
+  <application>
+    <!-- 권한 창을 띄우고 답을 받아 오는 투명한 화면 -->
+    <activity
+      android:name="expo.modules.intavaworkout.HealthPermissionActivity"
+      android:exported="false"
+      android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+    <!-- 헬스 커넥트가 「이 앱이 왜 쓰는지」를 보여 달라고 할 때 — 개인정보 처리방침을 연다(필수) -->
+    <activity
+      android:name="expo.modules.intavaworkout.HealthRationaleActivity"
+      android:exported="true"
+      android:theme="@android:style/Theme.Translucent.NoTitleBar">
+      <intent-filter>
+        <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+      </intent-filter>
+    </activity>
+    <activity-alias
+      android:name="expo.modules.intavaworkout.ViewPermissionUsageActivity"
+      android:exported="true"
+      android:targetActivity="expo.modules.intavaworkout.HealthRationaleActivity"
+      android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+        <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+      </intent-filter>
+    </activity-alias>
+  </application>
+</manifest>

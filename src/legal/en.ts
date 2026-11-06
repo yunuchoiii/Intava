@@ -5,7 +5,7 @@ const EMAIL = 'chltjdnjs529@gmail.com';
 export const en: LegalPack = {
   privacy: {
     title: 'Privacy Policy',
-    updated: 'Last updated: November 3, 2026',
+    updated: 'Last updated: November 6, 2026',
     lead: 'intava does not collect personal information.',
     sections: [
       {
@@ -42,10 +42,11 @@ export const en: LegalPack = {
         ],
       },
       {
-        heading: 'Apple Health (HealthKit)',
+        heading: 'Apple Health (HealthKit) · Health Connect',
         body: [
           'Only if you turn on “Log workouts to Health” in Settings, the app records each workout in Apple Health when it ends. What it writes is the workout type you chose for the routine, the start and end time, and the workout duration; active energy (calories) estimated by iOS during the workout may be attached. These workouts also appear in the Fitness app.',
           'Intava never reads data from Health. Workouts written to Health stay in Apple Health, are not sent to anyone (including the developer), and are not used for advertising or analytics. You can revoke access anytime in iOS Settings → Health → Data Access & Devices.',
+          'On Android the same setting is “Log workouts to Health Connect.” Only when it is on, Intava saves one exercise session (the workout type and start and end times) to Health Connect when you finish, which apps like Samsung Health can show. Intava never reads Health Connect data; what it writes stays in Health Connect on your device and is not sent to anyone. You can turn off the permission anytime in Settings → Health Connect → App permissions.',
           'When the lock screen timer is on, the app runs an iOS workout session during a workout so the timer keeps going while the screen is off. If “Log workouts to Health” is off, that session is discarded and nothing is saved to Health.',
         ],
       },

@@ -96,6 +96,7 @@ function useAppVersion(): string {
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const ios = Platform.OS === 'ios';
   const appVersion = useAppVersion();
   /**
    * 화면을 손가락에 딸려 보내지 않는다. 그렇게 해봤더니 오른쪽으로 끌려가다
@@ -301,7 +302,7 @@ export default function SettingsScreen() {
           )}
 
           {/*
-            건강 앱 — HealthKit을 쓸 수 있는 기기(iPhone)에서만 선다.
+            건강 앱 — HealthKit(iPhone) 또는 헬스 커넥트(안드로이드)를 쓸 수 있는 기기에서만 선다.
             켜는 순간 권한을 묻고, 허용되지 않으면 켜지 않은 채로 둔다 — 켜 있는데 아무것도
             안 쓰이는 스위치는 거짓말이다. iOS는 한 번 거절하면 다시 묻지 않으므로 어디서
             켜는지 알려 준다.
@@ -310,8 +311,8 @@ export default function SettingsScreen() {
             <>
               <Text style={styles.section}>{t('settings.health')}</Text>
               <ToggleRow
-                title={t('settings.healthSync')}
-                note={t('settings.healthSyncNote')}
+                title={t(ios ? 'settings.healthSync' : 'settings.healthSyncAndroid')}
+                note={t(ios ? 'settings.healthSyncNote' : 'settings.healthSyncNoteAndroid')}
                 value={settings.healthSync}
                 onChange={(on) => {
                   if (!on) {
@@ -320,7 +321,11 @@ export default function SettingsScreen() {
                   }
                   void requestWorkoutAuthorization().then(() => {
                     if (workoutAuthorized()) setSettings({ healthSync: true });
-                    else Alert.alert(t('settings.healthDeniedTitle'), t('settings.healthDeniedBody'));
+                    else
+                      Alert.alert(
+                        t(ios ? 'settings.healthDeniedTitle' : 'settings.healthDeniedTitleAndroid'),
+                        t(ios ? 'settings.healthDeniedBody' : 'settings.healthDeniedBodyAndroid')
+                      );
                   });
                 }}
                 last
