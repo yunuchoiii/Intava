@@ -10,6 +10,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.graphics.Color
 import android.os.Build
+import android.os.Bundle
 import android.os.IBinder
 
 /** JS가 보내는 한 판의 내용 */
@@ -114,7 +115,8 @@ class OngoingService : Service() {
       if (Build.VERSION.SDK_INT >= 36) {
         // 안드로이드 16 Live Updates — 상태 표시줄 칩(갤럭시는 Now Bar)으로 올려 달라고 청한다. 시스템이 거절할 수 있다
         runCatching {
-          b.setRequestPromotedOngoing(true)
+          // setRequestPromotedOngoing은 compileSdk 36에 아직 없다(EAS 빌드 실패) — 같은 뜻의 extra를 직접 붙인다
+          b.addExtras(Bundle().apply { putBoolean("android.requestPromotedOngoing", true) })
           if (c.shortText.isNotEmpty() && !counting) b.setShortCriticalText(c.shortText)
         }
       }
