@@ -330,10 +330,15 @@ export default function SettingsScreen() {
                         모르면 「켰는데 왜 안 남지」로 끝난다(사용자 지적 2026-11-06). 켜는 순간 한 번 알린다.
                       */
                       if (!ios && hasSamsungHealth()) {
-                        Alert.alert(t('settings.shealthTitle'), t('settings.shealthBody'), [
-                          { text: t('common.ok'), style: 'cancel' },
-                          { text: t('settings.shealthOpen'), onPress: () => void openSamsungHealth() },
-                        ]);
+                        // 권한 화면이 걷히고 설정 화면이 다시 앞에 선 뒤에 — 바로 띄우면 같이 사라졌다
+                        setTimeout(
+                          () =>
+                            Alert.alert(t('settings.shealthTitle'), t('settings.shealthBody'), [
+                              { text: t('common.ok'), style: 'cancel' },
+                              { text: t('settings.shealthOpen'), onPress: () => void openSamsungHealth() },
+                            ]),
+                          400
+                        );
                       }
                     }
                     else

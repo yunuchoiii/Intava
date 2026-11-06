@@ -25,14 +25,26 @@ class HealthPermissionActivity : ComponentActivity() {
   }
 
   private lateinit var launcher: ActivityResultLauncher<Set<String>>
+  private var result = false
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     launcher = registerForActivityResult(PermissionController.createRequestPermissionResultContract()) { got ->
-      pending?.invoke(got.containsAll(wanted))
-      pending = null
+      result = got.containsAll(wanted)
       finish()
     }
     if (savedInstanceState == null) launcher.launch(wanted)
+  }
+
+  /*
+    답은 이 화면이 다 닫힌 뒤에 넘긴다 — 결과를 받자마자 넘기면 JS가 그 순간 띄운 안내창(삼성 헬스
+    동기화)이 이 투명한 화면에 붙었다가 함께 사라졌다(갤럭시 실기기).
+  */
+  override fun onDestroy() {
+    super.onDestroy()
+    if (isFinishing) {
+      pending?.invoke(result)
+      pending = null
+    }
   }
 }
