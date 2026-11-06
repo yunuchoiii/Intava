@@ -10,7 +10,7 @@
  * 위 84pt는 인스타 프로필·닫기 버튼, 아래 60pt는 하단 바 자리라 비워 둔다(시안 개정).
  */
 import React from 'react';
-import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Platform, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import Svg, { Circle, Defs, G, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { clock } from '../engine/labels';
 import { t } from '../i18n';
@@ -30,9 +30,18 @@ export const CARD = {
   panelBorder: 'rgba(255,255,255,0.08)',
 };
 
-/** 숫자 글꼴 — app.json의 expo-font가 묶어 넣는다(iOS는 PostScript 이름으로 찾는다) */
-export const NUM_BOLD = 'LeagueSpartan-Bold';
-export const NUM_SEMI = 'LeagueSpartan-SemiBold';
+/**
+ * 숫자 글꼴 — app.json의 expo-font가 묶어 넣는다. **이름이 플랫폼마다 다르다** — iOS는 PostScript 이름
+ * (LeagueSpartan-Bold)으로, 안드로이드는 파일 이름(LeagueSpartan_700Bold)으로 찾는다. iOS 이름만 쓰자
+ * 안드로이드에서 시스템 글꼴로 그려졌다(갤럭시 실기기, 2026-11-05).
+ *
+ * 이 글꼴을 쓰는 스타일에는 `includeFontPadding: false`를 함께 둔다 — 안드로이드는 글자 위아래에 폰트의
+ * 여백을 더 붙여, 링 가운데에 둔 숫자가 아래로 처졌다(갤럭시 실기기). iOS에는 없는 속성이라 영향이 없다.
+ */
+const spartan = (ios: string, file: string) => (Platform.OS === 'ios' ? ios : file);
+export const NUM_SEMI = spartan('LeagueSpartan-SemiBold', 'LeagueSpartan_600SemiBold');
+export const NUM_BOLD = spartan('LeagueSpartan-Bold', 'LeagueSpartan_700Bold');
+export const NUM_EXTRA = spartan('LeagueSpartan-ExtraBold', 'LeagueSpartan_800ExtraBold');
 
 /** 이미지에 넣는 종목 줄 수 — 넘으면 「외 N개 종목」 */
 export const SHARE_MAX_ROWS = 7;
@@ -346,9 +355,9 @@ export function Legend({ color, label, value, small }: { color: string; label?: 
 
 const styles = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center' },
-  ringLabel: { fontFamily: NUM_BOLD, color: CARD.text, letterSpacing: -1, paddingTop: 3 },
+  ringLabel: { fontFamily: NUM_BOLD, includeFontPadding: false, color: CARD.text, letterSpacing: -1, paddingTop: 3 },
   logo: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  logoText: { fontFamily: NUM_SEMI, color: CARD.text, letterSpacing: -0.9, paddingTop: 3 },
+  logoText: { fontFamily: NUM_SEMI, includeFontPadding: false, color: CARD.text, letterSpacing: -0.9, paddingTop: 3 },
 
   hero: { flexDirection: 'row', alignItems: 'center' },
   heroText: { flex: 1, minWidth: 0, gap: 8 },
@@ -358,7 +367,7 @@ const styles = StyleSheet.create({
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   dot: { width: 7, height: 7, borderRadius: 3.5 },
   legendLabel: { fontSize: 11.5, color: CARD.legend },
-  legendValue: { fontFamily: NUM_BOLD, fontSize: 15, color: CARD.text, paddingTop: 2 },
+  legendValue: { fontFamily: NUM_BOLD, includeFontPadding: false, fontSize: 15, color: CARD.text, paddingTop: 2 },
 
   panel: {
     borderRadius: 18,
@@ -375,7 +384,7 @@ const styles = StyleSheet.create({
   },
   lineHead: { flexDirection: 'row', alignItems: 'baseline', gap: 10 },
   lineName: { flex: 1, minWidth: 0, fontSize: 14.5, fontWeight: '600', color: CARD.text },
-  lineTime: { fontFamily: NUM_BOLD, fontSize: 16, color: CARD.text },
+  lineTime: { fontFamily: NUM_BOLD, includeFontPadding: false, fontSize: 16, color: CARD.text },
   lineMeta: { fontSize: 11.5, color: CARD.meta },
 
   share: {
@@ -399,7 +408,7 @@ const styles = StyleSheet.create({
   shareMeta: { fontSize: 10, color: CARD.meta },
   shareMore: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 6, paddingBottom: 7 },
   shareMoreText: { fontSize: 12, color: CARD.sub },
-  shareMoreTime: { fontFamily: NUM_BOLD, fontSize: 13.5, color: CARD.legend },
+  shareMoreTime: { fontFamily: NUM_BOLD, includeFontPadding: false, fontSize: 13.5, color: CARD.legend },
 });
 
 export const cardStyles = styles;

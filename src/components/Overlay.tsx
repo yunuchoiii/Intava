@@ -22,7 +22,7 @@
  * 한 번 더 깐다(시트의 끌어내리기가 gesture-handler다).
  */
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { FullWindowOverlay } from 'react-native-screens';
 
@@ -59,16 +59,27 @@ export function OverlayHost() {
   const nodes = useContext(NodesContext);
   // 아무것도 없을 때는 창 위에 뷰를 두지 않는다 — 빈 겹이라도 창 맨 위에 있으면 무엇을 가릴지 모른다
   if (nodes.length === 0) return null;
-  return (
-    <FullWindowOverlay>
-      {/* 빈 자리는 아래로 흘려보낸다 — backdrop이 없는 툴팁은 뒤를 살려 둔다 */}
-      <GestureHandlerRootView style={StyleSheet.absoluteFill} pointerEvents="box-none">
-        {nodes.map((n) => (
-          <React.Fragment key={n.key}>{n.node}</React.Fragment>
-        ))}
-      </GestureHandlerRootView>
-    </FullWindowOverlay>
+  const layer = (
+    // 빈 자리는 아래로 흘려보낸다 — backdrop이 없는 툴팁은 뒤를 살려 둔다
+    <GestureHandlerRootView style={StyleSheet.absoluteFill} pointerEvents="box-none">
+      {nodes.map((n) => (
+        <React.Fragment key={n.key}>{n.node}</React.Fragment>
+      ))}
+    </GestureHandlerRootView>
   );
+  /*
+    FullWindowOverlay는 iOS 전용이다 — 안드로이드에서는 크기 없는 평범한 View가 되어 시트·팝업이
+    그 안에 갇혀 하나도 보이지 않았다(갤럭시 실기기, 2026-11-05). 안드로이드의 스택 화면은 이
+    뿌리 뷰 계층 안에 있으므로, 화면을 덮는 겹을 맨 위(elevation)에 깔면 된다.
+  */
+  if (Platform.OS !== 'ios') {
+    return (
+      <View style={[StyleSheet.absoluteFill, { zIndex: 1000, elevation: 1000 }]} pointerEvents="box-none">
+        {layer}
+      </View>
+    );
+  }
+  return <FullWindowOverlay>{layer}</FullWindowOverlay>;
 }
 
 let seq = 0;

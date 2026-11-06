@@ -16,6 +16,7 @@ import {
   AppState,
   Easing,
   PanResponder,
+  Platform,
   StyleSheet,
   Text,
   View,
@@ -329,7 +330,11 @@ export function Ring({
     <View style={{ width: RING_SIZE, height: RING_SIZE }}>
       {/* 내부 유리 원판 */}
       <View style={styles.disc}>
-        <BlurView intensity={16} tint="light" style={StyleSheet.absoluteFill} />
+        {/*
+          안드로이드의 expo-blur는 흐림 없이 반투명 흰 막만 깔아 원판이 바깥보다 훨씬 밝았다(갤럭시 실기기).
+          뒤가 단색 그라데이션이라 iOS에서도 흐림 자체는 거의 안 보인다 — 안드로이드에서는 뺀다.
+        */}
+        {Platform.OS === 'ios' && <BlurView intensity={16} tint="light" style={StyleSheet.absoluteFill} />}
         <LinearGradient
           colors={['rgba(255,255,255,0.16)', 'rgba(255,255,255,0.04)']}
           start={{ x: 0.15, y: 0 }}
