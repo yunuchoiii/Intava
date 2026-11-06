@@ -488,7 +488,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   /** 운동 세션을 켤 까닭이 있는가 — 아일랜드(뒤에서 갱신)나 건강 기록 */
   const wantsWorkout = useCallback(
-    () => settingsRef.current.liveActivity || settingsRef.current.healthSync,
+    // 안드로이드는 운동 세션이 없다 — 잠금화면 타이머(진행 중 알림)는 건강 권한과 무관하니 건강 기록만 본다.
+    // 아니면 첫 운동을 시작할 때마다 헬스 커넥트 권한을 묻게 된다
+    () =>
+      Platform.OS === 'ios'
+        ? settingsRef.current.liveActivity || settingsRef.current.healthSync
+        : settingsRef.current.healthSync,
     []
   );
   /** 끝나면 건강 앱에 남길 운동 — settle이 채우고, 세션이 끝날 때 쓰고 비운다 */
