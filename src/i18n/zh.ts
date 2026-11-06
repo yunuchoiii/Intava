@@ -3,6 +3,7 @@ import type { Catalog } from './ko';
 /** 简体中文 — 语序接近英语，但没有复数变化 */
 export const zh: Catalog = {
   common: {
+    ok: '好',
     cancel: '取消',
     save: '保存',
     close: '关闭',
@@ -168,9 +169,14 @@ export const zh: Catalog = {
     healthDeniedTitle: '健康权限已关闭',
     healthDeniedBody: '请在“设置”→“健康”→“数据访问与设备”→ intava 中开启写入体能训练。',
     healthSyncAndroid: '记录到 Health Connect',
-    healthSyncNoteAndroid: '完成训练后（中途结束也一样），会按照例程中选择的运动类型记录到 Health Connect。三星健康等应用也能看到。',
+    healthSyncNoteAndroid: '完成训练后（中途结束也一样），会按照例程中选择的运动类型记录到 Health Connect。要在三星健康中查看，请在 三星健康 → 设置 → Health Connect 中开启同步。',
     healthDeniedTitleAndroid: 'Health Connect 权限已关闭',
     healthDeniedBodyAndroid: '请前往 设置 → Health Connect → 应用权限 → intava，允许写入锻炼数据。',
+    shealthTitle: '也要在三星健康中查看',
+    shealthBody: '训练记录会保存到 Health Connect。要在三星健康中查看，请在 三星健康 → 设置 → Health Connect 中开启同步。',
+    shealthOpen: '打开三星健康',
+    openHealthConnect: '打开 Health Connect',
+    openHealthConnectNote: '查看 Intava 记录的训练。',
     feedbackSection: '联系',
     feedback: '告诉开发者',
     feedbackNote: '通过邮件直接发送问题或建议。',

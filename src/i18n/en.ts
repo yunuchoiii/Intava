@@ -9,6 +9,7 @@ import type { Catalog } from './ko';
  */
 export const en: Catalog = {
   common: {
+    ok: 'OK',
     cancel: 'Cancel',
     save: 'Save',
     close: 'Close',
@@ -175,9 +176,14 @@ export const en: Catalog = {
     healthDeniedTitle: 'Health access is off',
     healthDeniedBody: 'In Settings → Health → Data Access & Devices → intava, turn on writing workouts.',
     healthSyncAndroid: 'Log workouts to Health Connect',
-    healthSyncNoteAndroid: 'When you finish (even early), the workout is saved to Health Connect as the type chosen in the routine. Apps like Samsung Health can show it too.',
+    healthSyncNoteAndroid: 'When you finish (even early), the workout is saved to Health Connect as the type chosen in the routine. To see it in Samsung Health, turn on sync in Samsung Health → Settings → Health Connect.',
     healthDeniedTitleAndroid: 'Health Connect access is off',
     healthDeniedBodyAndroid: 'In Settings → Health Connect → App permissions → intava, allow writing exercise.',
+    shealthTitle: 'To see it in Samsung Health',
+    shealthBody: 'Workouts are saved to Health Connect. To see them in Samsung Health, turn on sync in Samsung Health → Settings → Health Connect.',
+    shealthOpen: 'Open Samsung Health',
+    openHealthConnect: 'Open Health Connect',
+    openHealthConnectNote: 'Check the workouts Intava saved.',
     feedbackSection: 'Contact',
     feedback: 'Tell the developer',
     feedbackNote: 'Send a bug or a wish straight by email.',

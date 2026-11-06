@@ -5,6 +5,8 @@
   <!-- 안드로이드 13 이하는 헬스 커넥트가 따로 깔린 앱이다 -->
   <queries>
     <package android:name="com.google.android.apps.healthdata" />
+    <!-- 삼성 헬스가 깔려 있는지 — 헬스 커넥트 동기화 안내를 띄울지 정한다 -->
+    <package android:name="com.sec.android.app.shealth" />
   </queries>
 
   <application>

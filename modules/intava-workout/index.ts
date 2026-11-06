@@ -18,6 +18,10 @@ type Native = {
   stop(save: boolean): Promise<string>;
   saveWorkout(type: string, startMs: number, endMs: number): Promise<string>;
   state(): number;
+  // 안드로이드만
+  openHealthConnect?(): boolean;
+  hasSamsungHealth?(): boolean;
+  openSamsungHealth?(): boolean;
 };
 
 const native = requireOptionalNativeModule<Native>('IntavaWorkout');
@@ -122,5 +126,31 @@ export function workoutSessionState(): number {
     return native ? native.state() : -2;
   } catch {
     return -3;
+  }
+}
+
+/** 안드로이드 — 헬스 커넥트 화면을 연다(안드로이드 14+는 설정 안에 있어 찾기 어렵다) */
+export function openHealthConnect(): boolean {
+  try {
+    return !!native?.openHealthConnect?.();
+  } catch {
+    return false;
+  }
+}
+
+/** 안드로이드 — 삼성 헬스가 깔려 있나 */
+export function hasSamsungHealth(): boolean {
+  try {
+    return !!native?.hasSamsungHealth?.();
+  } catch {
+    return false;
+  }
+}
+
+export function openSamsungHealth(): boolean {
+  try {
+    return !!native?.openSamsungHealth?.();
+  } catch {
+    return false;
   }
 }

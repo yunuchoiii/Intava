@@ -26,6 +26,9 @@ import { preview } from '../src/audio';
 import { exportBackup, pickBackup } from '../src/backup';
 import { DEVELOPER_EMAIL } from '../src/legal';
 import {
+  hasSamsungHealth,
+  openHealthConnect,
+  openSamsungHealth,
   requestWorkoutAuthorization,
   workoutAuthorized,
   workoutAvailable,
@@ -320,7 +323,19 @@ export default function SettingsScreen() {
                     return;
                   }
                   void requestWorkoutAuthorization().then(() => {
-                    if (workoutAuthorized()) setSettings({ healthSync: true });
+                    if (workoutAuthorized()) {
+                      setSettings({ healthSync: true });
+                      /*
+                        안드로이드 — 기록은 헬스 커넥트에 들어가지만 삼성 헬스는 동기화를 켜야 읽어 온다.
+                        모르면 「켰는데 왜 안 남지」로 끝난다(사용자 지적 2026-11-06). 켜는 순간 한 번 알린다.
+                      */
+                      if (!ios && hasSamsungHealth()) {
+                        Alert.alert(t('settings.shealthTitle'), t('settings.shealthBody'), [
+                          { text: t('common.ok'), style: 'cancel' },
+                          { text: t('settings.shealthOpen'), onPress: () => void openSamsungHealth() },
+                        ]);
+                      }
+                    }
                     else
                       Alert.alert(
                         t(ios ? 'settings.healthDeniedTitle' : 'settings.healthDeniedTitleAndroid'),
@@ -328,8 +343,17 @@ export default function SettingsScreen() {
                       );
                   });
                 }}
-                last
+                last={ios}
               />
+              {/* 안드로이드 — 기록이 들어갔는지 볼 곳. 헬스 커넥트는 설정 깊숙이 있어 바로 연다 */}
+              {!ios && (
+                <ActionRow
+                  title={t('settings.openHealthConnect')}
+                  note={t('settings.openHealthConnectNote')}
+                  onPress={() => void openHealthConnect()}
+                  last
+                />
+              )}
             </>
           )}
 
