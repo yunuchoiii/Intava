@@ -18,7 +18,7 @@
 import { Platform } from 'react-native';
 import type { LiveActivity, LiveActivityFactory } from 'expo-widgets';
 import type { TimerActivityProps } from './TimerActivity';
-import { hideOngoing, showOngoing } from '../../modules/intava-ongoing';
+import { hideOngoing, showOngoing, type OngoingStep } from '../../modules/intava-ongoing';
 import { t } from '../i18n';
 
 let factory: LiveActivityFactory<TimerActivityProps> | null | undefined;
@@ -60,9 +60,14 @@ function getFactory(): LiveActivityFactory<TimerActivityProps> | null {
  * 지금 상태를 아일랜드에 반영한다. props가 null이면 끈다.
  * 몇 번을 불러도 내용이 같으면 아무것도 보내지 않는다.
  */
-export function syncLiveActivity(props: TimerActivityProps | null, force = false): void {
+export function syncLiveActivity(
+  props: TimerActivityProps | null,
+  force = false,
+  /** 안드로이드만 — 지금 구간부터 남은 구간들(진행 중 알림이 스스로 넘긴다) */
+  steps: OngoingStep[] = []
+): void {
   if (Platform.OS === 'android') {
-    syncOngoing(props, force);
+    syncOngoing(props, force, steps);
     return;
   }
   const f = getFactory();
@@ -147,11 +152,11 @@ function safeId(a: LiveActivity<TimerActivityProps>): string {
 /**
  * 안드로이드 — 라이브 액티비티 대신 진행 중 알림 + 포그라운드 서비스(modules/intava-ongoing).
  *
- * 같은 props를 받아 같은 때(구간 전환 · 멈춤 · 재개)에만 보낸다. 숫자는 알림의 크로노미터가
- * 구간 끝 시각까지 스스로 줄인다. 서비스가 떠 있는 동안 안드로이드가 앱을 멈추지 않는다 —
- * 화면을 꺼도 구간 알림음이 제때 난다.
+ * 같은 때(시작 · 멈춤 · 재개 · 구간 이동)에 **남은 일정 전체**를 보낸다 — 안드로이드의 RN은 앱이
+ * 뒤에 가면 JS 타이머를 멈춰, 구간마다 JS가 고치는 방식으로는 첫 구간에 멈췄다(실기기). 서비스가
+ * 구간 끝마다 스스로 다음으로 넘기고, 숫자는 크로노미터가 줄인다.
  */
-function syncOngoing(props: TimerActivityProps | null, force: boolean): void {
+function syncOngoing(props: TimerActivityProps | null, force: boolean, steps: OngoingStep[]): void {
   if (!props) {
     if (lastSent) hideOngoing();
     lastSent = '';
@@ -159,11 +164,10 @@ function syncOngoing(props: TimerActivityProps | null, force: boolean): void {
   }
   const still = props.paused || props.done;
   const payload = {
-    title: props.phase,
-    text: [props.name, props.sub].filter(Boolean).join(' · '),
-    endMs: still ? 0 : props.end,
-    shortText: props.paused ? props.remain : '',
-    color: props.color,
+    steps: still ? [] : steps,
+    pausedTitle: props.phase,
+    pausedText: [props.paused ? props.remain : '', props.name].filter(Boolean).join(' · '),
+    pausedColor: props.color,
     channelName: t('live.channel'),
   };
   const key = JSON.stringify(payload);

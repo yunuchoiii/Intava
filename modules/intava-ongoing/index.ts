@@ -6,15 +6,24 @@
  */
 import { requireOptionalNativeModule } from 'expo-modules-core';
 
-export type OngoingPayload = {
+export type OngoingStep = {
   title: string;
   text: string;
-  /** 지금 구간이 끝나는 시각(ms). 0이면 멈춤·완료 */
+  /** 이 구간이 끝나는 시각(ms) */
   endMs: number;
-  /** 멈췄을 때 보일 남은 시간 「0:39」 */
-  shortText: string;
   /** 단계 색 #RRGGBB */
   color: string;
+};
+
+/**
+ * 지금 구간부터 남은 구간들 — 서비스가 구간 끝마다 스스로 다음으로 넘긴다(앱의 JS가 뒤에서 멈춰도).
+ * 멈춘 동안에는 steps를 비우고 paused*를 고정해 보인다.
+ */
+export type OngoingPayload = {
+  steps: OngoingStep[];
+  pausedTitle: string;
+  pausedText: string;
+  pausedColor: string;
   /** 알림 설정 화면에 보일 채널 이름 */
   channelName: string;
 };

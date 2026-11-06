@@ -11,28 +11,49 @@ import android.content.pm.ServiceInfo
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.IBinder
 
-/** JS가 보내는 한 판의 내용 */
+/** 한 구간 — 이 구간이 끝나는 시각(endMs)까지 보일 내용 */
+data class OngoingStep(val title: String, val text: String, val endMs: Long, val color: Int)
+
+/**
+ * JS가 보내는 한 판의 내용 — 지금 구간부터 남은 구간들(steps).
+ *
+ * 안드로이드의 RN은 앱이 뒤로 가거나 화면이 꺼지면 JS 타이머를 멈춘다. 구간마다 JS가 알림을 고치게
+ * 했더니 첫 구간(웜업)에 멈춘 채 크로노미터가 음수(「-0:05」)로 넘어갔다(갤럭시 실기기). 그래서 남은
+ * 일정을 통째로 받아 서비스가 구간 끝마다 스스로 다음 구간으로 넘긴다.
+ */
 data class OngoingContent(
-  val title: String,
-  val text: String,
-  /** 지금 구간이 끝나는 시각(ms). 0이면 멈춤·완료 — 크로노미터를 돌리지 않는다 */
-  val endMs: Long,
-  /** 상태 칩·멈춤 때 보일 짧은 말(남은 시간) */
-  val shortText: String,
-  val color: Int,
+  val steps: List<OngoingStep>,
+  /** 멈췄을 때 — 일정 대신 이 말을 고정해 보인다(steps는 비어 있다) */
+  val pausedTitle: String,
+  val pausedText: String,
+  val pausedColor: Int,
   val channelName: String,
 ) {
   companion object {
-    fun from(p: Map<String, Any?>): OngoingContent = OngoingContent(
-      title = p["title"] as? String ?: "",
-      text = p["text"] as? String ?: "",
-      endMs = (p["endMs"] as? Number)?.toLong() ?: 0L,
-      shortText = p["shortText"] as? String ?: "",
-      color = runCatching { Color.parseColor(p["color"] as? String ?: "#D32F3E") }.getOrDefault(Color.RED),
-      channelName = p["channelName"] as? String ?: "Workout",
-    )
+    private fun color(v: Any?): Int = runCatching { Color.parseColor(v as? String ?: "#D32F3E") }.getOrDefault(Color.RED)
+
+    fun from(p: Map<String, Any?>): OngoingContent {
+      @Suppress("UNCHECKED_CAST")
+      val raw = p["steps"] as? List<Map<String, Any?>> ?: emptyList()
+      return OngoingContent(
+        steps = raw.map {
+          OngoingStep(
+            title = it["title"] as? String ?: "",
+            text = it["text"] as? String ?: "",
+            endMs = (it["endMs"] as? Number)?.toLong() ?: 0L,
+            color = color(it["color"]),
+          )
+        },
+        pausedTitle = p["pausedTitle"] as? String ?: "",
+        pausedText = p["pausedText"] as? String ?: "",
+        pausedColor = color(p["pausedColor"]),
+        channelName = p["channelName"] as? String ?: "Workout",
+      )
+    }
   }
 }
 
@@ -51,9 +72,18 @@ class OngoingService : Service() {
     @Volatile private var running = false
     @Volatile private var pending: Notification? = null
 
+    private val main = Handler(Looper.getMainLooper())
+    private var content: OngoingContent? = null
+    private var appCtx: Context? = null
+    /** 다음 구간으로 넘기는 예약 — 새 일정이 오면 갈아 끼운다 */
+    private val advance = Runnable { render() }
+
     fun show(ctx: Context, c: OngoingContent) {
       ensureChannel(ctx, c.channelName)
-      val n = build(ctx, c)
+      appCtx = ctx.applicationContext
+      content = c
+      val n = current(ctx, c)
+      schedule(c)
       if (running) {
         ctx.getSystemService(NotificationManager::class.java)?.notify(ID, n)
         return
@@ -68,7 +98,33 @@ class OngoingService : Service() {
       }
     }
 
+    /** 지금 시각의 구간을 다시 그리고, 다음 구간 끝에 또 깨어난다 */
+    private fun render() {
+      val ctx = appCtx ?: return
+      val c = content ?: return
+      ctx.getSystemService(NotificationManager::class.java)?.notify(ID, current(ctx, c))
+      schedule(c)
+    }
+
+    private fun schedule(c: OngoingContent) {
+      main.removeCallbacks(advance)
+      val now = System.currentTimeMillis()
+      val next = c.steps.firstOrNull { it.endMs > now } ?: return
+      // 끝 시각 바로 뒤에 — 앞서 깨면 같은 구간을 한 번 더 그린다
+      main.postDelayed(advance, next.endMs - now + 30)
+    }
+
+    /** 지금 보일 판 — 끝나지 않은 첫 구간. 다 지났으면 마지막 구간을 숫자 없이 */
+    private fun current(ctx: Context, c: OngoingContent): Notification {
+      if (c.steps.isEmpty()) return build(ctx, c.pausedTitle, c.pausedText, 0L, c.pausedColor)
+      val now = System.currentTimeMillis()
+      val s = c.steps.firstOrNull { it.endMs > now } ?: c.steps.last()
+      return build(ctx, s.title, s.text, s.endMs, s.color)
+    }
+
     fun hide(ctx: Context) {
+      main.removeCallbacks(advance)
+      content = null
       pending = null
       ctx.stopService(Intent(ctx, OngoingService::class.java))
       ctx.getSystemService(NotificationManager::class.java)?.cancel(ID)
@@ -85,7 +141,7 @@ class OngoingService : Service() {
       nm.createNotificationChannel(ch)
     }
 
-    private fun build(ctx: Context, c: OngoingContent): Notification {
+    private fun build(ctx: Context, title: String, text: String, endMs: Long, color: Int): Notification {
       val b = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) Notification.Builder(ctx, CHANNEL)
       else @Suppress("DEPRECATION") Notification.Builder(ctx)
 
@@ -96,11 +152,11 @@ class OngoingService : Service() {
         PendingIntent.getActivity(ctx, 0, it, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
       }
 
-      val counting = c.endMs > System.currentTimeMillis()
+      val counting = endMs > System.currentTimeMillis()
       b.setSmallIcon(R.drawable.intava_ongoing_icon)
-        .setContentTitle(c.title)
-        .setContentText(if (counting) c.text else listOf(c.shortText, c.text).filter { it.isNotEmpty() }.joinToString(" · "))
-        .setColor(c.color)
+        .setContentTitle(title)
+        .setContentText(text)
+        .setColor(color)
         .setOngoing(true)
         .setOnlyAlertOnce(true)
         .setShowWhen(counting)
@@ -109,7 +165,7 @@ class OngoingService : Service() {
       if (tap != null) b.setContentIntent(tap)
       if (counting) {
         // 끝 시각까지 스스로 줄어드는 숫자 — 앱이 매초 보내지 않는다
-        b.setWhen(c.endMs).setUsesChronometer(true)
+        b.setWhen(endMs).setUsesChronometer(true)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) b.setChronometerCountDown(true)
       }
       if (Build.VERSION.SDK_INT >= 36) {
@@ -117,7 +173,6 @@ class OngoingService : Service() {
         runCatching {
           // setRequestPromotedOngoing은 compileSdk 36에 아직 없다(EAS 빌드 실패) — 같은 뜻의 extra를 직접 붙인다
           b.addExtras(Bundle().apply { putBoolean("android.requestPromotedOngoing", true) })
-          if (c.shortText.isNotEmpty() && !counting) b.setShortCriticalText(c.shortText)
         }
       }
       return b.build()
