@@ -67,6 +67,7 @@ export const ja: Catalog = {
     a11yAddBlock: '種目を追加',
     repeat: '繰り返し',
     rounds: 'ラウンド',
+    roundsTitle: 'ラウンド（全体を繰り返し）',
     blockRest: '種目間の休憩',
     roundRest: 'ラウンド間の休憩',
     skipLastRest: '最終セット後の休憩を省く',

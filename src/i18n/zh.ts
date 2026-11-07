@@ -67,6 +67,7 @@ export const zh: Catalog = {
     a11yAddBlock: '添加动作',
     repeat: '重复',
     rounds: '轮数',
+    roundsTitle: '轮数（整体重复）',
     blockRest: '动作之间的休息',
     roundRest: '轮次之间的休息',
     skipLastRest: '跳过最后一组后的休息',

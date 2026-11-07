@@ -178,7 +178,8 @@ function Band() {
 }
 
 const MAX_MIN = 30;
-const SEC_STEP = 5;
+/** 초 칸 간격 — 5초였는데 7초 · 12초 같은 값을 못 골랐다(사용자 피드백 2026-11-05) */
+const SEC_STEP = 1;
 
 /** 분·초 2열 피커 */
 export function TimeWheel({
