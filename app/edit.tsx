@@ -619,7 +619,8 @@ export default function Edit() {
 
               <Text style={styles.section}>{t('edit.repeat')}</Text>
               <ValueRow
-                title={t('edit.rounds')}
+                // 루틴 전체를 반복한다는 것을 이름에 — 종목을 돌아가며 하는 기능을 따로 찾던 피드백(2026-11-05)
+                title={t('edit.roundsTitle')}
                 tip={t('tips.rounds')}
                 {...tipFor('rounds')}
                 display={t('count.rounds', { count: draft.rounds })}

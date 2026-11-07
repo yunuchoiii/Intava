@@ -74,6 +74,7 @@ export const en: Catalog = {
     a11yAddBlock: 'Add exercise',
     repeat: 'Repeat',
     rounds: 'Rounds',
+    roundsTitle: 'Rounds (repeat all)',
     blockRest: 'Rest between exercises',
     roundRest: 'Rest between rounds',
     skipLastRest: 'Skip rest after the last set',

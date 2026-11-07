@@ -78,6 +78,7 @@ export const ko = {
     a11yAddBlock: '종목 추가',
     repeat: '반복',
     rounds: '라운드',
+    roundsTitle: '라운드 (전체 반복)',
     blockRest: '종목 사이 휴식',
     roundRest: '라운드 사이 휴식',
     skipLastRest: '마지막 세트 뒤 휴식 생략',
