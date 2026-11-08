@@ -6,7 +6,7 @@ iOS만 낸다(2026-11-08 사용자 결정). dev의 안드로이드 작업(#45 ·
 
 ### 한국어
 ```
-이번 업데이트에서는 공유 카드와 시간 설정을 더 편하게 다듬었습니다. 공유 카드에 넣은 사진을 원하는 만큼 확대하고 옮길 수 있어요.
+이번 업데이트에서는 공유 카드와 시간 설정을 더 편하게 다듬었습니다.
 
 새로 추가했어요
 - 공유 카드 사진을 두 손가락으로 확대하고 원하는 위치로 옮길 수 있어요.
@@ -21,7 +21,7 @@ iOS만 낸다(2026-11-08 사용자 결정). dev의 안드로이드 작업(#45 ·
 
 ### English
 ```
-This update makes share cards and time settings easier to use. You can now zoom and move the photo on your share card.
+This update makes share cards and time settings easier to use.
 
 New
 - You can now pinch to zoom the photo on a share card and drag it into place.
@@ -36,7 +36,7 @@ Intava is still free, with no subscription, no ads and no login.
 
 ### 日本語
 ```
-今回のアップデートでは、シェアカードと時間の設定をより使いやすくしました。シェアカードに入れた写真を好きなだけ拡大して、位置を動かせます。
+今回のアップデートでは、シェアカードと時間の設定をより使いやすくしました。
 
 新しく追加しました
 - シェアカードの写真を2本指で拡大し、好きな位置に動かせます。
@@ -51,7 +51,7 @@ Intava is still free, with no subscription, no ads and no login.
 
 ### 简体中文
 ```
-本次更新让分享卡片和时间设置更好用。放进分享卡片的照片现在可以随意放大和移动。
+本次更新让分享卡片和时间设置更好用。
 
 新增功能
 - 可以用双指放大分享卡片上的照片，并拖到想要的位置。
