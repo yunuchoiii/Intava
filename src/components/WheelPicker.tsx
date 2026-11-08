@@ -2,10 +2,11 @@
  * 휠 피커 (핸드오프 5.5)
  *
  * − / ＋ 스테퍼는 쓰지 않는다 — 90초·3분 같은 값에서 수십 번 눌러야 한다.
- * 높이 176, 중앙 선택 밴드 52, 초 단위 스텝 5초 · 분 단위 스텝 1분.
+ * 높이 176, 중앙 선택 밴드 52, 초 단위 스텝 1초 · 분 단위 스텝 1분.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Animated,
   NativeSyntheticEvent,
   Pressable,
   ScrollView,
@@ -34,9 +35,18 @@ type ColumnProps = {
 function Column({ items, index, onIndex, align, width }: ColumnProps) {
   const ref = useRef<ScrollView>(null);
   const [active, setActive] = useState(index);
+  /** 스크롤 위치 — 칸마다 가운데와의 거리에 맞춰 크기 · 진하기가 이어서 바뀐다(네이티브에서) */
+  const scrollY = useRef(new Animated.Value(index * ITEM_H)).current;
   const dragging = useRef(false);
   /** 우리가 건 스크롤이 도는 동안에는 외부 값 변경에 다시 반응하지 않는다 */
   const programmatic = useRef(false);
+  /**
+   * 손을 뗀 뒤 관성으로 구르는 중. 손을 떼는 순간(onScrollEndDrag)에 값을 확정하면, 빠르게 돌렸을 때
+   * 휠이 더 굴러간 자리에서 그 값으로 다시 끌려 올라갔다(1초 간격 60칸, 실기기 영상). 관성이 이어지면
+   * 멈출 때(onMomentumScrollEnd) 한 번만 확정한다.
+   */
+  const momentum = useRef(false);
+  const endTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /**
    * 처음 한 번, 지금 값이 가운데 오도록 앉힌다.
@@ -57,12 +67,12 @@ function Column({ items, index, onIndex, align, width }: ColumnProps) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (dragging.current || programmatic.current || index === active) return;
+    if (dragging.current || momentum.current || programmatic.current || index === active) return;
     ref.current?.scrollTo({ y: index * ITEM_H, animated: true });
     setActive(index);
   }, [index]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const onScroll = useCallback(
+  const onActive = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
       const i = Math.round(e.nativeEvent.contentOffset.y / ITEM_H);
       const clamped = Math.max(0, Math.min(items.length - 1, i));
@@ -73,6 +83,14 @@ function Column({ items, index, onIndex, align, width }: ColumnProps) {
       }
     },
     [active, items.length]
+  );
+  const onScroll = useMemo(
+    () =>
+      Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+        useNativeDriver: true,
+        listener: onActive,
+      }),
+    [scrollY, onActive]
   );
 
   /**
@@ -97,11 +115,12 @@ function Column({ items, index, onIndex, align, width }: ColumnProps) {
     [active, onIndex]
   );
 
-  const commit = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+  const commitAt = useCallback(
+    (y: number) => {
       dragging.current = false;
+      momentum.current = false;
       programmatic.current = false;
-      const i = Math.round(e.nativeEvent.contentOffset.y / ITEM_H);
+      const i = Math.round(y / ITEM_H);
       const clamped = Math.max(0, Math.min(items.length - 1, i));
       setActive(clamped);
       onIndex(clamped);
@@ -109,13 +128,38 @@ function Column({ items, index, onIndex, align, width }: ColumnProps) {
     [items.length, onIndex]
   );
 
+  /** 손을 뗐다 — 바로 관성이 시작되지 않으면(천천히 놓았다) 그 자리로 확정한다 */
+  const onEndDrag = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      dragging.current = false;
+      const y = e.nativeEvent.contentOffset.y;
+      if (endTimer.current) clearTimeout(endTimer.current);
+      endTimer.current = setTimeout(() => {
+        endTimer.current = null;
+        if (!momentum.current) commitAt(y);
+      }, 80);
+    },
+    [commitAt]
+  );
+
+  useEffect(
+    () => () => {
+      if (endTimer.current) clearTimeout(endTimer.current);
+    },
+    []
+  );
+
   return (
-    <ScrollView
+    <Animated.ScrollView
       ref={ref}
       style={{ width, height: H }}
       showsVerticalScrollIndicator={false}
       snapToInterval={ITEM_H}
-      decelerationRate="fast"
+      /*
+        관성 — 'fast'(0.99)는 세게 돌려도 12칸쯤에서 멈춰 1초 간격 60칸을 오가기 답답했다(사용자 피드백).
+        0.994는 굴러가는 거리가 약 1.7배(20칸쯤). 'normal'(0.998)은 너무 멀리 가 원하는 값을 지나친다
+      */
+      decelerationRate={0.994}
       scrollEventThrottle={16}
       /*
         안드로이드는 이것이 없으면 휠이 아예 돌지 않는다. 이 휠은 편집 화면의
@@ -127,8 +171,13 @@ function Column({ items, index, onIndex, align, width }: ColumnProps) {
       onScrollBeginDrag={() => {
         dragging.current = true;
       }}
-      onMomentumScrollEnd={commit}
-      onScrollEndDrag={commit}
+      onMomentumScrollBegin={() => {
+        momentum.current = true;
+        if (endTimer.current) clearTimeout(endTimer.current);
+        endTimer.current = null;
+      }}
+      onMomentumScrollEnd={(e) => commitAt(e.nativeEvent.contentOffset.y)}
+      onScrollEndDrag={onEndDrag}
       onContentSizeChange={(_w, h) => {
         if (seated.current || h <= 0) return;
         seated.current = true;
@@ -137,9 +186,23 @@ function Column({ items, index, onIndex, align, width }: ColumnProps) {
       contentContainerStyle={{ paddingVertical: PAD }}
     >
       {items.map((label, i) => {
-        const d = Math.abs(i - active);
-        const size = d === 0 ? 24 : d === 1 ? 19 : 17;
-        const opacity = d === 0 ? 1 : d === 1 ? 0.22 : 0.12;
+        /*
+          가운데에 가까울수록 크고 진하게 — 칸이 바뀌는 순간 한 번에 바뀌던 것을 스크롤을 따라 이어서
+          바꾼다(사용자 요청). 글자 크기는 애니메이션이 안 돼 가장 큰 24로 그리고 배율로 줄인다
+          (24 → 19 → 17). 굵기도 중간값이 없어 하나로 둔다 — 차이는 진하기가 맡는다.
+        */
+        const at = i * ITEM_H;
+        const range = [at - 2 * ITEM_H, at - ITEM_H, at, at + ITEM_H, at + 2 * ITEM_H];
+        const scale = scrollY.interpolate({
+          inputRange: range,
+          outputRange: [17 / 24, 19 / 24, 1, 19 / 24, 17 / 24],
+          extrapolate: 'clamp',
+        });
+        const opacity = scrollY.interpolate({
+          inputRange: range,
+          outputRange: [0.12, 0.22, 1, 0.22, 0.12],
+          extrapolate: 'clamp',
+        });
         return (
           <Pressable
             key={label + i}
@@ -148,24 +211,27 @@ function Column({ items, index, onIndex, align, width }: ColumnProps) {
             accessibilityRole="button"
             accessibilityLabel={label}
           >
-            <Text
+            <Animated.Text
               style={[
                 TABULAR,
                 {
-                  fontSize: size,
-                  fontWeight: d === 0 ? '700' : '600',
+                  fontSize: 24,
+                  fontWeight: '700',
                   color: C.textPrimary,
                   opacity,
                   textAlign: align,
+                  // 줄어들 때 정렬한 쪽 끝을 붙잡는다 — 가운데로 줄면 분·초 사이가 벌어진다
+                  transformOrigin: align === 'right' ? 'right center' : align === 'left' ? 'left center' : 'center',
+                  transform: [{ scale }],
                 },
               ]}
             >
               {label}
-            </Text>
+            </Animated.Text>
           </Pressable>
         );
       })}
-    </ScrollView>
+    </Animated.ScrollView>
   );
 }
 
