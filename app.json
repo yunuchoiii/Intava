@@ -2,7 +2,7 @@
   "expo": {
     "name": "intava",
     "slug": "Intava",
-    "version": "1.6.1",
+    "version": "1.6.2",
     "scheme": "intava",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -75,7 +75,12 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#17171C"
+          "backgroundColor": "#17171C",
+          "android": {
+            "image": "./assets/splash-icon.png",
+            "imageWidth": 170,
+            "backgroundColor": "#17171C"
+          }
         }
       ],
       [
@@ -119,6 +124,9 @@
         {
           "ios": {
             "enableSceneSupport": true
+          },
+          "android": {
+            "minSdkVersion": 26
           }
         }
       ],

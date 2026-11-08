@@ -22,7 +22,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import {
   endSession,
   keepSessionAlive,
@@ -488,7 +488,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   /** 운동 세션을 켤 까닭이 있는가 — 아일랜드(뒤에서 갱신)나 건강 기록 */
   const wantsWorkout = useCallback(
-    () => settingsRef.current.liveActivity || settingsRef.current.healthSync,
+    // 안드로이드는 운동 세션이 없다 — 잠금화면 타이머(진행 중 알림)는 건강 권한과 무관하니 건강 기록만 본다.
+    // 아니면 첫 운동을 시작할 때마다 헬스 커넥트 권한을 묻게 된다
+    () =>
+      Platform.OS === 'ios'
+        ? settingsRef.current.liveActivity || settingsRef.current.healthSync
+        : settingsRef.current.healthSync,
     []
   );
   /** 끝나면 건강 앱에 남길 운동 — settle이 채우고, 세션이 끝날 때 쓰고 비운다 */
@@ -552,7 +557,19 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           done: shot.done,
           waiting: t('live.waiting'),
         },
-        force
+        force,
+        // 안드로이드 진행 중 알림 — 지금 구간부터 남은 일정. 앱이 뒤에서 멈춰도 서비스가 구간 끝마다 넘긴다
+        Platform.OS === 'android' && moving
+          ? plan.segs.slice(shot.idx).map((sg, k) => {
+              const tx = liveText(sg, plan.segs[shot.idx + k + 1], preset);
+              return {
+                title: tx.phase,
+                text: [tx.name, tx.sub].filter(Boolean).join(' · '),
+                endMs: stored.zeroAt + (sg.start + sg.dur) * 1000,
+                color: LIVE_COLOR[sg.phase],
+              };
+            })
+          : []
       );
     },
     [elapsedNow, snapshotAt]

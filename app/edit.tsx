@@ -48,6 +48,7 @@ import {
   type Preset,
 } from '../src/types';
 import { WorkoutTypeSheet } from '../src/components/WorkoutTypeSheet';
+import { workoutAvailable } from '../modules/intava-workout';
 
 /** 종목 추가와 저장 — 한 화면의 두 버튼이라 모서리를 한 값에 묶어둔다 */
 const ACTION_RADIUS = 16;
@@ -413,10 +414,10 @@ export default function Edit() {
 
   /**
    * 운동 종류 — 건강·피트니스 앱에 이 루틴을 무엇으로 남길지(기본 고강도 인터벌).
-   * 운동 중 켜는 iOS 운동 세션도 이 종류다. 건강 앱은 iPhone에만 있어 iOS에서만 선다.
+   * 운동 중 켜는 iOS 운동 세션도 이 종류다. 건강 앱(iPhone)이나 헬스 커넥트(안드로이드)가 있을 때만 선다.
    */
   const workoutTypeRow =
-    Platform.OS === 'ios' ? (
+    workoutAvailable() ? (
       <Pressable
         style={styles.linkRow}
         onPress={() => {
@@ -440,7 +441,7 @@ export default function Edit() {
     종류만 고르면 왜 피트니스에 안 남는지 알 길이 없다. 누르면 편집을 확정하고 설정을 연다.
   */
   const healthOffRow =
-    Platform.OS === 'ios' && !settings.healthSync ? (
+    workoutAvailable() && !settings.healthSync ? (
       <Pressable
         style={styles.healthOff}
         onPress={() => {
@@ -449,16 +450,18 @@ export default function Edit() {
         }}
         accessibilityRole="button"
       >
-        <Text style={styles.healthOffText}>{t('edit.workoutTypeHealthOff')}</Text>
+        <Text style={styles.healthOffText}>
+          {t(Platform.OS === 'ios' ? 'edit.workoutTypeHealthOff' : 'edit.workoutTypeHealthOffAndroid')}
+        </Text>
       </Pressable>
     ) : null;
 
   /*
     「운동 기록」 칸 — 이 루틴이 건강·피트니스와 운동 기록 화면에 무엇으로 남는지.
-    건강 앱은 iPhone에만 있어 iOS에서만 선다.
+    건강 앱(iPhone)이나 헬스 커넥트(안드로이드)가 있을 때만 선다.
   */
   const recordSection =
-    Platform.OS === 'ios' ? (
+    workoutAvailable() ? (
       <>
         <Text style={styles.section}>{t('edit.recordSection')}</Text>
         {workoutTypeRow}
@@ -616,7 +619,8 @@ export default function Edit() {
 
               <Text style={styles.section}>{t('edit.repeat')}</Text>
               <ValueRow
-                title={t('edit.rounds')}
+                // 루틴 전체를 반복한다는 것을 이름에 — 종목을 돌아가며 하는 기능을 따로 찾던 피드백(2026-11-05)
+                title={t('edit.roundsTitle')}
                 tip={t('tips.rounds')}
                 {...tipFor('rounds')}
                 display={t('count.rounds', { count: draft.rounds })}

@@ -3,6 +3,7 @@ import type { Catalog } from './ko';
 /** 日本語 — 語順は韓国語とほぼ同じで、複数形はない */
 export const ja: Catalog = {
   common: {
+    ok: 'OK',
     cancel: 'キャンセル',
     save: '保存する',
     close: '閉じる',
@@ -54,6 +55,7 @@ export const ja: Catalog = {
     workoutType: 'ワークアウトの種類',
     workoutTypeNote: 'ヘルスケアとフィットネスにこの種類で記録されます。',
     workoutTypeHealthOff: '「ヘルスケアにワークアウトを記録」がオフです。',
+    workoutTypeHealthOffAndroid: '「ヘルスコネクトに記録」の設定がオフです。',
     countdown: 'カウントダウン',
     countdownSeconds: '{{n}}秒',
     countdownUnit: '秒',
@@ -65,6 +67,7 @@ export const ja: Catalog = {
     a11yAddBlock: '種目を追加',
     repeat: '繰り返し',
     rounds: 'ラウンド',
+    roundsTitle: 'ラウンド（全体を繰り返し）',
     blockRest: '種目間の休憩',
     roundRest: 'ラウンド間の休憩',
     skipLastRest: '最終セット後の休憩を省く',
@@ -166,6 +169,15 @@ export const ja: Catalog = {
     healthSyncNote: '終えると（途中で終えても）ルーティンで選んだ種類でヘルスケアに保存します。フィットネスにも表示されます。',
     healthDeniedTitle: 'ヘルスケアへのアクセスがオフです',
     healthDeniedBody: '設定 → ヘルスケア → データアクセスとデバイス → intava で、ワークアウトの書き込みをオンにしてください。',
+    healthSyncAndroid: 'ヘルスコネクトに記録',
+    healthSyncNoteAndroid: 'トレーニングを終えると（途中で終えても）、ルーティンで選んだ種類でヘルスコネクトに記録します。Samsung Healthで見るには、Samsung Health → 設定 → ヘルスコネクト で同期をオンにしてください。',
+    healthDeniedTitleAndroid: 'ヘルスコネクトの許可がオフです',
+    healthDeniedBodyAndroid: '設定 → ヘルスコネクト → アプリの権限 → intava で、エクササイズの書き込みを許可してください。',
+    shealthTitle: 'Samsung Healthでも見るには',
+    shealthBody: 'トレーニング記録はヘルスコネクトに保存されます。Samsung Healthで見るには、Samsung Health → 設定 → ヘルスコネクト で同期をオンにしてください。',
+    shealthOpen: 'Samsung Healthを開く',
+    openHealthConnect: 'ヘルスコネクトを開く',
+    openHealthConnectNote: 'インタバが記録したトレーニングを確認します。',
     feedbackSection: 'お問い合わせ',
     feedback: '開発者に知らせる',
     feedbackNote: '不具合や要望をメールですぐに送ります。',
@@ -344,6 +356,8 @@ export const ja: Catalog = {
   },
 
   live: {
+    /** 안드로이드 진행 중 알림의 채널 이름(알림 설정에 보인다) */
+    channel: 'ワークアウトタイマー',
     next: '次: {{what}}',
     subWork: '{{sub}} · 次: {{next}}',
     waiting: '更新中…',

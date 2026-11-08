@@ -7,6 +7,7 @@
  */
 export const ko = {
   common: {
+    ok: '확인',
     cancel: '취소',
     save: '저장하기',
     close: '닫기',
@@ -65,6 +66,7 @@ export const ko = {
     workoutType: '운동 종류',
     workoutTypeNote: '건강·피트니스 앱에 이 종류로 기록됩니다.',
     workoutTypeHealthOff: '"건강 앱에 운동 기록" 설정이 꺼져있습니다.',
+    workoutTypeHealthOffAndroid: '"헬스 커넥트에 운동 기록" 설정이 꺼져있습니다.',
     countdown: '카운트다운',
     countdownSeconds: '{{n}}초',
     countdownUnit: '초',
@@ -76,6 +78,7 @@ export const ko = {
     a11yAddBlock: '종목 추가',
     repeat: '반복',
     rounds: '라운드',
+    roundsTitle: '라운드 (전체 반복)',
     blockRest: '종목 사이 휴식',
     roundRest: '라운드 사이 휴식',
     skipLastRest: '마지막 세트 뒤 휴식 생략',
@@ -185,6 +188,15 @@ export const ko = {
     healthSyncNote: '운동을 마치면(도중에 끝내도) 루틴에서 고른 운동 종류로 건강 앱에 남깁니다. 피트니스 앱에도 보입니다.',
     healthDeniedTitle: '건강 앱 권한이 꺼져 있습니다',
     healthDeniedBody: '설정 → 건강 → 데이터 접근 및 기기 → intava에서 운동 쓰기를 켜 주세요.',
+    healthSyncAndroid: '헬스 커넥트에 운동 기록',
+    healthSyncNoteAndroid: '운동을 마치면(도중에 끝내도) 루틴에서 고른 운동 종류로 헬스 커넥트에 남깁니다. 삼성 헬스에서 보려면 삼성 헬스 → 설정 → 헬스 커넥트에서 동기화를 켜 주세요.',
+    healthDeniedTitleAndroid: '헬스 커넥트 권한이 꺼져 있습니다',
+    healthDeniedBodyAndroid: '설정 → 헬스 커넥트 → 앱 권한 → intava에서 운동 쓰기를 허용해 주세요.',
+    shealthTitle: '삼성 헬스에서도 보려면',
+    shealthBody: '운동 기록은 헬스 커넥트에 저장돼요. 삼성 헬스에서 보려면 삼성 헬스 → 설정 → 헬스 커넥트에서 동기화를 켜 주세요.',
+    shealthOpen: '삼성 헬스 열기',
+    openHealthConnect: '헬스 커넥트 열기',
+    openHealthConnectNote: '인타바가 남긴 운동 기록을 확인해요.',
     feedbackSection: '문의',
     feedback: '개발자에게 알리기',
     feedbackNote: '버그나 바라는 점을 메일로 바로 보냅니다.',
@@ -374,6 +386,8 @@ export const ko = {
 
   /** 라이브 액티비티 — 다이내믹 아일랜드 · 잠금화면 */
   live: {
+    /** 안드로이드 진행 중 알림의 채널 이름(알림 설정에 보인다) */
+    channel: '운동 타이머',
     next: '다음: {{what}}',
     subWork: '{{sub}} · 다음: {{next}}',
     /** 워치에 다음 구간이 늦게 닿는 동안 — 0:00에 멈춘 숫자 대신 */

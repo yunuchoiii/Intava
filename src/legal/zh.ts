@@ -5,7 +5,7 @@ const EMAIL = 'chltjdnjs529@gmail.com';
 export const zh: LegalPack = {
   privacy: {
     title: '隐私政策',
-    updated: '最后更新：2026年11月3日',
+    updated: '最后更新：2026年11月6日',
     lead: 'intava 不收集个人信息。',
     sections: [
       {
@@ -42,10 +42,11 @@ export const zh: LegalPack = {
         ],
       },
       {
-        heading: '健康（HealthKit）',
+        heading: '健康（HealthKit）· Health Connect',
         body: [
           '仅当你在设置中打开「将训练记录到健康」时，应用才会在训练结束时把这次训练记录到 Apple「健康」。写入的内容是你为训练选择的体能训练类型、开始和结束时间以及训练时长，训练期间 iOS 估算的活动能量（卡路里）可能会一并附上。这些记录也会显示在「健身」App 中。',
           'Intava 不读取「健康」中的任何数据。写入「健康」的记录只保存在 Apple「健康」中，不会发送给任何人（包括开发者），也不会用于广告或分析。你可以随时在 iOS 设置 → 健康 → 数据访问与设备 中关闭权限。',
+          '在 Android 上，同样的设置是“记录到 Health Connect”。仅在开启时，完成训练后会把运动类型和开始、结束时间作为一条锻炼记录写入 Health Connect，三星健康等应用也能看到。Intava 不会读取 Health Connect 的数据；写入的记录只保存在设备上的 Health Connect 中，不会发送给任何人。你可以随时在 设置 → Health Connect → 应用权限 中关闭权限。',
           '打开锁屏计时时，为了在熄屏期间继续计时，应用会在训练中使用 iOS 体能训练会话。如果「将训练记录到健康」处于关闭状态，该会话会被丢弃，不会保存到「健康」。',
         ],
       },

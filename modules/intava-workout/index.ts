@@ -1,8 +1,10 @@
 /**
- * iOS 운동 세션 · 건강 앱 기록(ios/IntavaWorkoutModule.swift).
+ * 운동 세션 · 건강 기록 — iOS는 HealthKit(ios/IntavaWorkoutModule.swift), 안드로이드는 헬스 커넥트
+ * (android/…/IntavaWorkoutModule.kt). 안드로이드에는 운동 세션이 없어 start/stop이 "none"을 돌려주고,
+ * 세션이 끝나면 시작 · 끝 시각으로 한 건 써넣는다(saveWorkoutRecord).
  *
- * 네이티브 모듈이 없는 빌드·플랫폼(안드로이드, Expo Go)에서는 조용히 아무것도 하지
- * 않는다 — 운동 세션은 아일랜드와 건강 기록을 거드는 덤이고, 타이머는 그것 없이 돈다.
+ * 네이티브 모듈이 없는 빌드(Expo Go)에서는 조용히 아무것도 하지 않는다 — 운동 세션은 아일랜드와
+ * 건강 기록을 거드는 덤이고, 타이머는 그것 없이 돈다.
  */
 import { requireOptionalNativeModule } from 'expo-modules-core';
 import type { WorkoutType } from '../../src/types';
@@ -16,6 +18,10 @@ type Native = {
   stop(save: boolean): Promise<string>;
   saveWorkout(type: string, startMs: number, endMs: number): Promise<string>;
   state(): number;
+  // 안드로이드만
+  openHealthConnect?(): boolean;
+  hasSamsungHealth?(): boolean;
+  openSamsungHealth?(): boolean;
 };
 
 const native = requireOptionalNativeModule<Native>('IntavaWorkout');
@@ -120,5 +126,31 @@ export function workoutSessionState(): number {
     return native ? native.state() : -2;
   } catch {
     return -3;
+  }
+}
+
+/** 안드로이드 — 헬스 커넥트 화면을 연다(안드로이드 14+는 설정 안에 있어 찾기 어렵다) */
+export function openHealthConnect(): boolean {
+  try {
+    return !!native?.openHealthConnect?.();
+  } catch {
+    return false;
+  }
+}
+
+/** 안드로이드 — 삼성 헬스가 깔려 있나 */
+export function hasSamsungHealth(): boolean {
+  try {
+    return !!native?.hasSamsungHealth?.();
+  } catch {
+    return false;
+  }
+}
+
+export function openSamsungHealth(): boolean {
+  try {
+    return !!native?.openSamsungHealth?.();
+  } catch {
+    return false;
   }
 }
