@@ -11,7 +11,7 @@
  */
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Animated, Image, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Defs, G, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { t } from '../i18n';
 import { TABULAR } from '../theme';
@@ -185,22 +185,58 @@ function Glows({ id, base, glows }: { id: string; base?: string; glows: Glow[] }
   );
 }
 
-function Photo({ uri }: { uri?: string }) {
+/** 사진의 확대 · 위치(카드 좌표, 360×640). 고르기 화면이 손가락으로 움직이고, 찍는 카드도 같은 값을 쓴다 */
+export type PhotoFrame = { scale: Animated.Value; x: Animated.Value; y: Animated.Value };
+
+/**
+ * 카드에 깔 사진 — 문자열이면 가운데를 cover로 자른다(새 기능 팝업의 예시 사진).
+ * 크기와 frame이 있으면 cover 크기로 그린 뒤 frame만큼 키우고 옮긴다(사용자가 핀치 · 끌기로 맞춘 것).
+ */
+export type StoryPhoto = string | { uri: string; width: number; height: number; frame?: PhotoFrame };
+
+/** cover로 깔 때의 그림 크기 — 짧은 쪽이 카드에 꼭 맞는다 */
+export function coverSize(w: number, h: number) {
+  const k = Math.max(SHARE_W / w, SHARE_H / h);
+  return { w: w * k, h: h * k };
+}
+
+function Photo({ photo }: { photo?: StoryPhoto }) {
+  if (!photo || typeof photo === 'string') {
+    return (
+      <>
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: '#2A2A2E' }]} />
+        {!!photo && <Image source={{ uri: photo }} resizeMode="cover" style={StyleSheet.absoluteFill} />}
+      </>
+    );
+  }
+  const size = coverSize(photo.width || SHARE_W, photo.height || SHARE_H);
+  const f = photo.frame;
   return (
     <>
       <View style={[StyleSheet.absoluteFill, { backgroundColor: '#2A2A2E' }]} />
-      {!!uri && <Image source={{ uri }} resizeMode="cover" style={StyleSheet.absoluteFill} />}
+      <Animated.Image
+        source={{ uri: photo.uri }}
+        style={{
+          position: 'absolute',
+          width: size.w,
+          height: size.h,
+          left: (SHARE_W - size.w) / 2,
+          top: (SHARE_H - size.h) / 2,
+          // 옮긴 뒤 키운다(CSS 순서) — 옮긴 거리는 배율에 곱해지지 않는다
+          transform: f ? [{ translateX: f.x }, { translateY: f.y }, { scale: f.scale }] : [],
+        }}
+      />
     </>
   );
 }
 
 // ---- 3a 사진 · 우측 하단 숫자 스택 ------------------------------------------
 
-function PhotoStack({ record, photo }: { record: WorkoutRecord; photo?: string }) {
+function PhotoStack({ record, photo }: { record: WorkoutRecord; photo?: StoryPhoto }) {
   const n = numbers(record);
   return (
     <>
-      <Photo uri={photo} />
+      <Photo photo={photo} />
       <Glows
         id="sa"
         glows={[
@@ -243,11 +279,11 @@ function PhotoStat({ value, label }: { value: string; label: string }) {
 
 // ---- 3c 사진 · 하단 비율 바 스트립 --------------------------------------------
 
-function PhotoStrip({ record, photo }: { record: WorkoutRecord; photo?: string }) {
+function PhotoStrip({ record, photo }: { record: WorkoutRecord; photo?: StoryPhoto }) {
   const n = numbers(record);
   return (
     <>
-      <Photo uri={photo} />
+      <Photo photo={photo} />
       <LinearGradient
         colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.72)']}
         locations={[0.45, 0.88]}
@@ -440,7 +476,7 @@ function PosterStat({ value, label, first }: { value: number; label: string; fir
 /** 고른 카드 하나를 360×640으로 — 찍을 때는 가려져 있어도 된다 */
 export const StoryCard = React.forwardRef<
   View,
-  { template: StoryTemplate; record: WorkoutRecord; photo?: string }
+  { template: StoryTemplate; record: WorkoutRecord; photo?: StoryPhoto }
 >(function StoryCard({ template, record, photo }, ref) {
   return (
     <View ref={ref} collapsable={false} style={s.card}>

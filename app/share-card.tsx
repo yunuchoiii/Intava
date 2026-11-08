@@ -11,7 +11,8 @@
  */
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import {
   Alert,
   Animated,
@@ -30,7 +31,7 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { captureRef } from 'react-native-view-shot';
 import { BackIcon, ShareIcon } from '../src/components/Icons';
 import { PressBox } from '../src/components/PressBox';
-import { needsPhoto, PHOTO_SPOT, StoryCard, type StoryTemplate } from '../src/components/StoryCards';
+import { coverSize, needsPhoto, PHOTO_SPOT, StoryCard, type StoryTemplate } from '../src/components/StoryCards';
 import { ToastHost, useToast } from '../src/components/Toast';
 import { ShareImage, SHARE_H, SHARE_W } from '../src/components/WorkoutCard';
 import { t } from '../src/i18n';
@@ -61,6 +62,8 @@ const CARD_H = SHARE_H * SCALE;
  * 투명도는 무관, 2026-11-03). 그래서 크기는 고정하고 투명도만 바꾼다.
  */
 const STEP = CARD_W + 12;
+/** 사진 카드에서 숫자 · 글자 묶음이 시작하는 높이(카드 좌표) — 여기 아래에서 시작한 끌기는 카드 넘기기로 */
+const INFO_TOP = 400;
 /**
  * 카드 아래 칸 — 위 여백 16 + 점 6 + 12 + 안내 문구 24(위 6 + 줄 18). 사진 바꾸기(38)는 14만큼 아래로
  * 넘치지만 absolute라 자리를 밀지 않는다. 문구 기준으로 잡아야 문구~버튼 간격이 헤더~카드 간격과 맞는다.
@@ -101,10 +104,75 @@ function ShareCard() {
   const [start, setStart] = useState<number | null>(null);
   const [index, setIndex] = useState(0);
   const order = ORDER;
-  const [photo, setPhoto] = useState<string | undefined>();
+  const [photo, setPhoto] = useState<{ uri: string; width: number; height: number } | undefined>();
+  /*
+    사진 확대 · 위치 — 사진 카드 두 장과 찍는 카드가 같은 값을 쓴다(공유 이미지 = 보이는 그대로).
+    두 손가락으로 벌리면 커지고(1~4배), 커진 상태에서만 한 손가락으로 끌어 옮긴다 — 확대하지 않았을
+    때는 끌기가 꺼져 있어 좌우로 넘기면 다음 카드로 간다. 사진이 카드 밖으로 빠져 빈 곳이 생기지
+    않게 옮길 수 있는 거리를 막는다(사용자 요청 2026-11-08).
+  */
+  const frame = useRef({
+    scale: new Animated.Value(1),
+    x: new Animated.Value(0),
+    y: new Animated.Value(0),
+  }).current;
+  const z = useRef({ s: 1, x: 0, y: 0, s0: 1, x0: 0, y0: 0 }).current;
+  const [zoomed, setZoomed] = useState(false);
+  const setFrame = useCallback(
+    (sc: number, x: number, y: number) => {
+      const size = photo ? coverSize(photo.width, photo.height) : { w: SHARE_W, h: SHARE_H };
+      const mx = Math.max(0, (size.w * sc - SHARE_W) / 2);
+      const my = Math.max(0, (size.h * sc - SHARE_H) / 2);
+      z.s = sc;
+      z.x = Math.min(mx, Math.max(-mx, x));
+      z.y = Math.min(my, Math.max(-my, y));
+      frame.scale.setValue(z.s);
+      frame.x.setValue(z.x);
+      frame.y.setValue(z.y);
+    },
+    [photo, frame, z]
+  );
+  // 새 사진이면 처음(가운데 · 1배)부터
+  useEffect(() => {
+    setFrame(1, 0, 0);
+    setZoomed(false);
+  }, [photo, setFrame]);
+  /*
+    카드마다 따로 만들고 가운데 카드에서만 켠다. 가운데 카드에만 GestureDetector를 붙였더니 넘길 때마다
+    카드가 다른 모양으로 다시 만들어져 사진이 깜빡였다(사용자 지적) — 구조는 늘 같게, 켜고 끄기만 바꾼다.
+  */
+  const gestureFor = useCallback((on: boolean) => {
+    const pinch = Gesture.Pinch()
+      .runOnJS(true)
+      .enabled(on)
+      .onStart(() => {
+        z.s0 = z.s;
+      })
+      .onUpdate((e) => setFrame(Math.min(4, Math.max(1, z.s0 * e.scale)), z.x, z.y))
+      .onEnd(() => setZoomed(z.s > 1.01));
+    const pan = Gesture.Pan()
+      .runOnJS(true)
+      .enabled(on && zoomed)
+      /*
+        아래쪽 숫자 · 글자 영역에서는 끌기가 시작조차 하지 않게 잡는 영역을 위로 줄인다 — 확대한 채로도
+        그 자리를 잡고 밀면 옆 카드로 넘어가게(사용자 요청). onTouchesDown에서 JS로 판정해 fail()하던
+        방식은 판정이 늦어 실기기에서 듣지 않았다. 값은 카드 좌표(360×640, 이 뷰의 자기 좌표)다.
+      */
+      .hitSlop({ bottom: -(SHARE_H - INFO_TOP) })
+      .onStart(() => {
+        z.x0 = z.x;
+        z.y0 = z.y;
+      })
+      // 화면은 카드를 0.8배로 보여 준다 — 손가락이 움직인 만큼 카드 좌표로는 1/0.8
+      .onUpdate((e) => setFrame(z.s, z.x0 + e.translationX / SCALE, z.y0 + e.translationY / SCALE));
+    return Gesture.Simultaneous(pinch, pan);
+  }, [zoomed, setFrame, z]);
+  const framed = photo ? { ...photo, frame } : undefined;
   const [picking, setPicking] = useState(false);
   const [sharing, setSharing] = useState(false);
   const scrollX = useRef(new Animated.Value(0)).current;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const listRef = useRef<any>(null);
   const shot = useRef<View>(null);
 
   useEffect(() => {
@@ -138,7 +206,8 @@ function ShareCard() {
         from === 'camera'
           ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.9 })
           : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.9 });
-      if (!res.canceled && res.assets?.[0]?.uri) setPhoto(res.assets[0].uri);
+      const a = res.canceled ? undefined : res.assets?.[0];
+      if (a?.uri) setPhoto({ uri: a.uri, width: a.width || SHARE_W, height: a.height || SHARE_H });
     } catch {
       // 고르다 만 것 — 그대로 둔다
     }
@@ -173,7 +242,7 @@ function ShareCard() {
         {kind === 'base' ? (
           <ShareImage ref={shot} record={entry} />
         ) : (
-          <StoryCard ref={shot} template={kind} record={entry} photo={photo} />
+          <StoryCard ref={shot} template={kind} record={entry} photo={framed} />
         )}
       </View>
       <View style={[StyleSheet.absoluteFill, { backgroundColor: '#0A0A0D' }]} />
@@ -202,6 +271,7 @@ function ShareCard() {
       <View style={{ flex: 1, justifyContent: 'center', marginBottom: 16 + 56 + bottomPad }}>
         <View style={{ height: CARD_H + BELOW_H }}>
           <Animated.FlatList
+            ref={listRef}
             data={order}
             keyExtractor={(k) => k}
             horizontal
@@ -227,18 +297,30 @@ function ShareCard() {
               return (
                 <Animated.View style={{ width: STEP, height: CARD_H, alignItems: 'center', opacity }}>
                   <Pressable
-                    disabled={!empty || i !== index}
-                    onPress={() => setPicking(true)}
+                    // 옆 카드를 누르면 그 카드를 가운데로(사용자 요청), 가운데의 빈 사진 카드는 사진 넣기
+                    disabled={i === index && !empty}
+                    onPress={() => {
+                      if (i !== index) listRef.current?.scrollToOffset({ offset: i * STEP, animated: true });
+                      else setPicking(true);
+                    }}
                     style={styles.card}
                     accessibilityLabel={empty ? t('shareCard.addPhoto') : t(NAME[item])}
                   >
-                    <View style={styles.cardInner}>
-                      {item === 'base' ? (
-                        <ShareImage record={entry} />
-                      ) : (
-                        <StoryCard template={item} record={entry} photo={photo} />
-                      )}
-                    </View>
+                    {item !== 'base' && needsPhoto(item) ? (
+                      <GestureDetector gesture={gestureFor(!!photo && i === index)}>
+                        <View style={styles.cardInner}>
+                          <StoryCard template={item} record={entry} photo={framed} />
+                        </View>
+                      </GestureDetector>
+                    ) : (
+                      <View style={styles.cardInner}>
+                        {item === 'base' ? (
+                          <ShareImage record={entry} />
+                        ) : (
+                          <StoryCard template={item} record={entry} photo={framed} />
+                        )}
+                      </View>
+                    )}
                     {empty && (
                       // 카드 전체가 아니라 사진이 들어갈 빈 자리 가운데에
                       <View style={[styles.addSpot, { height: PHOTO_SPOT[item as keyof typeof PHOTO_SPOT] * 2 * SCALE }]}>
