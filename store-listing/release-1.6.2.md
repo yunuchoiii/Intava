@@ -14,7 +14,6 @@ iOS만 낸다(2026-11-08 사용자 결정). dev의 안드로이드 작업(#45 ·
 이런 점도 개선했어요
 - 운동과 휴식 시간을 1초 단위로 고를 수 있어요.
 - 시간 휠을 빠르게 돌려도 멈춘 자리에 정확히 서고, 더 부드럽게 움직여요.
-- 라운드가 루틴 전체를 반복한다는 걸 알기 쉽게 표시했어요.
 - 공유 카드 화면에서 옆 카드를 누르면 바로 넘어가고, 왼쪽 위 버튼으로 나갈 수 있어요.
 
 인타바는 이번에도 구독, 광고, 로그인 없이 무료로 사용할 수 있습니다.
@@ -30,7 +29,6 @@ New
 Improved
 - Workout and rest times can now be set to the second.
 - The time wheel stops exactly where you leave it, even when you spin it fast, and moves more smoothly.
-- Rounds are now labeled to show that they repeat the whole routine.
 - On the share card screen, tap a card on the side to jump to it, or use the button at the top left to go back.
 
 Intava is still free, with no subscription, no ads and no login.
@@ -46,7 +44,6 @@ Intava is still free, with no subscription, no ads and no login.
 改善しました
 - トレーニングと休憩の時間を1秒単位で選べます。
 - 時間ホイールを速く回しても止めた位置でぴったり止まり、動きもなめらかになりました。
-- ラウンドがルーティン全体を繰り返すことを分かりやすく表示しました。
 - シェアカード画面で横のカードをタップするとすぐ移動し、左上のボタンで戻れます。
 
 インタバは今回も、サブスクリプション・広告・ログインなしで無料で使えます。
@@ -62,7 +59,6 @@ Intava is still free, with no subscription, no ads and no login.
 改进
 - 训练和休息时间现在可以按 1 秒设置。
 - 时间滚轮即使快速转动也会准确停在松手的位置，转动也更顺滑。
-- 更清楚地标明轮数会重复整个例程。
 - 在分享卡片页面点击旁边的卡片即可切换，也可以用左上角的按钮返回。
 
 Intava 依然免费，无订阅、无广告、无需登录。
