@@ -22,6 +22,7 @@ import { BackIcon } from '../src/components/Icons';
 import { Screen } from '../src/components/Screen';
 import * as Application from 'expo-application';
 import Constants from 'expo-constants';
+import * as Device from 'expo-device';
 import { preview } from '../src/audio';
 import { exportBackup, pickBackup } from '../src/backup';
 import { DEVELOPER_EMAIL } from '../src/legal';
@@ -376,7 +377,7 @@ export default function SettingsScreen() {
 
           {/*
             개발자에게 알리기 — 메일 앱을 받는 사람·제목·기기 정보가 채워진 채로 연다.
-            무엇이 어디서 났는지 되묻지 않아도 되게, 앱 버전·OS·언어를 본문 아래에 붙인다.
+            무엇이 어디서 났는지 되묻지 않아도 되게, 앱 버전·기기 모델·OS·언어를 본문 아래에 붙인다.
             메일 앱이 없으면(지웠거나 계정이 없다) 주소를 보여 준다.
           */}
           <Text style={styles.section}>{t('settings.feedbackSection')}</Text>
@@ -386,9 +387,12 @@ export default function SettingsScreen() {
             onPress={() => {
               const info = [
                 `${t('settings.version')}: ${appVersion}`,
+                Device.modelName ?? '',
                 `${Platform.OS} ${String(Platform.Version)}`,
                 `lang: ${currentLanguage()}`,
-              ].join('\n');
+              ]
+                .filter(Boolean)
+                .join('\n');
               const url =
                 `mailto:${DEVELOPER_EMAIL}` +
                 `?subject=${encodeURIComponent(t('settings.feedbackSubject'))}` +
